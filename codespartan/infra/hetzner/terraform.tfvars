@@ -6,7 +6,8 @@ server_type = "cax11"
 location    = "nbg1"
 
 ssh_key_name        = "codespartan"
-ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+# SSH key que ya tienes configurada
+ssh_public_key_path = "~/.ssh/id_codespartan.pub"
 
 # SSH abierto a todos por ahora (restringe cuando tengas tu IP fija)
 firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]
