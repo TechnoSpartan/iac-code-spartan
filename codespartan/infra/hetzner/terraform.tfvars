@@ -7,7 +7,8 @@ location    = "nbg1"
 
 ssh_key_name        = "codespartan"
 # SSH key que ya tienes configurada
-ssh_public_key_path = "~/.ssh/id_codespartan.pub"
+# Note: Use absolute path, Terraform's file() function doesn't expand ~
+ssh_public_key_path = "/Users/krbaio3/.ssh/id_codespartan.pub"
 
 # SSH abierto a todos por ahora (restringe cuando tengas tu IP fija)
 firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]

@@ -22,7 +22,7 @@ provider "hetznerdns" {
 
 resource "hcloud_ssh_key" "main" {
   name       = var.ssh_key_name
-  public_key = file(var.ssh_public_key_path)
+  public_key = file(pathexpand(var.ssh_public_key_path))
 }
 
 resource "hcloud_firewall" "basic" {
