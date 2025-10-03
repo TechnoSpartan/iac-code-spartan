@@ -34,7 +34,7 @@ Añade estos 5 secrets:
 | `HCLOUD_TOKEN` | `tu_token_hetzner_cloud` | Console Hetzner Cloud → Security → API tokens |
 | `HETZNER_DNS_TOKEN` | `tu_token_hetzner_dns` | Console Hetzner → DNS → API tokens |
 | `VPS_SSH_HOST` | `91.98.137.217` | IP fija de tu VPS |
-| `VPS_SSH_USER` | `root` | Usuario por defecto |
+| `VPS_SSH_USER` | `leonidas` | Tu usuario en el VPS |
 | `VPS_SSH_KEY` | `-----BEGIN OPENSSH...` | Contenido completo de id_codespartan (privada) |
 
 ⚠️ **Importante**: `VPS_SSH_KEY` debe incluir `-----BEGIN OPENSSH PRIVATE KEY-----` y `-----END OPENSSH PRIVATE KEY-----`
@@ -110,7 +110,7 @@ ssh_public_key_path = "~/.ssh/id_codespartan.pub"
 
 ```bash
 # Conectar al VPS
-ssh -i ~/.ssh/id_codespartan root@91.98.137.217
+ssh -i ~/.ssh/id_codespartan leonidas@91.98.137.217
 
 # Verificar contenedores
 docker ps
@@ -137,7 +137,7 @@ docker logs grafana
 # 1. Verificar secrets están configurados
 # 2. Ver logs detallados en Actions → Job fallido
 # 3. Verificar SSH key es correcta:
-ssh -i ~/.ssh/id_codespartan root@91.98.137.217 "whoami"
+ssh -i ~/.ssh/id_codespartan leonidas@91.98.137.217 "whoami"
 ```
 
 ### Problema: No puedo acceder a los dominios
@@ -165,7 +165,7 @@ dig NS mambo-cloud.com
 
 ```bash
 # SSH al VPS
-ssh -i ~/.ssh/id_codespartan root@91.98.137.217
+ssh -i ~/.ssh/id_codespartan leonidas@91.98.137.217
 
 # Ver qué está pasando
 docker ps -a | grep servicio_problema
@@ -181,7 +181,7 @@ docker compose config
 ### Reiniciar todo:
 
 ```bash
-ssh -i ~/.ssh/id_codespartan root@91.98.137.217
+ssh -i ~/.ssh/id_codespartan leonidas@91.98.137.217
 
 # Parar todos los servicios
 cd /opt/codespartan
@@ -198,9 +198,9 @@ cd /opt/codespartan/apps/mambo-cloud && docker compose up -d
 
 ```bash
 # ⚠️ DESTRUCTIVO: Borra todo
-ssh -i ~/.ssh/id_codespartan root@91.98.137.217
+ssh -i ~/.ssh/id_codespartan leonidas@91.98.137.217
 docker system prune -a -f
-rm -rf /opt/codespartan
+sudo rm -rf /opt/codespartan
 # Luego re-ejecutar workflows GitHub Actions
 ```
 
