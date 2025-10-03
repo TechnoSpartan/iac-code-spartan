@@ -1,0 +1,30 @@
+# Terraform
+.terraform/
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*.override.tf
+*.override.tf.json
+.terraform.lock.hcl
+
+# Local environment
+.env
+.env.*
+
+# Compose artifacts
+**/letsencrypt/
+**/acme.json
+**/.DS_Store
+
+# Logs
+logs/
+**/*.log
+
+# Node / Python typical (for future tools)
+node_modules/
+__pycache__/
+
+.idea

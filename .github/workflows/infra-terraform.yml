@@ -1,0 +1,32 @@
+name: Infra (Hetzner) Terraform
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/infra/hetzner/**'
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+      - name: Terraform Init
+        working-directory: codespartan/infra/hetzner
+        run: terraform init -input=false
+      - name: Terraform Plan
+        working-directory: codespartan/infra/hetzner
+        run: terraform plan -input=false -var "hetzner_dns_token=${{ secrets.HETZNER_DNS_TOKEN }}"
+      - name: Terraform Apply
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        working-directory: codespartan/infra/hetzner
+        run: terraform apply -auto-approve -input=false -var "hetzner_dns_token=${{ secrets.HETZNER_DNS_TOKEN }}"
+

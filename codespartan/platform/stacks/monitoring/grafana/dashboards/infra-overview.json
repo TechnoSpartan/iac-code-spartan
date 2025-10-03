@@ -1,0 +1,24 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Targets UP",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [{"expr": "sum(up)"}]
+    },
+    {
+      "type": "graph",
+      "title": "Load1 per CPU",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [{"expr": "node_load1 / count(count(node_cpu_seconds_total{mode=\"idle\"}) by (cpu))"}]
+    }
+  ],
+  "schemaVersion": 39,
+  "title": "Infra Overview",
+  "version": 1
+}
+

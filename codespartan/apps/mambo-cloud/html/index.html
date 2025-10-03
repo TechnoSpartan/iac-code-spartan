@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mambo Cloud - CodeSpartan Platform</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        h1 { margin-bottom: 1rem; font-size: 3rem; }
+        .subtitle { font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; }
+        .links { margin-top: 2rem; }
+        .links a {
+            display: inline-block;
+            margin: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .links a:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Mambo Cloud</h1>
+        <div class="subtitle">CodeSpartan Infrastructure Platform</div>
+        <p>Plataforma de infraestructura como código con Traefik, Grafana y monitoreo completo.</p>
+
+        <div class="links">
+            <a href="https://traefik.mambo-cloud.com">🔀 Traefik Dashboard</a>
+            <a href="https://grafana.mambo-cloud.com">📊 Grafana</a>
+            <a href="https://backoffice.mambo-cloud.com">⚙️ Backoffice</a>
+        </div>
+
+        <div style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;">
+            <p>Entorno: <span id="env">Detectando...</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Detectar entorno basado en hostname
+        const hostname = window.location.hostname;
+        const envElement = document.getElementById('env');
+
+        if (hostname.includes('staging')) {
+            envElement.textContent = 'Staging';
+            envElement.style.color = '#ffd700';
+        } else if (hostname.includes('lab')) {
+            envElement.textContent = 'Laboratory';
+            envElement.style.color = '#ff6b6b';
+        } else {
+            envElement.textContent = 'Production';
+            envElement.style.color = '#4ecdc4';
+        }
+    </script>
+</body>
+</html>

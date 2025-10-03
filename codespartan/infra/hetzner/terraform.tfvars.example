@@ -1,0 +1,43 @@
+# Ejemplo de variables para Terraform
+# Copia a terraform.tfvars y ajusta
+
+# hcloud_token = ""
+# hetzner_dns_token = ""
+server_name = "codespartan-vps"
+image       = "alma-9"
+server_type = "cax11"
+location    = "nbg1"
+
+ssh_key_name          = "codespartan"
+ssh_public_key_path   = "~/.ssh/id_ed25519.pub"
+firewall_allowed_ssh_cidrs = ["1.2.3.4/32", "::/0"]
+
+# Si vas a gestionar DNS en Hetzner DNS, añade tus dominios aquí
+# domains = ["cyberdyne-systems.es", "dental-io.es"]
+# subdomains = ["www", "staging", "lab", "traefik", "grafana"]
+
+# IPv6 / AAAA opcional
+# create_aaaa_records = true
+# manual_ipv6_address = "2a01:4f8:XXXX:XXXX::1"  # ajusta con la IPv6 del VPS
+
+# Apex/root (A y AAAA) opcional
+# create_apex_a = true
+# create_apex_aaaa = true
+# apex_name = "@"  # Si hubiera problema con '@', prueba con ""
+
+# Registros adicionales por dominio (placeholders)
+# Importante: NO inventes valores de correo. Copia los que te dé tu proveedor (OVH u otro).
+# dns_additional_records = {
+#   "cyberdyne-systems.es" = [
+#     # MX principal de tu proveedor de correo
+#     { name = "@", type = "MX", value = "10 mail.tu-proveedor.com." },
+#     # SPF (TXT)
+#     { name = "@", type = "TXT", value = "v=spf1 include:_spf.tu-proveedor.com ~all" },
+#     # DKIM (TXT) - ejemplo: selector1._domainkey
+#     { name = "selector1._domainkey", type = "TXT", value = "v=DKIM1; k=rsa; p=CLAVE_PUBLICA..." }
+#   ]
+#   "dental-io.es" = [
+#     # CNAME para verificación (si lo pide tu proveedor)
+#     { name = "_acme-challenge", type = "CNAME", value = "challenge.tu-proveedor.com." }
+#   ]
+# }

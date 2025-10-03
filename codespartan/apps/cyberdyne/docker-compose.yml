@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  web:
+    image: traefik/whoami:v1.10
+    container_name: cyberdyne-web
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.cyberdyne-www.rule=Host(`www.${BASE_DOMAIN}`)
+      - traefik.http.routers.cyberdyne-staging.rule=Host(`staging.${BASE_DOMAIN}`)
+      - traefik.http.routers.cyberdyne-lab.rule=Host(`lab.${BASE_DOMAIN}`)
+      - traefik.http.routers.cyberdyne-www.entrypoints=websecure
+      - traefik.http.routers.cyberdyne-staging.entrypoints=websecure
+      - traefik.http.routers.cyberdyne-lab.entrypoints=websecure
+      - traefik.http.routers.cyberdyne-www.tls=true
+      - traefik.http.routers.cyberdyne-staging.tls=true
+      - traefik.http.routers.cyberdyne-lab.tls=true
+      - traefik.http.routers.cyberdyne-www.tls.certresolver=le
+      - traefik.http.routers.cyberdyne-staging.tls.certresolver=le
+      - traefik.http.routers.cyberdyne-lab.tls.certresolver=le
+      - traefik.docker.network=web
+    networks: [web]
+    restart: unless-stopped
+networks:
+  web:
+    external: true
+
