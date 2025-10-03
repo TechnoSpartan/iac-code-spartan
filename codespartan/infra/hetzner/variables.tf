@@ -46,6 +46,12 @@ variable "ssh_public_key_path" {
   default     = "~/.ssh/id_ed25519.pub"
 }
 
+variable "ssh_public_key_content" {
+  description = "Contenido directo de la clave SSH pública (alternativa a ssh_public_key_path)."
+  type        = string
+  default     = ""
+}
+
 variable "firewall_allowed_ssh_cidrs" {
   description = "CIDRs permitidos para SSH (22/tcp). Recomendado restringir a tu IP."
   type        = list(string)
@@ -87,6 +93,12 @@ variable "manual_ipv6_address" {
   default     = ""
 }
 
+variable "manual_ipv4_address" {
+  description = "IPv4 manual del VPS para registros A (si está vacío, usa la IP auto-asignada)."
+  type        = string
+  default     = ""
+}
+
 variable "create_apex_a" {
   description = "Crear registro A para el apex/root (@) de cada dominio apuntando al VPS."
   type        = bool
@@ -100,13 +112,7 @@ variable "create_apex_aaaa" {
 }
 
 variable "apex_name" {
-  description = "Nombre para el apex/root en el provider hetznerdns. Suele ser '@' o vacio ''."
+  description = "Nombre para el registro apex/root (normalmente '@' o vacío)."
   type        = string
   default     = "@"
-}
-
-variable "manual_ipv4_address" {
-  description = "IPv4 a usar en registros A (si se define, tiene prioridad sobre la IPv4 del VPS)."
-  type        = string
-  default     = ""
 }

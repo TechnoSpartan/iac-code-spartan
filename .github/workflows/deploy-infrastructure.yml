@@ -28,6 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_PUBLIC_KEY }}" > ~/.ssh/id_codespartan.pub
+          chmod 600 ~/.ssh/id_codespartan.pub
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:

@@ -20,9 +20,14 @@ provider "hetznerdns" {
   apitoken = var.hetzner_dns_token != "" ? var.hetzner_dns_token : null
 }
 
+# Lógica para SSH key: usar contenido inline si está disponible, sino archivo local
+locals {
+  ssh_public_key = var.ssh_public_key_content != "" ? var.ssh_public_key_content : file(pathexpand(var.ssh_public_key_path))
+}
+
 resource "hcloud_ssh_key" "main" {
   name       = var.ssh_key_name
-  public_key = file(pathexpand(var.ssh_public_key_path))
+  public_key = local.ssh_public_key
 }
 
 resource "hcloud_firewall" "basic" {
