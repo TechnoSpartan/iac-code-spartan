@@ -7,6 +7,7 @@ location    = "nbg1"
 
 ssh_key_name        = "codespartan"
 # SSH key que ya tienes configurada
+# Note: Use absolute path, Terraform's file() function doesn't expand ~
 ssh_public_key_path = "~/.ssh/id_codespartan.pub"
 
 # SSH abierto a todos por ahora (restringe cuando tengas tu IP fija)
