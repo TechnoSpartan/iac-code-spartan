@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeSpartan Backoffice - Mambo Cloud</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #16213e, #0f3460);
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #4ecdc4;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid #2a3f5f;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+        }
+
+        .card h3 {
+            color: #4ecdc4;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .card p {
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background: #4ecdc4;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 0.25rem;
+        }
+
+        .btn:hover {
+            background: #45b7b8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c5ce7;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5f3dc4;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .status-item {
+            background: #2a3f5f;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .status-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            text-align: center;
+            opacity: 0.6;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏢 CodeSpartan Backoffice</h1>
+        <p>Panel de control - Mambo Cloud Platform</p>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <!-- Monitoreo y Observabilidad -->
+            <div class="card">
+                <h3>📊 Monitoreo & Métricas</h3>
+                <p>Dashboards y métricas de la infraestructura</p>
+                <a href="https://grafana.mambo-cloud.com" class="btn" target="_blank">Grafana Dashboard</a>
+                <a href="https://traefik.mambo-cloud.com" class="btn btn-secondary" target="_blank">Traefik Dashboard</a>
+            </div>
+
+            <!-- Aplicaciones -->
+            <div class="card">
+                <h3>🚀 Aplicaciones</h3>
+                <p>Gestión de aplicaciones desplegadas</p>
+                <a href="https://www.mambo-cloud.com" class="btn" target="_blank">Mambo Cloud (Prod)</a>
+                <a href="https://staging.mambo-cloud.com" class="btn btn-secondary" target="_blank">Staging</a>
+                <a href="https://lab.mambo-cloud.com" class="btn btn-secondary" target="_blank">Laboratory</a>
+            </div>
+
+            <!-- Infraestructura -->
+            <div class="card">
+                <h3>⚙️ Infraestructura</h3>
+                <p>Estado y configuración del VPS</p>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value">🟢</div>
+                        <div>VPS Status</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value">ARM64</div>
+                        <div>Arquitectura</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value">Hetzner</div>
+                        <div>Proveedor</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DNS y Dominios -->
+            <div class="card">
+                <h3>🌐 DNS & Dominios</h3>
+                <p>Gestión de dominios y configuración DNS</p>
+                <div style="margin: 1rem 0;">
+                    <strong>mambo-cloud.com</strong><br>
+                    <small style="opacity: 0.7;">IPv4: 91.98.137.217</small><br>
+                    <small style="opacity: 0.7;">IPv6: 2a01:4f8:1c1a:7d21::1</small>
+                </div>
+                <p><strong>Subdominios activos:</strong> traefik, grafana, backoffice, www, staging, lab</p>
+            </div>
+
+            <!-- GitHub Actions -->
+            <div class="card">
+                <h3>🔄 CI/CD</h3>
+                <p>Estado de los despliegues automáticos</p>
+                <a href="https://github.com/CodeSpartan/iac-core-hetzner/actions" class="btn" target="_blank">GitHub Actions</a>
+                <div style="margin-top: 1rem;">
+                    <small style="opacity: 0.7;">
+                        ✅ Terraform<br>
+                        ✅ Traefik<br>
+                        ✅ Monitoring<br>
+                        ✅ Applications
+                    </small>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="card">
+                <h3>📋 Logs & Debug</h3>
+                <p>Acceso a logs centralizados con Loki</p>
+                <p><small>Los logs se visualizan en Grafana con Loki como datasource</small></p>
+                <a href="https://grafana.mambo-cloud.com/explore" class="btn" target="_blank">Ver Logs</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>CodeSpartan Platform - Mambo Cloud Infrastructure</p>
+            <p>Credenciales: admin / codespartan123</p>
+        </div>
+    </div>
+</body>
+</html>

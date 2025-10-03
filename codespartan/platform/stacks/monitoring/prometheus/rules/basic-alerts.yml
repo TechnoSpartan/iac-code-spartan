@@ -1,0 +1,29 @@
+groups:
+  - name: basic.rules
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target {{ $labels.job }} / {{ $labels.instance }} down"
+          description: "Prometheus target {{ $labels.instance }} is down for >5m."
+
+      - alert: HighLoadAverage
+        expr: node_load1 / count(count(node_cpu_seconds_total{mode="idle"}) by (cpu)) > 1.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High load average"
+          description: "Load1 per CPU > 1.5 for 10m on {{ $labels.instance }}"
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}) < 0.1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Root filesystem free space < 10% on {{ $labels.instance }}"

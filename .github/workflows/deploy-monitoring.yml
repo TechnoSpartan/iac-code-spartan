@@ -1,0 +1,51 @@
+name: Deploy Monitoring Stack
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/platform/stacks/monitoring/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare files
+        run: |
+          mkdir -p artifacts/monitoring
+          cp -r codespartan/platform/stacks/monitoring/* artifacts/monitoring/
+
+      - name: Prepare remote dir
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mkdir -p /opt/codespartan/platform/stacks/monitoring
+
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "artifacts/monitoring/*"
+          target: "/opt/codespartan/platform/stacks/monitoring"
+          strip_components: 2
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euxo pipefail
+            docker network create web || true
+            cd /opt/codespartan/platform/stacks/monitoring
+            docker compose pull
+            docker compose up -d

@@ -1,0 +1,16 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Entrypoint requests (rate)",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "targets": [{"expr": "sum(rate(traefik_entrypoint_requests_total[5m]))"}]
+    }
+  ],
+  "schemaVersion": 39,
+  "title": "Traefik (min)",
+  "version": 1
+}
+

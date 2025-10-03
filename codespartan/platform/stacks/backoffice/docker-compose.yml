@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  backoffice:
+    image: nginx:alpine
+    container_name: backoffice
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backoffice.rule=Host(`backoffice.mambo-cloud.com`)
+      - traefik.http.routers.backoffice.entrypoints=websecure
+      - traefik.http.routers.backoffice.tls=true
+      - traefik.http.routers.backoffice.tls.certresolver=le
+      # Autenticación básica (user: admin, pass: codespartan123)
+      - traefik.http.middlewares.backoffice-auth.basicauth.users=admin:$$2y$$05$$K7tE8zF9qX3mH2vL4uN0G.qF5Y8J9pL3wH6vK2xD4rN8mT1qS7uEq
+      - traefik.http.routers.backoffice.middlewares=backoffice-auth
+      - traefik.docker.network=web
+    networks: [web]
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true
