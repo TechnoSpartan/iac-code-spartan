@@ -21,11 +21,9 @@ jobs:
           cp -r codespartan/platform/traefik/* artifacts/traefik/
 
           # Crear archivo .env con las variables necesarias
-          cat > artifacts/traefik/.env <<EOF
-ACME_EMAIL=${ACME_EMAIL}
-DASHBOARD_HOST=traefik.mambo-cloud.com
-BASIC_AUTH=${BASIC_AUTH}
-EOF
+          echo "ACME_EMAIL=${ACME_EMAIL}" > artifacts/traefik/.env
+          echo "DASHBOARD_HOST=traefik.mambo-cloud.com" >> artifacts/traefik/.env
+          echo "BASIC_AUTH=${BASIC_AUTH}" >> artifacts/traefik/.env
 
       - name: Prepare remote dir
         uses: appleboy/ssh-action@v1.0.3
