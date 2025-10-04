@@ -1,36 +1,48 @@
 version: '3.8'
 services:
-  prometheus:
-    image: prom/prometheus:v2.53.0
-    container_name: prometheus
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.93.0
+    container_name: victoriametrics
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=7d
-      - --storage.tsdb.retention.size=2GB
+      - -storageDataPath=/storage
+      - -retentionPeriod=7d
+      - -httpListenAddr=:8428
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/rules:/etc/prometheus/rules:ro
-      - prometheus-data:/prometheus
+      - victoria-data:/storage
     networks: [web]
     restart: unless-stopped
 
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: dozzle
+  vmagent:
+    image: victoriametrics/vmagent:v1.93.0
+    container_name: vmagent
+    command:
+      - -promscrape.config=/etc/prometheus/prometheus.yml
+      - -remoteWrite.url=http://victoriametrics:8428/api/v1/write
     volumes:
+      - ./victoriametrics/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - victoriametrics
+    networks: [web]
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+    networks: [web]
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/promtail.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      - DOZZLE_LEVEL=info
-      - DOZZLE_TAILSIZE=300
-      - DOZZLE_FILTER=status=running
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.dozzle.rule=Host(`logs.mambo-cloud.com`)
-      - traefik.http.routers.dozzle.entrypoints=websecure
-      - traefik.http.routers.dozzle.tls=true
-      - traefik.http.routers.dozzle.tls.certresolver=le
-      - traefik.http.services.dozzle.loadbalancer.server.port=8080
-      - traefik.docker.network=web
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     networks: [web]
     restart: unless-stopped
 
@@ -88,7 +100,8 @@ services:
     restart: unless-stopped
 
 volumes:
-  prometheus-data:
+  victoria-data:
+  loki-data:
   grafana-data:
 
 networks:
