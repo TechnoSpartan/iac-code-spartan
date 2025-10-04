@@ -13,16 +13,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Prepare files
+        env:
+          ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+          BASIC_AUTH: ${{ secrets.TRAEFIK_BASIC_AUTH }}
         run: |
           mkdir -p artifacts/traefik
           cp -r codespartan/platform/traefik/* artifacts/traefik/
 
           # Crear archivo .env con las variables necesarias
           cat > artifacts/traefik/.env <<EOF
-          ACME_EMAIL=${{ secrets.ACME_EMAIL }}
-          DASHBOARD_HOST=traefik.mambo-cloud.com
-          BASIC_AUTH=${{ secrets.TRAEFIK_BASIC_AUTH }}
-          EOF
+ACME_EMAIL=${ACME_EMAIL}
+DASHBOARD_HOST=traefik.mambo-cloud.com
+BASIC_AUTH=${BASIC_AUTH}
+EOF
 
       - name: Prepare remote dir
         uses: appleboy/ssh-action@v1.0.3
