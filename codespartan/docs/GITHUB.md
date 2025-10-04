@@ -15,7 +15,7 @@ Ve a tu repositorio → Settings → Secrets and variables → Actions → New r
 | `HCLOUD_TOKEN` | Token API Hetzner Cloud | `xxxxxxxxxxxxxxxxxxx` |
 | `HETZNER_DNS_TOKEN` | Token API Hetzner DNS | `xxxxxxxxxxxxxxxxxxx` |
 | `VPS_SSH_HOST` | IP del VPS | `91.98.137.217` |
-| `VPS_SSH_USER` | Usuario SSH | `root` |
+| `VPS_SSH_USER` | Usuario SSH | `leonidas` |
 | `VPS_SSH_KEY` | Clave privada SSH completa | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
 
 ### Generar SSH Key para GitHub Actions
@@ -72,22 +72,12 @@ Seleccionar: plan / apply / destroy
 - Push a `codespartan/platform/stacks/monitoring/**`
 
 **Acciones**:
-- ✅ Despliega Grafana + Prometheus + Loki
+- ✅ Despliega VictoriaMetrics + vmagent + Grafana + Loki + Promtail + cAdvisor + Node Exporter
 - ✅ Configura datasources automáticamente
 - ✅ Importa dashboards predefinidos
+- ✅ Retención de 7 días para métricas y logs
 
-### 4. Deploy Logging
-**Archivo**: `.github/workflows/deploy-logging.yml`
-
-**Triggers**:
-- Manual (workflow_dispatch)
-- Push a `codespartan/platform/stacks/logging/**`
-
-**Acciones**:
-- ✅ Despliega Loki + Promtail
-- ✅ Configura recolección de logs centralizada
-
-### 5. Deploy Backoffice
+### 4. Deploy Backoffice
 **Archivo**: `.github/workflows/deploy-backoffice.yml`
 
 **Triggers**:
@@ -98,7 +88,7 @@ Seleccionar: plan / apply / destroy
 - ✅ Despliega panel de control web
 - ✅ Configura autenticación básica
 
-### 6. Deploy Mambo Cloud App
+### 5. Deploy Mambo Cloud App
 **Archivo**: `.github/workflows/deploy-mambo-cloud.yml`
 
 **Triggers**:
@@ -116,10 +106,9 @@ Seleccionar: plan / apply / destroy
 1. 🏗️  Deploy Infrastructure (Terraform)    ← Crea VPS y DNS
 2. ⏳  Esperar 5-10 minutos                  ← Docker se instala
 3. 🚪  Deploy Traefik                        ← Proxy reverso
-4. 📊  Deploy Monitoring Stack               ← Grafana + Prometheus
-5. 📋  Deploy Logging                        ← Loki + Promtail
-6. 🏢  Deploy Backoffice                     ← Panel de control
-7. 🌐  Deploy Mambo Cloud App                ← Aplicación principal
+4. 📊  Deploy Monitoring Stack               ← VictoriaMetrics + Grafana + Loki + Promtail
+5. 🏢  Deploy Backoffice                     ← Panel de control
+6. 🌐  Deploy Mambo Cloud App                ← Aplicación principal
 ```
 
 ### Actualizaciones Posteriores

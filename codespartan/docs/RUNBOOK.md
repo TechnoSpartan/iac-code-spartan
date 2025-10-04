@@ -18,7 +18,7 @@ La plataforma CodeSpartan Mambo Cloud es una infraestructura como código (IaC) 
 
 - **VPS Hetzner ARM64** con Terraform
 - **Traefik** como reverse proxy con SSL automático
-- **Stack de monitoreo** (Grafana + Prometheus + Loki)
+- **Stack de monitoreo** (VictoriaMetrics + Grafana + Loki + Promtail)
 - **Aplicaciones web** desplegadas automáticamente
 - **CI/CD completo** con GitHub Actions
 
@@ -85,7 +85,7 @@ Ir a tu repositorio GitHub → Settings → Secrets and variables → Actions:
 HCLOUD_TOKEN=tu_token_hetzner_cloud
 HETZNER_DNS_TOKEN=tu_token_hetzner_dns
 VPS_SSH_HOST=91.98.137.217
-VPS_SSH_USER=root
+VPS_SSH_USER=leonidas
 VPS_SSH_KEY=tu_clave_privada_ssh_completa
 ```
 
@@ -153,8 +153,8 @@ curl -k https://traefik.mambo-cloud.com
 
 **Verificar:**
 ```bash
-ssh root@91.98.137.217
-docker ps | grep -E "prometheus|grafana"
+ssh leonidas@91.98.137.217
+docker ps | grep -E "victoriametrics|vmagent|loki|promtail|grafana|cadvisor|node-exporter"
 curl -k https://grafana.mambo-cloud.com
 ```
 
@@ -214,7 +214,7 @@ subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "nuev
 - **URL**: https://grafana.mambo-cloud.com
 - **Usuario**: admin
 - **Password**: codespartan123
-- **Datasources**: Prometheus, Loki
+- **Datasources**: VictoriaMetrics, Loki
 
 ### Dashboards Preconfigurados
 - **Infraestructura**: Métricas del VPS (CPU, RAM, Disk)
@@ -307,7 +307,7 @@ dig traefik.mambo-cloud.com
 
 ### Datos Críticos a Respaldar
 - `/opt/codespartan/` - Toda la configuración
-- Volúmenes Docker (Grafana, Prometheus)
+- Volúmenes Docker (Grafana, VictoriaMetrics, Loki)
 - Certificados SSL (`/opt/codespartan/platform/traefik/letsencrypt/`)
 
 ### Recuperación de Desastre

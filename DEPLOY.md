@@ -117,8 +117,11 @@ docker ps
 
 # Debería mostrar algo así:
 # traefik
-# grafana  
-# prometheus
+# victoriametrics
+# vmagent
+# loki
+# promtail
+# grafana
 # node-exporter
 # cadvisor
 # backoffice

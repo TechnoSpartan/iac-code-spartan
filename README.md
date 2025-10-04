@@ -8,7 +8,7 @@ Plataforma de infraestructura completamente containerizada que proporciona:
 
 - **VPS ARM64 en Hetzner** provisionado con Terraform
 - **Traefik** como reverse proxy con SSL automático (Let's Encrypt)
-- **Stack de monitoreo** completo (Grafana + Prometheus + Loki + Promtail)
+- **Stack de monitoreo** completo (VictoriaMetrics + Grafana + Loki + Promtail + cAdvisor + Node Exporter)
 - **Backoffice** con dashboard de gestión
 - **CI/CD** completo con GitHub Actions
 - **Múltiples aplicaciones** web con subdominios automáticos
@@ -41,9 +41,12 @@ graph TD
     
     subgraph "Monitoring"
         F1[Grafana]
-        F2[Prometheus]
-        F3[Loki]
-        F4[Promtail]
+        F2[VictoriaMetrics]
+        F3[vmagent]
+        F4[Loki]
+        F5[Promtail]
+        F6[cAdvisor]
+        F7[Node Exporter]
     end
     
     subgraph "Applications"
@@ -112,8 +115,7 @@ codespartan/
 │   │   ├── docker-compose.yml      # Configuración Traefik
 │   │   └── .env                    # Variables específicas
 │   └── stacks/
-│       ├── monitoring/             # 📊 Grafana + Prometheus + Loki
-│       ├── logging/                # 📋 Loki + Promtail
+│       ├── monitoring/             # 📊 VictoriaMetrics + Grafana + Loki + Promtail
 │       └── backoffice/             # 🏢 Panel de control
 │
 ├── apps/
@@ -199,8 +201,9 @@ docker compose up -d
 
 ### Grafana Dashboard
 - **URL**: https://grafana.mambo-cloud.com
-- **Datasources**: Prometheus (métricas) + Loki (logs)
+- **Datasources**: VictoriaMetrics (métricas) + Loki (logs)
 - **Dashboards**: Infraestructura, Traefik, Docker, Aplicaciones
+- **Retención**: 7 días para métricas y logs
 
 ### Métricas disponibles
 - CPU, RAM, Disco del VPS
@@ -224,8 +227,7 @@ docker compose up -d
 |----------|---------|-------------|
 | `deploy-infrastructure.yml` | Manual + Push infra | Terraform: VPS + DNS |
 | `deploy-traefik.yml` | Manual + Push traefik | Reverse proxy |
-| `deploy-monitoring.yml` | Manual + Push monitoring | Grafana stack |
-| `deploy-logging.yml` | Manual + Push logging | Loki + Promtail |
+| `deploy-monitoring.yml` | Manual + Push monitoring | VictoriaMetrics + Grafana + Loki + Promtail |
 | `deploy-backoffice.yml` | Manual + Push backoffice | Panel de control |
 | `deploy-mambo-cloud.yml` | Manual + Push mambo-cloud | App principal |
 
