@@ -42,23 +42,3 @@ jobs:
             EOF
             cd /opt/codespartan/platform/stacks/backups
             docker compose --env-file .env up -d
-version: '3.8'
-services:
-  restic-backup:
-    image: lobaro/restic-backup-docker:1.4.0
-    container_name: restic-backup
-    environment:
-      - TZ=Europe/Madrid
-      - BACKUP_CRON=${BACKUP_CRON}
-      - RESTIC_REPOSITORY=${RESTIC_REPOSITORY}
-      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
-      - RESTIC_BACKUP_SOURCES=/data
-      - RESTIC_BACKUP_ARGS=--verbose
-      - RESTIC_FORGET_ARGS=--keep-daily 7 --keep-weekly 4 --keep-monthly 6
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
-    volumes:
-      - /opt/codespartan:/data:ro
-    restart: unless-stopped
-
