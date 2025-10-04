@@ -42,20 +42,38 @@ jobs:
       - name: Import existing resources (if not already imported)
         run: |
           # Importar zona DNS existente
-          terraform import 'hetznerdns_zone.zones["mambo-cloud.com"]' ApA8dZ7xbTygBAsUHgmvzW || true
+          echo "Importing DNS zone..."
+          terraform import 'hetznerdns_zone.zones["mambo-cloud.com"]' ApA8dZ7xbTygBAsUHgmvzW || echo "Zone already imported or doesn't exist"
 
           # Obtener SSH Key ID y importar si existe
+          echo "Looking for SSH key..."
           SSH_KEY_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
             https://api.hetzner.cloud/v1/ssh_keys | \
             jq -r '.ssh_keys[] | select(.name=="codespartan") | .id')
 
           if [ -n "$SSH_KEY_ID" ]; then
-            echo "Found SSH key with ID: $SSH_KEY_ID"
-            terraform import 'hcloud_ssh_key.main' "$SSH_KEY_ID" || true
+            echo "Found SSH key with ID: $SSH_KEY_ID, importing..."
+            terraform import 'hcloud_ssh_key.main' "$SSH_KEY_ID" || echo "SSH key already imported"
+          else
+            echo "SSH key 'codespartan' not found in Hetzner Cloud"
+          fi
+
+          # Obtener Firewall ID y importar si existe
+          echo "Looking for firewall..."
+          FIREWALL_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
+            https://api.hetzner.cloud/v1/firewalls | \
+            jq -r '.firewalls[] | select(.name=="codespartan-basic") | .id')
+
+          if [ -n "$FIREWALL_ID" ]; then
+            echo "Found firewall with ID: $FIREWALL_ID, importing..."
+            terraform import 'hcloud_firewall.basic' "$FIREWALL_ID" || echo "Firewall already imported"
+          else
+            echo "Firewall 'codespartan-basic' not found in Hetzner Cloud"
           fi
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
+          TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
 
       - name: Terraform Plan
         run: terraform plan -no-color
