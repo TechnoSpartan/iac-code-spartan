@@ -5,7 +5,8 @@ services:
     container_name: prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.size=2GB
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/rules:/etc/prometheus/rules:ro
@@ -13,11 +14,23 @@ services:
     networks: [web]
     restart: unless-stopped
 
-  alertmanager:
-    image: prom/alertmanager:v0.27.0
-    container_name: alertmanager
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
     volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DOZZLE_LEVEL=info
+      - DOZZLE_TAILSIZE=300
+      - DOZZLE_FILTER=status=running
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dozzle.rule=Host(`logs.mambo-cloud.com`)
+      - traefik.http.routers.dozzle.entrypoints=websecure
+      - traefik.http.routers.dozzle.tls=true
+      - traefik.http.routers.dozzle.tls.certresolver=le
+      - traefik.http.services.dozzle.loadbalancer.server.port=8080
+      - traefik.docker.network=web
     networks: [web]
     restart: unless-stopped
 
