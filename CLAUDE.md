@@ -21,8 +21,7 @@ The platform consists of three main layers:
 
 2. **Platform Layer** (`codespartan/platform/`)
    - **Traefik** (`platform/traefik/`): Reverse proxy with automatic Let's Encrypt SSL certificates
-   - **Monitoring Stack** (`platform/stacks/monitoring/`): Grafana, Prometheus, AlertManager, cAdvisor, Node Exporter
-   - **Logging Stack** (`platform/stacks/logging/`): Loki + Promtail for centralized logs
+   - **Monitoring Stack** (`platform/stacks/monitoring/`): VictoriaMetrics, vmagent, Grafana, Loki, Promtail, cAdvisor, Node Exporter (7-day retention)
    - **Backoffice** (`platform/stacks/backoffice/`): Management dashboard
 
 3. **Application Layer** (`codespartan/apps/`)
@@ -66,7 +65,7 @@ docker compose restart
 
 ```bash
 # SSH into VPS
-ssh root@91.98.137.217
+ssh leonidas@91.98.137.217
 
 # Check all running containers
 docker ps
@@ -101,10 +100,9 @@ Workflows must be executed in this order for initial deployment:
 
 1. `deploy-infrastructure.yml` - Creates VPS + DNS (wait 5-10 min for Docker installation)
 2. `deploy-traefik.yml` - Deploys reverse proxy
-3. `deploy-monitoring.yml` - Deploys Grafana stack
-4. `deploy-logging.yml` - Deploys Loki + Promtail (optional)
-5. `deploy-backoffice.yml` - Deploys management dashboard
-6. `deploy-mambo-cloud.yml` (or other apps) - Deploys applications
+3. `deploy-monitoring.yml` - Deploys VictoriaMetrics + Grafana + Loki + Promtail stack
+4. `deploy-backoffice.yml` - Deploys management dashboard
+5. `deploy-mambo-cloud.yml` (or other apps) - Deploys applications
 
 ### Required GitHub Secrets
 
@@ -112,7 +110,7 @@ Workflows must be executed in this order for initial deployment:
 HCLOUD_TOKEN - Hetzner Cloud API token
 HETZNER_DNS_TOKEN - Hetzner DNS API token
 VPS_SSH_HOST - 91.98.137.217
-VPS_SSH_USER - root
+VPS_SSH_USER - leonidas
 VPS_SSH_KEY - Complete private SSH key content
 ```
 
