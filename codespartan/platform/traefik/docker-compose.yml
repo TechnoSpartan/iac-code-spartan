@@ -26,8 +26,7 @@ services:
       - traefik.http.routers.traefik.tls=true
       - traefik.http.routers.traefik.tls.certresolver=le
       - traefik.http.routers.traefik.service=api@internal
-      # Sustituye el hash por uno generado: htpasswd -nbB admin 'tu_pass'
-      - traefik.http.middlewares.traefik-auth.basicauth.users=${BASIC_AUTH}
+      - traefik.http.middlewares.traefik-auth.basicauth.usersfile=/users.htpasswd
       - traefik.http.routers.traefik.middlewares=traefik-auth
     ports:
       - "80:80"
@@ -35,6 +34,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
+      - ./users.htpasswd:/users.htpasswd:ro
     networks: [web]
     restart: unless-stopped
 networks:
