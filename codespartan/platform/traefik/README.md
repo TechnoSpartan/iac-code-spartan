@@ -9,3 +9,4 @@ Pasos:
 2) Asegura que la red docker externa "web" existe: docker network create web || true
 3) Arranca: docker compose up -d
 
+# Trigger deployment
