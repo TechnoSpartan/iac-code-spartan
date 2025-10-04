@@ -92,6 +92,15 @@ resource "hcloud_server" "vps" {
       fi
       docker network create web || true
   CLOUD
+
+  # Ignorar cambios en ssh_keys y user_data para servidores existentes
+  # Estos parámetros solo se usan durante la creación inicial
+  lifecycle {
+    ignore_changes = [
+      ssh_keys,
+      user_data
+    ]
+  }
 }
 
 # DNS (opcional): crea zonas y A records para subdominios -> IPv4 del VPS
