@@ -41,10 +41,6 @@ jobs:
 
       - name: Import existing resources (if not already imported)
         run: |
-          # Importar zona DNS existente
-          echo "Importing DNS zone..."
-          terraform import 'hetznerdns_zone.zones["mambo-cloud.com"]' ApA8dZ7xbTygBAsUHgmvzW || echo "Zone already imported or doesn't exist"
-
           # Obtener SSH Key ID y importar si existe
           echo "Looking for SSH key..."
           SSH_KEY_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
