@@ -54,19 +54,17 @@ resource "hcloud_firewall" "basic" {
     source_ips = ["0.0.0.0/0", "::/0"]
   }
 
-  # ICMP entrante (ping/diagnóstico) - opcional, puedes eliminarlo si no lo quieres
+  # ICMP entrante (ping/diagnóstico) - sin especificar puerto
   rule {
     direction  = "in"
     protocol   = "icmp"
-    port       = "-1"
     source_ips = ["0.0.0.0/0", "::/0"]
   }
 
   # Salida permitida (por defecto Hetzner la permite, esto es explícito)
   rule {
-    direction  = "out"
-    protocol   = "icmp"
-    port       = "-1"
+    direction       = "out"
+    protocol        = "icmp"
     destination_ips = ["0.0.0.0/0", "::/0"]
   }
 }

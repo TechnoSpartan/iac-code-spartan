@@ -45,6 +45,13 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
 
+      - name: Import existing DNS zone (if not already imported)
+        run: |
+          terraform import 'hetznerdns_zone.zones["mambo-cloud.com"]' ApA8dZ7xbTygBAsUHgmvzW || true
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
+
       - name: Terraform Plan
         run: terraform plan -no-color
         env:
