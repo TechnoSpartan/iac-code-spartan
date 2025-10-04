@@ -15,7 +15,9 @@ firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]
 
 # DNS (Hetzner DNS)
 # Nota: codespartan.es (www en Hostinger/WordPress) no se gestiona aquí.
-domains    = ["mambo-cloud.com"]
+# TEMPORALMENTE DESHABILITADO - gestionar manualmente en Hetzner Console
+domains    = []
+# domains    = ["mambo-cloud.com"]
 subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab"]
 
 # IPv4/IPv6 concretos para los registros A/AAAA
