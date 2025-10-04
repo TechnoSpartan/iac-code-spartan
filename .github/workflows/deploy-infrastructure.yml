@@ -28,12 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_PUBLIC_KEY }}" > ~/.ssh/id_codespartan.pub
-          chmod 600 ~/.ssh/id_codespartan.pub
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -45,9 +39,20 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
 
-      - name: Import existing DNS zone (if not already imported)
+      - name: Import existing resources (if not already imported)
         run: |
+          # Importar zona DNS existente
           terraform import 'hetznerdns_zone.zones["mambo-cloud.com"]' ApA8dZ7xbTygBAsUHgmvzW || true
+
+          # Obtener SSH Key ID y importar si existe
+          SSH_KEY_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
+            https://api.hetzner.cloud/v1/ssh_keys | \
+            jq -r '.ssh_keys[] | select(.name=="codespartan") | .id')
+
+          if [ -n "$SSH_KEY_ID" ]; then
+            echo "Found SSH key with ID: $SSH_KEY_ID"
+            terraform import 'hcloud_ssh_key.main' "$SSH_KEY_ID" || true
+          fi
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
@@ -57,6 +62,7 @@ jobs:
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
+          TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
 
       - name: Terraform Apply
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
@@ -64,6 +70,7 @@ jobs:
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
+          TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
 
       - name: Terraform Destroy
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
@@ -71,3 +78,4 @@ jobs:
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
+          TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}

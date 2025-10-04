@@ -5,9 +5,10 @@ image       = "alma-9"
 server_type = "cax11"
 location    = "nbg1"
 
-ssh_key_name        = "codespartan"
-# SSH key que ya tienes configurada - contenido directo para GitHub Actions
-ssh_public_key_content = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILavUnsZmODINH2+OUZUdnx8Z5aaMmvjhoszojp1+s7D codespartan@mambo-cloud.com"
+ssh_key_name = "codespartan"
+# SSH key content viene de GitHub Secret: TF_VAR_ssh_public_key_content
+# Para uso local, descomenta la línea siguiente y añade tu clave pública:
+# ssh_public_key_content = "ssh-ed25519 AAAA... tu-clave-publica"
 
 # SSH abierto a todos por ahora (restringe cuando tengas tu IP fija)
 firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]
