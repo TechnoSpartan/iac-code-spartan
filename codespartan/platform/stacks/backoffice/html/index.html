@@ -21,10 +21,23 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .header-logo {
+            height: 60px;
+            width: auto;
+        }
+
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
             color: #4ecdc4;
+            margin: 0;
         }
 
         .header p {
@@ -119,16 +132,48 @@
 
         .footer {
             margin-top: 3rem;
+            padding: 2rem 0;
             text-align: center;
+            background: #0d1117;
+            border-top: 1px solid #2a3f5f;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-logo {
+            height: 40px;
+            width: auto;
+            opacity: 0.7;
+        }
+
+        .footer p {
+            margin: 0.25rem 0;
             opacity: 0.6;
             font-size: 0.9rem;
+        }
+
+        .footer-divider {
+            width: 200px;
+            height: 1px;
+            background: #2a3f5f;
+            margin: 0.5rem 0;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🏢 CodeSpartan Backoffice</h1>
-        <p>Panel de control - Mambo Cloud Platform</p>
+        <div class="header-content">
+            <img src="assets/codespartan.png" alt="CodeSpartan Logo" class="header-logo">
+            <div>
+                <h1>CodeSpartan Backoffice</h1>
+                <p>Panel de control - Mambo Cloud Platform</p>
+            </div>
+        </div>
     </div>
 
     <div class="container">
@@ -207,8 +252,13 @@
         </div>
 
         <div class="footer">
-            <p>CodeSpartan Platform - Mambo Cloud Infrastructure</p>
-            <p>Credenciales: admin / codespartan123</p>
+            <div class="footer-content">
+                <img src="assets/codespartan-bn.png" alt="CodeSpartan" class="footer-logo">
+                <div class="footer-divider"></div>
+                <p>CodeSpartan Platform - Mambo Cloud Infrastructure</p>
+                <p>Infraestructura como código • Monitoreo 24/7 • CI/CD Automatizado</p>
+                <p style="margin-top: 1rem; font-size: 0.8rem;">Credenciales: admin / codespartan123</p>
+            </div>
         </div>
     </div>
 </body>
