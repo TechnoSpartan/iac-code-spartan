@@ -25,6 +25,24 @@ services:
     networks: [web]
     restart: unless-stopped
 
+  vmalert:
+    image: victoriametrics/vmalert:v1.93.0
+    container_name: vmalert
+    command:
+      - -datasource.url=http://victoriametrics:8428
+      - -remoteWrite.url=http://victoriametrics:8428
+      - -remoteRead.url=http://victoriametrics:8428
+      - -rule=/etc/alerts/*.yml
+      - -notifier.url=https://ntfy.sh/codespartan-mambo-alerts
+      - -evaluationInterval=30s
+      - -httpListenAddr=:8880
+    volumes:
+      - ./alerts:/etc/alerts:ro
+    depends_on:
+      - victoriametrics
+    networks: [web]
+    restart: unless-stopped
+
   loki:
     image: grafana/loki:2.9.0
     container_name: loki

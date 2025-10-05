@@ -1,0 +1,144 @@
+groups:
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # CPU Usage Alert
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+
+      # Critical CPU Usage Alert
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "CRITICAL: CPU usage extremely high"
+          description: "CPU usage is above 95% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+
+      # Memory Usage Alert
+      - alert: HighMemoryUsage
+        expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 90
+        for: 3m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 90% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+
+      # Critical Memory Usage Alert
+      - alert: CriticalMemoryUsage
+        expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 95
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "CRITICAL: Memory almost full"
+          description: "Memory usage is above 95% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+
+      # Disk Usage Alert
+      - alert: HighDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is above 85% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+
+      # Critical Disk Usage Alert
+      - alert: CriticalDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "CRITICAL: Disk almost full"
+          description: "Disk usage is above 95% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+
+  - name: service_alerts
+    interval: 30s
+    rules:
+      # Service Down Alert
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: service
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes"
+
+      # Container Down Alert (via cAdvisor)
+      - alert: ContainerDown
+        expr: time() - container_last_seen{name=~".+"} > 120
+        for: 0m
+        labels:
+          severity: critical
+          component: container
+        annotations:
+          summary: "Container is down"
+          description: "Container {{ $labels.name }} has not been seen for more than 2 minutes"
+
+  - name: victoriametrics_alerts
+    interval: 30s
+    rules:
+      # VictoriaMetrics High Memory
+      - alert: VictoriaMetricsHighMemory
+        expr: (vm_app_rss_bytes / (1024*1024*1024)) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          component: victoriametrics
+        annotations:
+          summary: "VictoriaMetrics using high memory"
+          description: "VictoriaMetrics is using more than 1.5GB RAM (current: {{ $value | humanize }}GB)"
+
+      # VictoriaMetrics Storage Issues
+      - alert: VictoriaMetricsStorageIssue
+        expr: vm_free_disk_space_bytes / (1024*1024*1024) < 5
+        for: 5m
+        labels:
+          severity: warning
+          component: victoriametrics
+        annotations:
+          summary: "VictoriaMetrics low disk space"
+          description: "VictoriaMetrics has less than 5GB free disk space (current: {{ $value | humanize }}GB)"
+
+  - name: traefik_alerts
+    interval: 30s
+    rules:
+      # High 5xx Error Rate
+      - alert: HighHTTP5xxRate
+        expr: sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) by (service) > 10
+        for: 2m
+        labels:
+          severity: warning
+          component: traefik
+        annotations:
+          summary: "High 5xx error rate on Traefik"
+          description: "Service {{ $labels.service }} is returning more than 10 5xx errors per second (current: {{ $value | humanize }}/s)"
+
+      # Critical 5xx Error Rate
+      - alert: CriticalHTTP5xxRate
+        expr: sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) by (service) > 50
+        for: 1m
+        labels:
+          severity: critical
+          component: traefik
+        annotations:
+          summary: "CRITICAL: Very high 5xx error rate"
+          description: "Service {{ $labels.service }} is returning more than 50 5xx errors per second (current: {{ $value | humanize }}/s)"
