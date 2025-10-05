@@ -19,6 +19,13 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
   - ✅ 5 dashboards community importados
   - ✅ Documentación de dashboards creada
   - ✅ Backoffice desplegado y funcional (https://backoffice.mambo-cloud.com)
+- ✅ **FASE 2 COMPLETA:** Sistema de Alertas
+  - ✅ vmalert desplegado (~25 MB RAM)
+  - ✅ 14 reglas de alertas (6 CRITICAL, 8 WARNING)
+  - ✅ ntfy.sh configurado (0 MB RAM en servidor)
+  - ✅ Notificaciones push funcionando
+  - ✅ Documentación ALERTS.md creada
+  - ✅ 10 contenedores corriendo en total
 
 ---
 
@@ -317,5 +324,5 @@ ssh leonidas@91.98.137.217
 
 ---
 
-**Última actualización:** 2025-10-04
-**Estado:** ✅ Fase 1 Completada | ⏭️ Siguiente: Fase 2 - Observabilidad (Alertas)
+**Última actualización:** 2025-10-05
+**Estado:** ✅ Fase 1 y 2 Completadas | ⏭️ Siguiente: Fase 3 - Backups Automáticos

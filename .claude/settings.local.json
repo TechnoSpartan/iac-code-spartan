@@ -11,7 +11,15 @@
       "Bash(curl -s -u admin:codespartan123 https://grafana.mambo-cloud.com/api/datasources)",
       "Bash(curl -s -u admin:codespartan123 -X POST -H \"Content-Type: application/json\" -d '{\"\"dashboard\"\": {\"\"id\"\": null, \"\"uid\"\": null, \"\"title\"\": \"\"Import Test\"\", \"\"tags\"\": [], \"\"timezone\"\": \"\"browser\"\", \"\"schemaVersion\"\": 16, \"\"version\"\": 0, \"\"panels\"\": []}, \"\"overwrite\"\": true}' https://grafana.mambo-cloud.com/api/dashboards/db)",
       "Bash(curl -s -u admin:codespartan123 -X GET https://grafana.mambo-cloud.com/api/datasources/3)",
-      "Bash(curl -s -u admin:codespartan123 -X PUT -H \"Content-Type: application/json\" -d @- https://grafana.mambo-cloud.com/api/datasources/3)"
+      "Bash(curl -s -u admin:codespartan123 -X PUT -H \"Content-Type: application/json\" -d @- https://grafana.mambo-cloud.com/api/datasources/3)",
+      "Bash(curl -s \"https://grafana.com/api/dashboards/1860/revisions/latest/download\")",
+      "Bash(curl -s -u admin:codespartan123 https://grafana.mambo-cloud.com/api/search?type=dash-db)",
+      "Bash(curl -s -u admin:codespartan123 -X DELETE https://grafana.mambo-cloud.com/d/ff04ezegcdd6oe/import-test)",
+      "Bash(scp:*)",
+      "Bash(gh run list:*)",
+      "Bash(curl:*)",
+      "Bash(curl -s -o /dev/null -w \"HTTP Status: %{http_code}\\n\" -u admin:codespartan123 https://backoffice.mambo-cloud.com)",
+      "Bash(https://ntfy.sh/codespartan-mambo-alerts)"
     ],
     "deny": [],
     "ask": []
