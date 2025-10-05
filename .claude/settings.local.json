@@ -4,7 +4,14 @@
       "Bash(terraform:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(ssh hetzner \"docker ps -a --format ''table {{.Names}}\\t{{.Image}}\\t{{.Status}}''\")",
+      "Bash(ssh hetzner \"cat /opt/codespartan/platform/stacks/backoffice/docker-compose.yml\")",
+      "Bash(ssh:*)",
+      "Bash(curl -s -u admin:codespartan123 https://grafana.mambo-cloud.com/api/datasources)",
+      "Bash(curl -s -u admin:codespartan123 -X POST -H \"Content-Type: application/json\" -d '{\"\"dashboard\"\": {\"\"id\"\": null, \"\"uid\"\": null, \"\"title\"\": \"\"Import Test\"\", \"\"tags\"\": [], \"\"timezone\"\": \"\"browser\"\", \"\"schemaVersion\"\": 16, \"\"version\"\": 0, \"\"panels\"\": []}, \"\"overwrite\"\": true}' https://grafana.mambo-cloud.com/api/dashboards/db)",
+      "Bash(curl -s -u admin:codespartan123 -X GET https://grafana.mambo-cloud.com/api/datasources/3)",
+      "Bash(curl -s -u admin:codespartan123 -X PUT -H \"Content-Type: application/json\" -d @- https://grafana.mambo-cloud.com/api/datasources/3)"
     ],
     "deny": [],
     "ask": []
