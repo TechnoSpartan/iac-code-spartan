@@ -95,7 +95,7 @@ log "Temporary staging directory: ${TEMP_DIR}"
 
 log "Backing up Docker volumes..."
 
-VOLUMES=("victoria-data" "loki-data" "grafana-data")
+VOLUMES=("monitoring_victoria-data" "monitoring_loki-data" "monitoring_grafana-data")
 
 for volume in "${VOLUMES[@]}"; do
     if docker volume inspect "${volume}" &> /dev/null; then
