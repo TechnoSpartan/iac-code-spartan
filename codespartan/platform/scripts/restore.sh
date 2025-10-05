@@ -56,9 +56,10 @@ if [[ ! -f "${BACKUP_FILE}" ]]; then
     exit 1
 fi
 
-# Check if running as root
-if [[ $EUID -ne 0 ]]; then
-   error "This script must be run as root"
+# Check if user can access Docker
+if ! docker ps &> /dev/null; then
+   error "This script requires Docker access. Ensure user is in docker group or run as root."
+   error "To add user to docker group: sudo usermod -aG docker \$USER"
    exit 1
 fi
 
