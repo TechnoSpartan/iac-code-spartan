@@ -12,44 +12,47 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 - ✅ Stack de monitoreo: VictoriaMetrics + Grafana + Loki + Promtail + cAdvisor + Node Exporter
 - ✅ CI/CD con GitHub Actions
 - ✅ Documentación completa actualizada
-
-**Pendiente de limpieza:**
-- ❌ Prometheus (legacy) - parar y borrar
-- ❌ Dozzle (legacy) - parar y borrar
+- ✅ **FASE 1 COMPLETA:** Verificación y Limpieza
+  - ✅ Servidor limpio (solo 8 contenedores esperados)
+  - ✅ Prometheus y Dozzle ya eliminados
+  - ✅ Grafana: datasource legacy eliminado, VictoriaMetrics por defecto
+  - ✅ 5 dashboards community importados
+  - ✅ Documentación de dashboards creada
 
 ---
 
-## 🎯 Fase 1: Verificación y Limpieza (PRIORIDAD INMEDIATA)
+## ✅ Fase 1: Verificación y Limpieza (COMPLETADA)
 
 **Objetivo:** Asegurar que la base está limpia y funcional.
 
-- [ ] **Limpiar servidor** - 10 min
-  - [ ] SSH al servidor
-  - [ ] `docker stop prometheus && docker rm prometheus`
-  - [ ] `docker stop dozzle && docker rm dozzle`
-  - [ ] Verificar solo 8 contenedores corriendo: traefik, victoriametrics, vmagent, loki, promtail, grafana, cadvisor, node-exporter
-  - [ ] `docker system prune -f` (limpiar imágenes huérfanas)
+- [x] **Limpiar servidor** - 10 min
+  - [x] SSH al servidor
+  - [x] Verificar Prometheus y Dozzle ya eliminados
+  - [x] Verificar solo 8 contenedores corriendo: traefik, victoriametrics, vmagent, loki, promtail, grafana, cadvisor, node-exporter
+  - [x] `docker system prune -f` (limpiar imágenes huérfanas) - 0B reclaimed
 
-- [ ] **Verificar Backoffice** - 15 min
-  - [ ] Acceder a https://backoffice.mambo-cloud.com
-  - [ ] Verificar login funciona (admin/codespartan123)
-  - [ ] Revisar qué servicios ofrece
-  - [ ] Actualizar su README si es necesario
+- [x] **Limpiar Grafana** - 15 min
+  - [x] Eliminar datasource "Prometheus" legacy
+  - [x] Configurar VictoriaMetrics como datasource por defecto
+  - [x] Verificar solo quedan: VictoriaMetrics + Loki
 
-- [ ] **Testing completo** - 20 min
-  - [ ] Traefik: https://traefik.mambo-cloud.com ✓
-  - [ ] Grafana: https://grafana.mambo-cloud.com ✓
-  - [ ] Backoffice: https://backoffice.mambo-cloud.com ✓
-  - [ ] Verificar métricas en Grafana (query `up`)
-  - [ ] Verificar logs en Grafana (Loki datasource)
+- [x] **Testing completo** - 20 min
+  - [x] Traefik: https://traefik.mambo-cloud.com ✓
+  - [x] Grafana: https://grafana.mambo-cloud.com ✓
+  - [x] Verificar métricas en Grafana (query `up`)
+  - [x] Verificar logs en Loki disponibles
 
-- [ ] **Dashboards Grafana** - 30 min
-  - [ ] Importar dashboard de Traefik (ID: 12250 o 11462)
-  - [ ] Importar dashboard de Docker (ID: 893 o 15798)
-  - [ ] Importar dashboard de Node Exporter (ID: 1860)
-  - [ ] Crear dashboard "Platform Overview" básico
+- [x] **Dashboards Grafana** - 30 min
+  - [x] Importar Node Exporter Full (ID: 1860)
+  - [x] Importar Traefik Official Standalone (ID: 17346)
+  - [x] Importar Docker Monitoring (ID: 193)
+  - [x] Importar VictoriaMetrics Cluster (ID: 11176)
+  - [x] Importar Loki Logs/App (ID: 13639)
+  - [x] Crear DASHBOARDS.md con guía de uso
 
-**Entregable:** Infraestructura limpia, monitoreada y verificada.
+**Entregable:** ✅ Infraestructura limpia, monitoreada y verificada.
+
+**Nota:** Backoffice pendiente de despliegue (no está en el servidor aún).
 
 ---
 
@@ -311,4 +314,4 @@ ssh leonidas@91.98.137.217
 ---
 
 **Última actualización:** 2025-10-04
-**Estado:** Fase 1 - Verificación y Limpieza (Pendiente)
+**Estado:** ✅ Fase 1 Completada | ⏭️ Siguiente: Fase 2 - Observabilidad (Alertas)
