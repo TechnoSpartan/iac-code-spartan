@@ -18,6 +18,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
   - ✅ Grafana: datasource legacy eliminado, VictoriaMetrics por defecto
   - ✅ 5 dashboards community importados
   - ✅ Documentación de dashboards creada
+  - ✅ Backoffice desplegado y funcional (https://backoffice.mambo-cloud.com)
 
 ---
 
@@ -52,7 +53,10 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 
 **Entregable:** ✅ Infraestructura limpia, monitoreada y verificada.
 
-**Nota:** Backoffice pendiente de despliegue (no está en el servidor aún).
+**URLs verificadas:**
+- ✅ https://traefik.mambo-cloud.com - Traefik Dashboard
+- ✅ https://grafana.mambo-cloud.com - Grafana + 5 dashboards
+- ✅ https://backoffice.mambo-cloud.com - Backoffice Panel
 
 ---
 
