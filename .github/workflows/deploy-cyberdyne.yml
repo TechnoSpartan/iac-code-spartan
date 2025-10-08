@@ -1,4 +1,4 @@
-name: Deploy Cyberdyne
+name: Deploy Cyberdyne Systems
 
 on:
   workflow_dispatch:
@@ -10,18 +10,31 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout IaC repo
         uses: actions/checkout@v4
+        path: iac
 
-      - name: Copy app files
+      - name: Checkout application repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.CYBERDYNE_APP_REPO }}
+          token: ${{ secrets.GH_PAT }}
+          path: app
+
+      - name: Copy Dockerfile and docker-compose to app
+        run: |
+          cp iac/codespartan/apps/cyberdyne/Dockerfile app/
+          cp iac/codespartan/apps/cyberdyne/docker-compose.yml app/
+
+      - name: Copy app files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "codespartan/apps/cyberdyne/*"
+          source: "app/*"
           target: "/opt/codespartan/apps/cyberdyne/"
-          strip_components: 3
+          strip_components: 1
 
       - name: Deploy stack
         uses: appleboy/ssh-action@v1.0.3
@@ -31,10 +44,12 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -euo pipefail
-            mkdir -p /opt/codespartan/apps/cyberdyne
-            cat > /opt/codespartan/apps/cyberdyne/.env <<EOF
-            BASE_DOMAIN=${{ secrets.CYBERDYNE_BASE_DOMAIN }}
-            EOF
             cd /opt/codespartan/apps/cyberdyne
-            docker compose --env-file .env up -d
+
+            # Build and deploy
+            docker compose build --no-cache
+            docker compose up -d
+
+            # Clean up old images
+            docker image prune -f
 

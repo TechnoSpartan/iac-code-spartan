@@ -15,10 +15,8 @@ firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]
 
 # DNS (Hetzner DNS)
 # Nota: codespartan.es (www en Hostinger/WordPress) no se gestiona aquí.
-# TEMPORALMENTE DESHABILITADO - gestionar manualmente en Hetzner Console
-domains    = []
-# domains    = ["mambo-cloud.com"]
-subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab"]
+domains    = ["mambo-cloud.com", "cyberdyne-systems.es"]
+subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "api"]
 
 # IPv4/IPv6 concretos para los registros A/AAAA
 manual_ipv4_address  = "91.98.137.217"
@@ -26,7 +24,7 @@ create_aaaa_records  = true
 # IPv6 correcta proporcionada por el usuario
 manual_ipv6_address  = "2a01:4f8:1c1a:7d21::1"
 
-# Apex/root del dominio (AAAA activado; A desactivado por ahora)
-create_apex_a    = false
+# Apex/root del dominio (ambos activados para cyberdyne-systems.es)
+create_apex_a    = true
 create_apex_aaaa = true
 apex_name        = "@"
