@@ -1,26 +1,51 @@
 version: '3.8'
+
 services:
-  web:
-    image: traefik/whoami:v1.10
-    container_name: cyberdyne-web
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyberdyne-frontend
+    restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.cyberdyne-www.rule=Host(`www.${BASE_DOMAIN}`)
-      - traefik.http.routers.cyberdyne-staging.rule=Host(`staging.${BASE_DOMAIN}`)
-      - traefik.http.routers.cyberdyne-lab.rule=Host(`lab.${BASE_DOMAIN}`)
+
+      # Main domain (www)
+      - traefik.http.routers.cyberdyne-www.rule=Host(`www.cyberdyne-systems.es`)
       - traefik.http.routers.cyberdyne-www.entrypoints=websecure
-      - traefik.http.routers.cyberdyne-staging.entrypoints=websecure
-      - traefik.http.routers.cyberdyne-lab.entrypoints=websecure
       - traefik.http.routers.cyberdyne-www.tls=true
-      - traefik.http.routers.cyberdyne-staging.tls=true
-      - traefik.http.routers.cyberdyne-lab.tls=true
       - traefik.http.routers.cyberdyne-www.tls.certresolver=le
+
+      # Root domain redirect to www
+      - traefik.http.routers.cyberdyne-root.rule=Host(`cyberdyne-systems.es`)
+      - traefik.http.routers.cyberdyne-root.entrypoints=websecure
+      - traefik.http.routers.cyberdyne-root.tls=true
+      - traefik.http.routers.cyberdyne-root.tls.certresolver=le
+      - traefik.http.routers.cyberdyne-root.middlewares=cyberdyne-redirect-www
+
+      # Middleware to redirect root to www
+      - traefik.http.middlewares.cyberdyne-redirect-www.redirectregex.regex=^https://cyberdyne-systems.es/(.*)
+      - traefik.http.middlewares.cyberdyne-redirect-www.redirectregex.replacement=https://www.cyberdyne-systems.es/$${1}
+      - traefik.http.middlewares.cyberdyne-redirect-www.redirectregex.permanent=true
+
+      # Staging subdomain
+      - traefik.http.routers.cyberdyne-staging.rule=Host(`staging.cyberdyne-systems.es`)
+      - traefik.http.routers.cyberdyne-staging.entrypoints=websecure
+      - traefik.http.routers.cyberdyne-staging.tls=true
       - traefik.http.routers.cyberdyne-staging.tls.certresolver=le
+
+      # Lab subdomain
+      - traefik.http.routers.cyberdyne-lab.rule=Host(`lab.cyberdyne-systems.es`)
+      - traefik.http.routers.cyberdyne-lab.entrypoints=websecure
+      - traefik.http.routers.cyberdyne-lab.tls=true
       - traefik.http.routers.cyberdyne-lab.tls.certresolver=le
+
       - traefik.docker.network=web
-    networks: [web]
-    restart: unless-stopped
+      - traefik.http.services.cyberdyne-frontend.loadbalancer.server.port=80
+
+    networks:
+      - web
+
 networks:
   web:
     external: true
-
