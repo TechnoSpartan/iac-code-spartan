@@ -12,7 +12,8 @@ jobs:
     steps:
       - name: Checkout IaC repo
         uses: actions/checkout@v4
-        path: iac
+        with:
+          path: iac
 
       - name: Checkout application repo
         uses: actions/checkout@v4
