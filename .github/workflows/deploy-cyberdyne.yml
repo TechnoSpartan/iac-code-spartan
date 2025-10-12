@@ -15,6 +15,12 @@ jobs:
         with:
           repository: ${{ secrets.CYBERDYNE_APP_REPO }}
           token: ${{ secrets.GH_PAT }}
+          path: app
+
+      - name: Checkout IaC repo for docker-compose
+        uses: actions/checkout@v4
+        with:
+          path: iac
 
       - name: Copy app files to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -22,9 +28,19 @@ jobs:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "./*"
+          source: "app/*"
           target: "/opt/codespartan/apps/cyberdyne/"
-          strip_components: 0
+          strip_components: 1
+
+      - name: Copy docker-compose from IaC repo
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "iac/codespartan/apps/cyberdyne/docker-compose.yml"
+          target: "/opt/codespartan/apps/cyberdyne/"
+          strip_components: 4
 
       - name: Deploy stack
         uses: appleboy/ssh-action@v1.0.3
@@ -38,68 +54,20 @@ jobs:
 
             DEPLOY_START=$(date +%s)
 
+            # Verify docker-compose.yml exists
+            echo "📋 Verifying docker-compose.yml..."
+            if [ ! -f docker-compose.yml ]; then
+              echo "❌ docker-compose.yml not found!"
+              exit 1
+            fi
+            echo "✅ docker-compose.yml found"
+
             # Build and deploy
             echo "🏗️  Building Docker image..."
             docker compose build --no-cache
             
             echo "🚀 Starting container..."
             docker compose up -d
-
-            # Quick diagnosis immediately after start
-            echo ""
-            echo "🔍 === POST-DEPLOY DIAGNOSIS ==="
-            echo ""
-            
-            # 1. Verify container is running
-            echo "1️⃣ Container status:"
-            docker ps | grep cyberdyne-frontend || echo "❌ Container not running!"
-            echo ""
-            
-            # 2. Check files inside container
-            echo "2️⃣ Files in /usr/share/nginx/html:"
-            docker exec cyberdyne-frontend ls -lah /usr/share/nginx/html
-            echo ""
-            
-            # 3. Verify index.html exists
-            echo "3️⃣ Verifying index.html:"
-            if docker exec cyberdyne-frontend test -f /usr/share/nginx/html/index.html; then
-              echo "✅ index.html exists"
-              echo "First 5 lines:"
-              docker exec cyberdyne-frontend head -5 /usr/share/nginx/html/index.html
-            else
-              echo "❌ index.html NOT FOUND!"
-              docker logs cyberdyne-frontend
-              exit 1
-            fi
-            echo ""
-            
-            # 4. Test internal endpoint
-            echo "4️⃣ Testing internal localhost:"
-            docker exec cyberdyne-frontend wget -q -O- http://localhost/ 2>&1 | head -5 || echo "❌ Internal test failed"
-            echo ""
-            
-            # 5. Test health endpoint
-            echo "5️⃣ Testing /health endpoint:"
-            docker exec cyberdyne-frontend wget -q -O- http://localhost/health
-            echo ""
-            
-            # 6. Check nginx config
-            echo "6️⃣ Active nginx configuration:"
-            docker exec cyberdyne-frontend cat /etc/nginx/conf.d/default.conf
-            echo ""
-            
-            # 7. Check nginx error logs
-            echo "7️⃣ Nginx error logs:"
-            docker exec cyberdyne-frontend cat /var/log/nginx/error.log 2>/dev/null || echo "No errors yet"
-            echo ""
-            
-            # 8. Check exposed ports
-            echo "8️⃣ Exposed ports:"
-            docker port cyberdyne-frontend
-            echo ""
-            
-            echo "=== END DIAGNOSIS ==="
-            echo ""
 
             # Health check
             echo "🔍 Running health checks..."
