@@ -19,7 +19,8 @@
       "Bash(gh run list:*)",
       "Bash(curl:*)",
       "Bash(curl -s -o /dev/null -w \"HTTP Status: %{http_code}\\n\" -u admin:codespartan123 https://backoffice.mambo-cloud.com)",
-      "Bash(https://ntfy.sh/codespartan-mambo-alerts)"
+      "Bash(https://ntfy.sh/codespartan-mambo-alerts)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

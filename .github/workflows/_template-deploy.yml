@@ -1,0 +1,176 @@
+# GitHub Actions Workflow Template for App Deployment
+#
+# INSTRUCTIONS:
+# 1. Copy this file to: .github/workflows/deploy-your-app-name.yml
+# 2. Replace all instances of YOUR_APP_NAME with your actual app name (lowercase, hyphen-separated)
+# 3. Update the paths in the 'on.push.paths' section
+# 4. Commit and push to enable automatic deployments
+#
+# REQUIRED SECRETS (configured in GitHub repo settings):
+# - VPS_SSH_HOST: VPS IP address (91.98.137.217)
+# - VPS_SSH_USER: SSH username (leonidas)
+# - VPS_SSH_KEY: Complete private SSH key content
+#
+
+name: Deploy YOUR_APP_NAME App  # TODO: Change this
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+
+  # Automatic trigger on push to app directory
+  push:
+    paths:
+      - 'codespartan/apps/YOUR_APP_NAME/**'  # TODO: Change this
+    branches:
+      - main  # Only deploy from main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # Optional: Set timeout to prevent hanging workflows
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p artifacts/YOUR_APP_NAME  # TODO: Change this
+          cp -r codespartan/apps/YOUR_APP_NAME/* artifacts/YOUR_APP_NAME/  # TODO: Change both
+
+      - name: Create remote directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mkdir -p /opt/codespartan/apps/YOUR_APP_NAME  # TODO: Change this
+
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "artifacts/YOUR_APP_NAME/*"  # TODO: Change this
+          target: "/opt/codespartan/apps/YOUR_APP_NAME"  # TODO: Change this
+          strip_components: 2
+
+      # Optional: Set up .env file from GitHub Secrets
+      # Uncomment and customize if you need to inject secrets
+      #
+      # - name: Create .env file on VPS
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.VPS_SSH_HOST }}
+      #     username: ${{ secrets.VPS_SSH_USER }}
+      #     key: ${{ secrets.VPS_SSH_KEY }}
+      #     script: |
+      #       cat > /opt/codespartan/apps/YOUR_APP_NAME/.env << 'EOF'
+      #       APP_NAME=YOUR_APP_NAME
+      #       SUBDOMAIN=your-subdomain
+      #       APP_PORT=80
+      #       # Add your secrets here using ${{ secrets.YOUR_SECRET_NAME }}
+      #       DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+      #       API_KEY=${{ secrets.API_KEY }}
+      #       EOF
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true  # Stop on first error
+          script: |
+            set -euxo pipefail  # Exit on error, print commands
+
+            # Ensure web network exists (required for Traefik routing)
+            docker network create web || true
+
+            # Navigate to app directory
+            cd /opt/codespartan/apps/YOUR_APP_NAME  # TODO: Change this
+
+            # Pull latest images
+            docker compose pull
+
+            # Deploy with Docker Compose
+            docker compose up -d
+
+            # Wait for container to be healthy
+            sleep 5
+
+            # Optional: Verify deployment
+            docker ps | grep YOUR_APP_NAME  # TODO: Change this
+
+      # Optional: Health check after deployment
+      # Uncomment to verify the app is responding
+      #
+      # - name: Verify deployment
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.VPS_SSH_HOST }}
+      #     username: ${{ secrets.VPS_SSH_USER }}
+      #     key: ${{ secrets.VPS_SSH_KEY }}
+      #     script: |
+      #       # Wait for app to start
+      #       sleep 10
+      #
+      #       # Check container is running
+      #       if ! docker ps | grep -q YOUR_APP_NAME; then
+      #         echo "ERROR: Container is not running"
+      #         docker logs YOUR_APP_NAME-app --tail 50
+      #         exit 1
+      #       fi
+      #
+      #       # Check health endpoint (adjust URL as needed)
+      #       if ! curl -f -H "Host: your-subdomain.mambo-cloud.com" http://localhost/; then
+      #         echo "ERROR: Health check failed"
+      #         docker logs YOUR_APP_NAME-app --tail 50
+      #         exit 1
+      #       fi
+      #
+      #       echo "Deployment successful!"
+
+      # Optional: Notify on deployment success/failure
+      # Uncomment to send notifications via ntfy.sh
+      #
+      # - name: Send deployment notification
+      #   if: always()
+      #   run: |
+      #     if [ "${{ job.status }}" == "success" ]; then
+      #       MESSAGE="✅ YOUR_APP_NAME deployed successfully"
+      #       PRIORITY="default"
+      #     else
+      #       MESSAGE="❌ YOUR_APP_NAME deployment failed"
+      #       PRIORITY="urgent"
+      #     fi
+      #
+      #     curl -X POST https://ntfy.sh/codespartan-mambo-alerts \
+      #       -H "Title: Deployment: YOUR_APP_NAME" \
+      #       -H "Priority: $PRIORITY" \
+      #       -d "$MESSAGE"
+
+# Optional: Add deployment rollback workflow
+# Create a separate workflow file: .github/workflows/rollback-YOUR_APP_NAME.yml
+#
+# name: Rollback YOUR_APP_NAME
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       commit:
+#         description: 'Git commit hash to rollback to'
+#         required: true
+# jobs:
+#   rollback:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           ref: ${{ github.event.inputs.commit }}
+#       - name: Deploy previous version
+#         # ... same deployment steps as above

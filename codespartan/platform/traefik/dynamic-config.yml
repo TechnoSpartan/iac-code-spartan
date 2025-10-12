@@ -1,0 +1,68 @@
+# Traefik Dynamic Configuration
+# This file defines middlewares, routers, and services that are loaded dynamically
+
+http:
+  middlewares:
+    # Global rate limiting - 100 requests per second per IP
+    rate-limit-global:
+      rateLimit:
+        average: 100
+        period: 1s
+        burst: 50
+
+    # Strict rate limiting for sensitive endpoints - 10 requests per second
+    rate-limit-strict:
+      rateLimit:
+        average: 10
+        period: 1s
+        burst: 20
+
+    # API rate limiting - 50 requests per second
+    rate-limit-api:
+      rateLimit:
+        average: 50
+        period: 1s
+        burst: 30
+
+    # Security headers middleware
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        sslRedirect: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+
+    # Compression middleware
+    compression:
+      compress: {}
+
+    # CORS middleware for APIs
+    cors-api:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "*"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+
+# TCP configuration (if needed)
+tcp: {}
+
+# TLS configuration (if needed)
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305

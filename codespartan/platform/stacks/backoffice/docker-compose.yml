@@ -13,7 +13,7 @@ services:
       - traefik.http.routers.backoffice.tls.certresolver=le
       # Autenticación básica (user: admin, pass: codespartan123)
       - traefik.http.middlewares.backoffice-auth.basicauth.users=admin:$$2y$$05$$E6t5TRn595ZGqgG3yZ2XXOHwh19zgbruSv1.YQFsGgufTePCwDq4O
-      - traefik.http.routers.backoffice.middlewares=backoffice-auth
+      - traefik.http.routers.backoffice.middlewares=backoffice-auth,rate-limit-strict@file,security-headers@file,compression@file
       - traefik.docker.network=web
     networks: [web]
     restart: unless-stopped
