@@ -34,6 +34,7 @@
 | Root (redirect) | https://cyberdyne-systems.es | ✅ Activo |
 | Staging | https://staging.cyberdyne-systems.es | ✅ Activo |
 | Lab | https://lab.cyberdyne-systems.es | ✅ Activo |
+| **API** | **https://api.cyberdyne-systems.es** | 🟡 **Configurado** |
 | Traefik Dashboard | https://traefik.mambo-cloud.com | ✅ Activo |
 | Grafana | https://grafana.mambo-cloud.com | ✅ Activo |
 

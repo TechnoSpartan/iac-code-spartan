@@ -7,6 +7,12 @@ services:
       dockerfile: Dockerfile
     container_name: cyberdyne-frontend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     labels:
       - traefik.enable=true
 

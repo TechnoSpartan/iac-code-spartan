@@ -9,7 +9,8 @@ services:
       - -httpListenAddr=:8428
     volumes:
       - victoria-data:/storage
-    networks: [web]
+    networks:
+      - monitoring
     restart: unless-stopped
 
   vmagent:
@@ -22,7 +23,9 @@ services:
       - ./victoriametrics/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
       - victoriametrics
-    networks: [web]
+    networks:
+      - monitoring
+      - web  # Needs access to web network to scrape Traefik metrics
     restart: unless-stopped
 
   vmalert:
@@ -40,7 +43,8 @@ services:
       - ./alerts:/etc/alerts:ro
     depends_on:
       - victoriametrics
-    networks: [web]
+    networks:
+      - monitoring
     restart: unless-stopped
 
   loki:
@@ -50,7 +54,8 @@ services:
     volumes:
       - ./loki/loki.yml:/etc/loki/loki.yml:ro
       - loki-data:/loki
-    networks: [web]
+    networks:
+      - monitoring
     restart: unless-stopped
 
   promtail:
@@ -61,7 +66,8 @@ services:
       - ./promtail/promtail.yml:/etc/promtail/promtail.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    networks: [web]
+    networks:
+      - monitoring
     restart: unless-stopped
 
   grafana:
@@ -85,7 +91,10 @@ services:
       - traefik.http.routers.grafana.tls=true
       - traefik.http.routers.grafana.tls.certresolver=le
       - traefik.docker.network=web
-    networks: [web]
+      - traefik.http.routers.grafana.middlewares=rate-limit-global@file,security-headers@file,compression@file
+    networks:
+      - web  # Public access via Traefik
+      - monitoring  # Access to VictoriaMetrics and Loki
     restart: unless-stopped
 
   cadvisor:
@@ -98,7 +107,8 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     devices:
       - /dev/kmsg:/dev/kmsg
-    networks: [web]
+    networks:
+      - monitoring
     restart: unless-stopped
 
   node-exporter:
@@ -114,7 +124,8 @@ services:
       - --path.sysfs=/host/sys
       - --path.rootfs=/rootfs
       - --collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($|/)
-    networks: [web]
+    networks:
+      - monitoring
     restart: unless-stopped
 
 volumes:
@@ -125,4 +136,7 @@ volumes:
 networks:
   web:
     external: true
+  monitoring:
+    driver: bridge
+    name: monitoring
 
