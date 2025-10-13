@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   api:
-    image: ghcr.io/krbaio3/ms-nd-bko-truckworks:latest
+    image: ghcr.io/technospartan/ms-nd-bko-truckworks:latest
     container_name: truckworks-api
     restart: unless-stopped
     environment:
