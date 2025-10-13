@@ -20,7 +20,12 @@
       "Bash(curl:*)",
       "Bash(curl -s -o /dev/null -w \"HTTP Status: %{http_code}\\n\" -u admin:codespartan123 https://backoffice.mambo-cloud.com)",
       "Bash(https://ntfy.sh/codespartan-mambo-alerts)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Read(//Users/krbaio3/Worker/@CodeSpartan/ms-nd-bko-truckworks/**)",
+      "Read(//Users/krbaio3/Worker/@CodeSpartan/ft-rc-bko-dummy/**)",
+      "Bash(mkdir:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh workflow run:*)"
     ],
     "deny": [],
     "ask": []
