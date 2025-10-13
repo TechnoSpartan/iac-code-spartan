@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'codespartan/apps/cyberdyne-api/**'
+      - 'codespartan/apps/cyberdyne/backend/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout application repo
+      - name: Checkout backend application repo
         uses: actions/checkout@v4
         with:
-          repository: krbaio3/ms-nd-bko-truckworks
+          repository: CodeSpartan/ms-nd-bko-truckworks
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Docker Buildx
@@ -32,8 +32,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/cyberdyne-api:latest
-            ghcr.io/${{ github.repository_owner }}/cyberdyne-api:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/ms-nd-bko-truckworks:latest
+            ghcr.io/${{ github.repository_owner }}/ms-nd-bko-truckworks:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -48,9 +48,9 @@ jobs:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "iac/codespartan/apps/cyberdyne-api/docker-compose.yml"
-          target: "/opt/codespartan/apps/cyberdyne-api/"
-          strip_components: 4
+          source: "iac/codespartan/apps/cyberdyne/backend/docker-compose.yml"
+          target: "/opt/codespartan/apps/cyberdyne/backend/"
+          strip_components: 5
 
       - name: Deploy API on VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -60,7 +60,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -euo pipefail
-            cd /opt/codespartan/apps/cyberdyne-api
+            cd /opt/codespartan/apps/cyberdyne/backend
 
             DEPLOY_START=$(date +%s)
 
@@ -77,16 +77,16 @@ jobs:
 
             # Health check
             echo "🔍 Running health checks..."
-            if docker ps | grep -q cyberdyne-api; then
+            if docker ps | grep -q truckworks-api; then
               echo "✅ Container is running"
 
               # Esperar a que el health check interno de Docker pase
               echo "⏳ Waiting for container to be healthy..."
               HEALTH_CHECK_ATTEMPTS=0
               MAX_ATTEMPTS=24
-              
+
               while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-                HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' cyberdyne-api 2>/dev/null || echo "unknown")
+                HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' truckworks-api 2>/dev/null || echo "unknown")
                 
                 if [ "$HEALTH_STATUS" = "healthy" ]; then
                   echo "✅ Health check passed"
@@ -100,7 +100,7 @@ jobs:
                   docker image prune -f
 
                   echo "✨ API deployed successfully in ${DEPLOY_TIME}s!"
-                  docker ps | grep cyberdyne-api
+                  docker ps | grep truckworks-api
                   exit 0
                 fi
                 
@@ -111,7 +111,7 @@ jobs:
 
               echo "❌ Health check failed after $((MAX_ATTEMPTS * 3)) seconds"
               echo "📋 Container logs:"
-              docker logs --tail 50 cyberdyne-api
+              docker logs --tail 50 truckworks-api
               
               echo "DEPLOY_STATUS=health_check_failed" >> /tmp/deploy_metrics.txt
               exit 1
