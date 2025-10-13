@@ -13,7 +13,7 @@ jobs:
       - name: Checkout backend application repo
         uses: actions/checkout@v4
         with:
-          repository: TechnoSpartan/ms-nd-bko-truckworks
+          repository: TechnoSpartan/ms-nd-bko-trucksworks
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Docker Buildx
@@ -32,8 +32,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/technospartan/ms-nd-bko-truckworks:latest
-            ghcr.io/technospartan/ms-nd-bko-truckworks:${{ github.sha }}
+            ghcr.io/technospartan/ms-nd-bko-trucksworks:latest
+            ghcr.io/technospartan/ms-nd-bko-trucksworks:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
