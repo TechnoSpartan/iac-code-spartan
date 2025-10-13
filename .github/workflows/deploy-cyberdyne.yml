@@ -13,7 +13,7 @@ jobs:
       - name: Checkout frontend application repo
         uses: actions/checkout@v4
         with:
-          repository: CodeSpartan/ft-rc-bko-dummy
+          repository: TechnoSpartan/ft-rc-bko-dummy
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Docker Buildx

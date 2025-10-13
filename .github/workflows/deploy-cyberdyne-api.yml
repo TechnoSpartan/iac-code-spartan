@@ -13,7 +13,7 @@ jobs:
       - name: Checkout backend application repo
         uses: actions/checkout@v4
         with:
-          repository: CodeSpartan/ms-nd-bko-truckworks
+          repository: TechnoSpartan/ms-nd-bko-truckworks
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Docker Buildx
