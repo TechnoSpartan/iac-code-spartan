@@ -10,37 +10,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout frontend application repo
-        uses: actions/checkout@v4
-        with:
-          repository: TechnoSpartan/ft-rc-bko-dummy
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/technospartan/ft-rc-bko-dummy:latest
-            ghcr.io/technospartan/ft-rc-bko-dummy:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Checkout IaC repo
         uses: actions/checkout@v4
-        with:
-          path: iac
 
       - name: Copy docker-compose to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -48,9 +19,9 @@ jobs:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "iac/codespartan/apps/cyberdyne/frontend/docker-compose.yml"
+          source: "codespartan/apps/cyberdyne/frontend/docker-compose.yml"
           target: "/opt/codespartan/apps/cyberdyne/frontend/"
-          strip_components: 5
+          strip_components: 4
 
       - name: Deploy Frontend on VPS
         uses: appleboy/ssh-action@v1.0.3
