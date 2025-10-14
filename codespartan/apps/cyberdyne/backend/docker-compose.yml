@@ -10,7 +10,7 @@ services:
       - PORT=3001
       - API_VERSION=v1
       - ALLOWED_ORIGINS=https://cyberdyne-systems.es,https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://api.cyberdyne-systems.es
-      - USE_DATABASE=false
+      - USE_DATABASE=true
       - API_BASE_PATH=/api
       - LOG_LEVEL=info
     volumes:
