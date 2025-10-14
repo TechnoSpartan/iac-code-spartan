@@ -1,24 +1,29 @@
 version: '3.8'
 
 services:
-  frontend:
+  web:
     image: ghcr.io/technospartan/ft-rc-bko-dummy:latest
-    container_name: cyberdyne-frontend
+    container_name: cyberdyne-frontend-web
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     labels:
       - traefik.enable=true
-      - traefik.http.routers.cyberdyne-frontend.rule=Host(`www.cyberdyne-systems.es`)
-      - traefik.http.routers.cyberdyne-frontend.entrypoints=websecure
-      - traefik.http.routers.cyberdyne-frontend.tls=true
-      - traefik.http.routers.cyberdyne-frontend.tls.certresolver=le
+      - traefik.http.routers.cyberdyne-frontend-web.rule=Host(`www.cyberdyne-systems.es`)
+      - traefik.http.routers.cyberdyne-frontend-web.entrypoints=websecure
+      - traefik.http.routers.cyberdyne-frontend-web.tls=true
+      - traefik.http.routers.cyberdyne-frontend-web.tls.certresolver=le
+      - traefik.http.services.cyberdyne-frontend-web.loadbalancer.server.port=80
       - traefik.docker.network=web
-      - traefik.http.services.cyberdyne-frontend.loadbalancer.server.port=80
 
     networks:
       - web
