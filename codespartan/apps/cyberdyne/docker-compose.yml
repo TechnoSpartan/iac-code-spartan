@@ -62,4 +62,4 @@ networks:
     internal: false # Permite acceso a internet para el frontend
     ipam:
       config:
-        - subnet: 172.20.0.0/24
+        - subnet: 172.23.0.0/24
