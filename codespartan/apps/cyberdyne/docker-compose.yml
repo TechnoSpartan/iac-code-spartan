@@ -50,8 +50,16 @@ services:
       - traefik.http.services.cyberdyne-frontend.loadbalancer.server.port=80
 
     networks:
-      - web
+      - web           # Accesible por Traefik
+      - cyberdyne_net # Red interna de la aplicación
 
 networks:
   web:
     external: true
+  cyberdyne_net:
+    name: cyberdyne_internal
+    driver: bridge
+    internal: false # Permite acceso a internet para el frontend
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

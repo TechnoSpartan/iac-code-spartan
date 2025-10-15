@@ -18,9 +18,18 @@ services:
       - traefik.http.routers.dental-staging.tls.certresolver=le
       - traefik.http.routers.dental-lab.tls.certresolver=le
       - traefik.docker.network=web
-    networks: [web]
+    networks:
+      - web        # Accesible por Traefik
+      - dental_net # Red interna de la aplicación
     restart: unless-stopped
 networks:
   web:
     external: true
+  dental_net:
+    name: dental_internal
+    driver: bridge
+    internal: false # Permite acceso a internet si es necesario
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
 
