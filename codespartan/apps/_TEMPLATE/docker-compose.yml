@@ -53,9 +53,8 @@ services:
 
     # Networks
     networks:
-      - web
-      # Optional: Add private network for database connections
-      # - backend
+      - web     # Required: For Traefik to route traffic
+      - backend # Optional: For internal communication with database/cache
 
     # Health check (customize according to your app)
     healthcheck:
@@ -78,32 +77,61 @@ services:
     #       cpus: '0.25'
     #       memory: 128M
 
-# Optional: Add additional services (database, redis, etc.)
-# Example database service:
-#
-# database:
-#   image: postgres:15-alpine
-#   container_name: ${APP_NAME:-myapp}-db
-#   environment:
-#     - POSTGRES_USER=${DB_USER:-appuser}
-#     - POSTGRES_PASSWORD=${DB_PASSWORD}
-#     - POSTGRES_DB=${DB_NAME:-appdb}
-#   volumes:
-#     - db-data:/var/lib/postgresql/data
-#   networks:
-#     - backend
-#   restart: unless-stopped
-#   healthcheck:
-#     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-appuser}"]
-#     interval: 10s
-#     timeout: 5s
-#     retries: 5
+  # Optional: Database service (PostgreSQL example)
+  # Uncomment to add a database to your application
+  #
+  # database:
+  #   image: postgres:15-alpine  # ARM64 compatible
+  #   container_name: ${APP_NAME:-myapp}-db
+  #   environment:
+  #     - POSTGRES_USER=${DB_USER:-appuser}
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
+  #     - POSTGRES_DB=${DB_NAME:-appdb}
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+  #   networks:
+  #     - backend  # ONLY backend network - NOT accessible from internet
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-appuser}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #
+  # Optional: Redis cache example
+  #
+  # redis:
+  #   image: redis:7-alpine  # ARM64 compatible
+  #   container_name: ${APP_NAME:-myapp}-redis
+  #   command: redis-server --appendonly yes
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - backend  # ONLY backend network - NOT accessible from internet
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
 networks:
+  # External network (managed by Traefik)
   web:
     external: true
-  # backend:
-  #   driver: bridge
 
+  # Internal network for inter-service communication
+  backend:
+    name: ${APP_NAME:-myapp}_internal
+    driver: bridge
+    internal: true  # No internet access - maximum security for databases
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24
+
+# Persistent volumes for databases
 # volumes:
 #   db-data:
+#     name: ${APP_NAME:-myapp}_postgres_data
+#   redis-data:
+#     name: ${APP_NAME:-myapp}_redis_data

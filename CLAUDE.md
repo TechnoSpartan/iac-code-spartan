@@ -138,13 +138,47 @@ manual_ipv6_address = "2a01:4f8:1c1a:7d21::1"
 
 ### Docker Networks
 
-All services must be connected to the `web` network for Traefik routing:
+**Network Isolation Pattern (Security Best Practice):**
+
+Each application should have TWO networks for proper isolation:
+
+1. **`web` network** (external): For Traefik to route traffic
+2. **Internal network** (per-app): For communication between app services
 
 ```yaml
+# Example: Frontend accessible via Traefik + communicates with DB
+services:
+  app:
+    networks:
+      - web           # Required for Traefik routing
+      - myapp_net     # For internal DB/cache communication
+
+  database:
+    networks:
+      - myapp_net     # ONLY internal - NOT accessible from internet
+
 networks:
   web:
     external: true
+  myapp_net:
+    name: myapp_internal
+    driver: bridge
+    internal: true  # Maximum security: no internet access
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24
 ```
+
+**Reserved subnets:**
+- `172.20.0.0/24` - cyberdyne_internal
+- `172.21.0.0/24` - dental_internal
+- `172.22.0.0/24` - mambo_internal
+- `172.23.0.0/24` - template example
+
+**Why this matters:**
+- Without network isolation, `cyberdyne-frontend` can directly communicate with `dental-io-db`
+- With isolation, databases are only accessible by their own application services
+- See `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` for detailed guide
 
 ### Traefik Labels Pattern
 

@@ -26,9 +26,17 @@ services:
     volumes:
       - ./html:/usr/share/nginx/html:ro
     networks:
-      - web
+      - web       # Accesible por Traefik
+      - mambo_net # Red interna de la aplicación
     restart: unless-stopped
 
 networks:
   web:
     external: true
+  mambo_net:
+    name: mambo_internal
+    driver: bridge
+    internal: false # Permite acceso a internet si es necesario
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
