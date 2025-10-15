@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  app:
+    # Replace with your application image (e.g., node:18-alpine, python:3.11-slim, nginx:alpine)
+    image: nginx:alpine
+    container_name: ${APP_NAME:-myapp}-app
+
+    # Traefik labels for automatic routing and SSL
+    labels:
+      - traefik.enable=true
+
+      # Main router configuration
+      - traefik.http.routers.${APP_NAME:-myapp}.rule=Host(`${SUBDOMAIN:-app}.mambo-cloud.com`)
+      - traefik.http.routers.${APP_NAME:-myapp}.entrypoints=websecure
+      - traefik.http.routers.${APP_NAME:-myapp}.tls=true
+      - traefik.http.routers.${APP_NAME:-myapp}.tls.certresolver=le
+      - traefik.docker.network=web
+
+      # Service configuration
+      - traefik.http.services.${APP_NAME:-myapp}.loadbalancer.server.port=${APP_PORT:-80}
+
+      # Optional: Add middlewares (uncomment to enable)
+      # Available middlewares from dynamic-config.yml:
+      # - rate-limit-global@file (100 req/s)
+      # - rate-limit-strict@file (10 req/s)
+      # - rate-limit-api@file (50 req/s)
+      # - security-headers@file (security headers)
+      # - compression@file (gzip compression)
+      # - cors-api@file (CORS for APIs)
+
+      # Example: Enable rate limiting + security headers + compression
+      # - traefik.http.routers.${APP_NAME:-myapp}.middlewares=rate-limit-global@file,security-headers@file,compression@file
+
+      # Optional: Add basic auth (define middleware inline)
+      # - traefik.http.routers.${APP_NAME:-myapp}.middlewares=auth
+      # - traefik.http.middlewares.auth.basicauth.users=${BASIC_AUTH_USERS}
+
+    # Environment variables
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - APP_PORT=${APP_PORT:-80}
+      # Add your app-specific environment variables here
+
+    # Optional: Add env_file for sensitive variables
+    # env_file:
+    #   - .env
+
+    # Volumes (uncomment and customize as needed)
+    # volumes:
+    #   - ./data:/app/data
+    #   - ./config:/app/config:ro
+
+    # Networks
+    networks:
+      - web
+      # Optional: Add private network for database connections
+      # - backend
+
+    # Health check (customize according to your app)
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${APP_PORT:-80}/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Resource limits (uncomment to enable)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 128M
+
+# Optional: Add additional services (database, redis, etc.)
+# Example database service:
+#
+# database:
+#   image: postgres:15-alpine
+#   container_name: ${APP_NAME:-myapp}-db
+#   environment:
+#     - POSTGRES_USER=${DB_USER:-appuser}
+#     - POSTGRES_PASSWORD=${DB_PASSWORD}
+#     - POSTGRES_DB=${DB_NAME:-appdb}
+#   volumes:
+#     - db-data:/var/lib/postgresql/data
+#   networks:
+#     - backend
+#   restart: unless-stopped
+#   healthcheck:
+#     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-appuser}"]
+#     interval: 10s
+#     timeout: 5s
+#     retries: 5
+
+networks:
+  web:
+    external: true
+  # backend:
+  #   driver: bridge
+
+# volumes:
+#   db-data:

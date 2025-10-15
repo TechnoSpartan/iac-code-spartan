@@ -12,6 +12,8 @@ services:
       - --entrypoints.websecure.address=:443
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.file.filename=/etc/traefik/dynamic-config.yml
+      - --providers.file.watch=true
       - --certificatesresolvers.le.acme.httpchallenge=true
       - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
@@ -27,7 +29,7 @@ services:
       - traefik.http.routers.traefik.tls.certresolver=le
       - traefik.http.routers.traefik.service=api@internal
       - traefik.http.middlewares.traefik-auth.basicauth.usersfile=/users.htpasswd
-      - traefik.http.routers.traefik.middlewares=traefik-auth
+      - traefik.http.routers.traefik.middlewares=traefik-auth,rate-limit-strict@file,security-headers@file
     ports:
       - "80:80"
       - "443:443"
@@ -35,6 +37,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
       - ./users.htpasswd:/users.htpasswd:ro
+      - ./dynamic-config.yml:/etc/traefik/dynamic-config.yml:ro
     networks: [web]
     restart: unless-stopped
 networks:
