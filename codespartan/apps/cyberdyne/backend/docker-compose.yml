@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7-jammy
+    container_name: truckworks-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=truckworks
+      - MONGO_INITDB_ROOT_PASSWORD=truckworks_secure_password_2025
+      - MONGO_INITDB_DATABASE=truckworks
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend
+
+  api:
+    image: ghcr.io/technospartan/ms-nd-bko-trucksworks:latest
+    platform: linux/amd64
+    container_name: truckworks-api
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - API_VERSION=v1
+      - ALLOWED_ORIGINS=https://cyberdyne-systems.es,https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://api.cyberdyne-systems.es
+      - USE_DATABASE=true
+      - API_BASE_PATH=/api
+      - LOG_LEVEL=info
+      - MONGODB_URI=mongodb://truckworks:truckworks_secure_password_2025@mongodb:27017/truckworks?authSource=admin
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - traefik.enable=true
+
+      # API subdomain
+      - traefik.http.routers.truckworks-api.rule=Host(`api.cyberdyne-systems.es`)
+      - traefik.http.routers.truckworks-api.entrypoints=websecure
+      - traefik.http.routers.truckworks-api.tls=true
+      - traefik.http.routers.truckworks-api.tls.certresolver=le
+
+      # CORS middleware
+      - traefik.http.middlewares.truckworks-api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
+      - traefik.http.middlewares.truckworks-api-cors.headers.accesscontrolallowheaders=*
+      - traefik.http.middlewares.truckworks-api-cors.headers.accesscontrolalloworiginlist=https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://cyberdyne-systems.es
+      - traefik.http.middlewares.truckworks-api-cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.truckworks-api-cors.headers.addvaryheader=true
+      - traefik.http.middlewares.truckworks-api-cors.headers.accesscontrolallowcredentials=true
+
+      # Apply CORS middleware
+      - traefik.http.routers.truckworks-api.middlewares=truckworks-api-cors
+
+      # Service configuration
+      - traefik.docker.network=web
+      - traefik.http.services.truckworks-api.loadbalancer.server.port=3001
+
+    networks:
+      - web
+      - backend
+
+volumes:
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+
+networks:
+  web:
+    external: true
+  backend:
+    driver: bridge

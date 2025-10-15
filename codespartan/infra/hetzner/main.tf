@@ -84,6 +84,7 @@ resource "hcloud_server" "vps" {
   runcmd:
     - |
       set -eux
+      # Install Docker if not present
       if ! command -v docker >/dev/null 2>&1; then
         dnf -y install yum-utils device-mapper-persistent-data lvm2
         dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -91,6 +92,40 @@ resource "hcloud_server" "vps" {
         systemctl enable --now docker
       fi
       docker network create web || true
+
+      # Install and configure Fail2ban for SSH protection
+      if ! command -v fail2ban-server >/dev/null 2>&1; then
+        dnf -y install epel-release
+        dnf -y install fail2ban fail2ban-systemd
+
+        # Create custom jail configuration
+        cat > /etc/fail2ban/jail.local << 'EOF'
+      [DEFAULT]
+      bantime = 10m
+      findtime = 10m
+      maxretry = 5
+
+      [sshd]
+      enabled = true
+      port = ssh
+      logpath = /var/log/secure
+      maxretry = 5
+      bantime = 10m
+      findtime = 10m
+
+      [sshd-ddos]
+      enabled = true
+      port = ssh
+      logpath = /var/log/secure
+      maxretry = 10
+      findtime = 10m
+      bantime = 10m
+      EOF
+
+        # Enable and start fail2ban
+        systemctl enable fail2ban
+        systemctl start fail2ban
+      fi
   CLOUD
 
   # Ignorar cambios en ssh_keys y user_data para servidores existentes

@@ -1,10 +1,10 @@
-name: Deploy Cyberdyne Frontend
+name: Deploy Cyberdyne API
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'codespartan/apps/cyberdyne/frontend/**'
+      - 'codespartan/apps/cyberdyne/backend/**'
 
 jobs:
   deploy:
@@ -19,11 +19,11 @@ jobs:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "codespartan/apps/cyberdyne/frontend/docker-compose.yml"
-          target: "/opt/codespartan/apps/cyberdyne/frontend/"
+          source: "codespartan/apps/cyberdyne/backend/docker-compose.yml"
+          target: "/opt/codespartan/apps/cyberdyne/backend/"
           strip_components: 4
 
-      - name: Deploy Frontend on VPS
+      - name: Deploy API on VPS
         uses: appleboy/ssh-action@v1.0.3
         env:
           GHCR_TOKEN: ${{ secrets.GH_PAT }}
@@ -34,7 +34,7 @@ jobs:
           envs: GHCR_TOKEN
           script: |
             set -euo pipefail
-            cd /opt/codespartan/apps/cyberdyne/frontend
+            cd /opt/codespartan/apps/cyberdyne/backend
 
             DEPLOY_START=$(date +%s)
 
@@ -50,25 +50,25 @@ jobs:
             docker compose pull
 
             # Deploy
-            echo "🚀 Starting frontend container..."
+            echo "🚀 Starting API container..."
             docker compose up -d
 
             # Health check
             echo "🔍 Running health checks..."
-            if docker ps | grep -q cyberdyne-frontend; then
+            if docker ps | grep -q truckworks-api; then
               echo "✅ Container is running"
 
               # Esperar a que el health check interno de Docker pase
               echo "⏳ Waiting for container to be healthy..."
               HEALTH_CHECK_ATTEMPTS=0
-              MAX_ATTEMPTS=20
+              MAX_ATTEMPTS=24
 
               while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-                HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' cyberdyne-frontend 2>/dev/null || echo "unknown")
-
+                HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' truckworks-api 2>/dev/null || echo "unknown")
+                
                 if [ "$HEALTH_STATUS" = "healthy" ]; then
                   echo "✅ Health check passed"
-
+                  
                   DEPLOY_END=$(date +%s)
                   DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
                   echo "DEPLOY_TIME=${DEPLOY_TIME}" >> /tmp/deploy_metrics.txt
@@ -77,11 +77,11 @@ jobs:
                   echo "🧹 Cleaning up old images..."
                   docker image prune -f
 
-                  echo "✨ Frontend deployed successfully in ${DEPLOY_TIME}s!"
-                  docker ps | grep cyberdyne-frontend
+                  echo "✨ API deployed successfully in ${DEPLOY_TIME}s!"
+                  docker ps | grep truckworks-api
                   exit 0
                 fi
-
+                
                 echo "⏳ Health status: $HEALTH_STATUS - waiting... ($((HEALTH_CHECK_ATTEMPTS + 1))/$MAX_ATTEMPTS)"
                 HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_ATTEMPTS + 1))
                 sleep 3
@@ -89,7 +89,7 @@ jobs:
 
               echo "❌ Health check failed after $((MAX_ATTEMPTS * 3)) seconds"
               echo "📋 Container logs:"
-              docker logs --tail 50 cyberdyne-frontend
+              docker logs --tail 50 truckworks-api
               
               echo "DEPLOY_STATUS=health_check_failed" >> /tmp/deploy_metrics.txt
               exit 1
@@ -99,32 +99,3 @@ jobs:
               exit 1
             fi
 
-      - name: Check production URL
-        if: success()
-        run: |
-          echo "🌐 Checking production URL..."
-          
-          # Wait a bit for proxy to update
-          sleep 5
-          
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.cyberdyne-systems.es)
-          
-          if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ Production site is responding correctly (HTTP $HTTP_STATUS)"
-            echo "status=$HTTP_STATUS" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Production site returned HTTP $HTTP_STATUS"
-            echo ""
-            echo "⚠️  NOTE: Container is healthy but proxy returns 404"
-            echo "This indicates a PROXY CONFIGURATION issue, not a container issue."
-            echo ""
-            echo "To fix, check the proxy configuration (Caddy/Traefik) on the VPS:"
-            echo "  - Verify reverse proxy is pointing to localhost:3000"
-            echo "  - Check proxy logs: journalctl -u caddy -n 50"
-            echo "  - Verify domain configuration"
-            echo ""
-            echo "Container is working correctly. Issue is in the proxy layer."
-            
-            # Don't fail the deployment since the container is working
-            echo "status=$HTTP_STATUS" >> $GITHUB_OUTPUT
-          fi
