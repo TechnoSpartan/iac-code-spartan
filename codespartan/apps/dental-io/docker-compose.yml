@@ -31,5 +31,5 @@ networks:
     internal: false # Permite acceso a internet si es necesario
     ipam:
       config:
-        - subnet: 172.21.0.0/24
+        - subnet: 172.24.0.0/24
 

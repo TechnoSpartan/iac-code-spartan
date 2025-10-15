@@ -170,10 +170,10 @@ networks:
 ```
 
 **Reserved subnets:**
-- `172.20.0.0/24` - cyberdyne_internal
-- `172.21.0.0/24` - dental_internal
 - `172.22.0.0/24` - mambo_internal
-- `172.23.0.0/24` - template example
+- `172.23.0.0/24` - cyberdyne_internal
+- `172.24.0.0/24` - dental_internal
+- `172.25.0.0/24` - template example (available)
 
 **Why this matters:**
 - Without network isolation, `cyberdyne-frontend` can directly communicate with `dental-io-db`
