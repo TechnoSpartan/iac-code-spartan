@@ -20,6 +20,14 @@ services:
       start_period: 10s
     networks:
       - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
 
   api:
     image: ghcr.io/technospartan/ms-nd-bko-trucksworks:latest
@@ -76,6 +84,14 @@ services:
     networks:
       - web
       - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
 
 volumes:
   mongodb-data:

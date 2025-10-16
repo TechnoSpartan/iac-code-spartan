@@ -180,6 +180,55 @@ networks:
 - With isolation, databases are only accessible by their own application services
 - See `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` for detailed guide
 
+### Resource Limits
+
+**All containers MUST have resource limits** to prevent resource exhaustion and ensure system stability. Resource limits are applied using Docker Compose `deploy.resources` configuration.
+
+**Resource Allocation Guidelines:**
+
+| Service Type | Memory Limit | CPU Limit | Example |
+|-------------|--------------|-----------|---------|
+| Databases | 512M - 1G | 0.5 - 1.0 | MongoDB, VictoriaMetrics |
+| API/Backend | 512M | 0.5 | Node.js, Python APIs |
+| Frontend/Web | 512M | 0.5 | React, Vue apps |
+| Reverse Proxy | 512M | 0.5 | Traefik, Grafana, Loki |
+| Metrics Collectors | 256M | 0.25 | vmagent, Promtail, cAdvisor |
+| Static Sites | 128M | 0.25 | Nginx serving static content |
+| Exporters | 128M | 0.1 - 0.15 | Node Exporter, vmalert |
+
+**Standard Pattern:**
+
+```yaml
+services:
+  myapp:
+    # ... other configuration ...
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'      # Maximum CPU cores
+          memory: 512M     # Maximum RAM
+        reservations:
+          cpus: '0.1'      # Minimum guaranteed CPU
+          memory: 128M     # Minimum guaranteed RAM
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+```
+
+**Important Notes:**
+- Resource limits only apply when containers are CREATED/RECREATED (not to running containers)
+- To apply new limits: `docker compose down && docker compose up -d`
+- Verify limits: `docker stats --no-stream`
+- VPS has 3.4GB total RAM - sum of limits should not exceed ~4GB (containers won't all max out simultaneously)
+- Health checks enable automatic container restart on failure
+
+**Current Resource Allocation:**
+- See `codespartan/docs/RESOURCES.md` for complete breakdown
+- Total allocated: ~4.4GB RAM (safe because of diverse workloads)
+
 ### Traefik Labels Pattern
 
 Services exposed via Traefik require these labels:
@@ -247,3 +296,5 @@ Services:
 - `codespartan/docs/RUNBOOK.md` - Complete operational guide
 - `codespartan/docs/BEGINNER.md` - Step-by-step beginner tutorial
 - `codespartan/docs/GITHUB.md` - GitHub Actions CI/CD documentation
+- `codespartan/docs/RESOURCES.md` - Resource limits and management guide
+- `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` - Network isolation patterns
