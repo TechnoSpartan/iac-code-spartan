@@ -231,6 +231,23 @@ subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "nuev
 
 ## 🔄 Operaciones Rutinarias
 
+### Verificación de Recursos
+
+```bash
+# Verificar uso de recursos en tiempo real
+ssh leonidas@91.98.137.217
+docker stats --no-stream
+
+# Verificar límites aplicados
+docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}'
+
+# Contenedores que más recursos consumen
+docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}' | sort -k2 -h
+
+# Verificar salud de contenedores
+docker ps --format 'table {{.Names}}\t{{.Status}}'
+```
+
 ### Actualizaciones
 
 ```bash
@@ -238,9 +255,15 @@ subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "nuev
 git push origin main  # Activa GitHub Actions automáticamente
 
 # Actualizar stack manualmente
-ssh root@91.98.137.217
+ssh leonidas@91.98.137.217
 cd /opt/codespartan/platform/stacks/monitoring
 docker compose pull
+docker compose up -d
+
+# IMPORTANTE: Al actualizar docker-compose.yml con nuevos resource limits
+# Debes RECREAR los contenedores para aplicar los límites
+cd /opt/codespartan/apps/[app-name]
+docker compose down
 docker compose up -d
 ```
 
@@ -248,7 +271,7 @@ docker compose up -d
 
 ```bash
 # Ver logs de contenedor
-ssh root@91.98.137.217
+ssh leonidas@91.98.137.217
 docker logs traefik -f
 docker logs grafana --tail 100
 
@@ -301,6 +324,37 @@ dig traefik.mambo-cloud.com
 
 # Verificar en Hetzner Console
 # Cloud → DNS → mambo-cloud.com
+```
+
+### Problema: Contenedor consume demasiados recursos
+```bash
+# Identificar contenedor problemático
+docker stats --no-stream | sort -k4 -h
+
+# Ver límites configurados
+docker inspect [container-name] | grep -A 10 "Memory"
+
+# Aplicar límites (editar docker-compose.yml primero)
+cd /opt/codespartan/[path-to-service]
+# Agregar deploy.resources.limits en docker-compose.yml
+docker compose down
+docker compose up -d
+
+# Verificar límites aplicados
+docker stats --no-stream | grep [container-name]
+```
+
+### Problema: OOM (Out of Memory) Errors
+```bash
+# Verificar logs del sistema
+dmesg | grep -i "out of memory"
+dmesg | grep -i "oom"
+
+# Verificar qué contenedor fue matado
+docker events --filter 'event=oom' --since 1h
+
+# Solución: Incrementar límites en docker-compose.yml
+# O reducir carga/optimizar aplicación
 ```
 
 ## 💾 Backups y Recuperación
