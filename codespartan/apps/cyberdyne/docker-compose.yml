@@ -52,6 +52,14 @@ services:
     networks:
       - web           # Accesible por Traefik
       - cyberdyne_net # Red interna de la aplicación
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
 networks:
   web:
