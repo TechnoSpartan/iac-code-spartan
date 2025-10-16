@@ -243,6 +243,72 @@ labels:
   - traefik.docker.network=web
 ```
 
+## Alerting System
+
+The platform includes a complete alerting pipeline for proactive monitoring:
+
+### Architecture
+
+```
+vmalert → Alertmanager → ntfy-forwarder → ntfy.sh → Mobile/Web
+```
+
+**Components:**
+- **vmalert**: Evaluates alert rules against VictoriaMetrics metrics
+- **Alertmanager**: Groups, deduplicates, and routes alerts by severity
+- **ntfy-forwarder**: Custom webhook forwarder (Alertmanager → ntfy.sh format)
+- **ntfy.sh**: Public push notification service
+
+### Configured Alerts
+
+| Category | Alerts | Conditions |
+|----------|--------|------------|
+| Infrastructure | CPU, RAM, Disk | Warning: 80%/90%/85%, Critical: 95%/95%/95% |
+| Services | ServiceDown, ContainerDown | Down for > 2 minutes |
+| VictoriaMetrics | High Memory, Storage Issues | > 1.5GB RAM, < 5GB free disk |
+| Traefik | HTTP 5xx Errors | Warning: >10/s, Critical: >50/s |
+
+### Receiving Alerts
+
+**Mobile App (Recommended):**
+1. Install "ntfy" from [Play Store](https://play.google.com/store/apps/details?id=io.heckel.ntfy) or [App Store](https://apps.apple.com/app/ntfy/id1625396347)
+2. Subscribe to topic: `codespartan-mambo-alerts`
+
+**Web Browser:**
+- https://ntfy.sh/codespartan-mambo-alerts
+
+**Command Line:**
+```bash
+curl -s ntfy.sh/codespartan-mambo-alerts/json
+```
+
+### Alert Severities
+
+- **Critical**: Immediate notification, repeat every 1h, priority 5 (max)
+- **Warning**: 30s grouping, repeat every 12h, priority 4
+
+### Common Operations
+
+```bash
+# View active alerts
+ssh leonidas@91.98.137.217
+curl http://localhost:8880/api/v1/rules
+
+# Check alertmanager status
+curl http://localhost:9093/api/v2/alerts
+
+# Silence alert temporarily (1 hour)
+curl -X POST http://localhost:9093/api/v2/silences -H "Content-Type: application/json" -d '{
+  "matchers": [{"name": "alertname", "value": "HighCPUUsage", "isRegex": false}],
+  "startsAt": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
+  "endsAt": "'$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)'",
+  "createdBy": "admin",
+  "comment": "Maintenance window"
+}'
+```
+
+**For complete documentation**, see `codespartan/docs/ALERTS.md`
+
 ## Troubleshooting
 
 ### Service Not Accessible
@@ -297,4 +363,5 @@ Services:
 - `codespartan/docs/BEGINNER.md` - Step-by-step beginner tutorial
 - `codespartan/docs/GITHUB.md` - GitHub Actions CI/CD documentation
 - `codespartan/docs/RESOURCES.md` - Resource limits and management guide
+- `codespartan/docs/ALERTS.md` - Complete alerting system documentation
 - `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` - Network isolation patterns

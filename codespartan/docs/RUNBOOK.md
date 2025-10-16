@@ -222,12 +222,85 @@ subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "nuev
 - **Docker**: Contenedores, imágenes, volúmenes
 - **Logs**: Centralizados con Loki
 
-### Alertas
-- CPU > 80% por 5min
-- Memoria > 90% por 3min
-- Disk > 85%
-- Servicio caído por > 2min
-- Certificado SSL expira en < 7 días
+### Dashboards Sugeridos
+- **System Overview**: CPU, RAM, Disk total del VPS
+- **Container Resources**: Recursos por contenedor
+- **Traefik**: Request rate, response times, SSL status
+- **Logs Explorer**: Búsqueda de logs en Loki
+
+## 🚨 Sistema de Alertas
+
+El sistema de alertas envía notificaciones proactivas cuando se detectan problemas.
+
+### Arquitectura de Alertas
+
+```
+vmalert → Alertmanager → ntfy-forwarder → ntfy.sh → Tu móvil/web
+```
+
+### Recibir Notificaciones
+
+**App Móvil (Recomendado):**
+1. Instalar "ntfy" desde Play Store o App Store
+2. Suscribirse al topic: `codespartan-mambo-alerts`
+3. Activar notificaciones push
+
+**Browser Web:**
+- Visitar: https://ntfy.sh/codespartan-mambo-alerts
+
+**Línea de comandos:**
+```bash
+curl -s ntfy.sh/codespartan-mambo-alerts/json
+```
+
+### Alertas Configuradas
+
+| Categoría | Alerta | Condición | Severidad |
+|-----------|--------|-----------|-----------|
+| CPU | HighCPUUsage | > 80% por 5min | warning |
+| CPU | CriticalCPUUsage | > 95% por 2min | critical |
+| Memoria | HighMemoryUsage | > 90% por 3min | warning |
+| Memoria | CriticalMemoryUsage | > 95% por 1min | critical |
+| Disco | HighDiskUsage | > 85% por 5min | warning |
+| Disco | CriticalDiskUsage | > 95% por 2min | critical |
+| Servicios | ServiceDown | Servicio caído > 2min | critical |
+| Contenedores | ContainerDown | Contenedor no visto > 2min | critical |
+| VictoriaMetrics | HighMemory | > 1.5GB RAM | warning |
+| Traefik | HighHTTP5xxRate | > 10 errores/s | warning |
+| Traefik | CriticalHTTP5xxRate | > 50 errores/s | critical |
+
+### Gestión de Alertas
+
+```bash
+# Ver alertas activas
+ssh leonidas@91.98.137.217
+curl http://localhost:8880/api/v1/rules | jq '.data.groups[].rules[] | select(.state=="firing")'
+
+# Ver estado de Alertmanager
+curl http://localhost:9093/api/v2/alerts | jq '.'
+
+# Silenciar alerta por 1 hora (mantenimiento)
+curl -X POST http://localhost:9093/api/v2/silences \
+  -H "Content-Type: application/json" \
+  -d '{
+    "matchers": [{"name": "alertname", "value": "HighCPUUsage", "isRegex": false}],
+    "startsAt": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
+    "endsAt": "'$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)'",
+    "createdBy": "admin",
+    "comment": "Ventana de mantenimiento"
+  }'
+
+# Ver silenciamientos activos
+curl http://localhost:9093/api/v2/silences | jq '.[] | select(.status.state=="active")'
+```
+
+### Severidades de Alertas
+
+- **critical**: Notificación inmediata, repite cada 1 hora, prioridad máxima (5)
+- **warning**: Agrupa por 30s, repite cada 12 horas, prioridad 4
+- **info**: Agrupa por 30s, repite cada 24 horas, prioridad 3
+
+**Documentación completa**: Ver `codespartan/docs/ALERTS.md`
 
 ## 🔄 Operaciones Rutinarias
 

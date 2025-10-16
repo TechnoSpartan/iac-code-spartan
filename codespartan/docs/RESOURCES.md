@@ -33,10 +33,12 @@ Todos los contenedores en la plataforma tienen límites de recursos configurados
 | Promtail | `promtail` | 256 MB | 0.25 | ~60 MB | Log shipping |
 | cAdvisor | `cadvisor` | 256 MB | 0.25 | ~195 MB | Container metrics |
 | vmalert | `vmalert` | 128 MB | 0.15 | ~12 MB | Alerting engine |
+| **Alertmanager** | `alertmanager` | **128 MB** | **0.15** | **~8 MB** | **Alert routing & grouping** |
+| **ntfy-forwarder** | `ntfy-forwarder` | **64 MB** | **0.1** | **~6 MB** | **Webhook → ntfy.sh converter** |
 | Node Exporter | `node-exporter` | 128 MB | 0.1 | ~13 MB | System metrics |
 | Backoffice | `backoffice` | 128 MB | 0.25 | ~4 MB | Management UI |
 
-**Subtotal Platform**: 3.7 GB límite / ~749 MB uso actual
+**Subtotal Platform**: 3.9 GB límite / ~763 MB uso actual
 
 ### Application Services
 
@@ -52,10 +54,11 @@ Todos los contenedores en la plataforma tienen límites de recursos configurados
 
 ### Totales
 
-- **RAM Total Límites**: ~5.5 GB (excede VPS intencionalmente)
-- **RAM Uso Actual**: ~1.08 GB (32% del VPS)
+- **RAM Total Límites**: ~5.7 GB (excede VPS intencionalmente)
+- **RAM Uso Actual**: ~1.10 GB (32% del VPS)
 - **RAM Disponible**: ~2.3 GB (68% libre)
 - **Margen de Seguridad**: Excelente ✅
+- **Contenedores Totales**: 17 (12 platform + 5 applications)
 
 > **Nota**: La suma de límites puede exceder la RAM física porque los contenedores rara vez usan su límite máximo simultáneamente. Esto se conoce como "overcommitment" y es una práctica estándar.
 
@@ -193,6 +196,11 @@ services:
 - **RAM**: 128 MB
 - **CPU**: 0.1
 - **Razón**: Exponen métricas simple, muy livianos
+
+### Alert Systems (Alertmanager, ntfy-forwarder)
+- **RAM**: 64 - 128 MB
+- **CPU**: 0.1 - 0.15
+- **Razón**: Procesan y enrutan alertas, bajo overhead
 
 ## Troubleshooting
 
