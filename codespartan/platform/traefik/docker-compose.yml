@@ -21,6 +21,7 @@ services:
       - --metrics.prometheus=true
       - --metrics.prometheus.addEntryPointsLabels=true
       - --metrics.prometheus.addServicesLabels=true
+      - --ping=true
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik.rule=Host(`${DASHBOARD_HOST}`)
@@ -40,6 +41,20 @@ services:
       - ./dynamic-config.yml:/etc/traefik/dynamic-config.yml:ro
     networks: [web]
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 networks:
   web:
     external: true
