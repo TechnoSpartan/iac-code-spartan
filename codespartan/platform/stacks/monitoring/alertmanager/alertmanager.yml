@@ -1,0 +1,52 @@
+global:
+  resolve_timeout: 5m
+
+# Configuración de enrutamiento
+route:
+  # Agrupar alertas por nombre y severidad
+  group_by: ['alertname', 'severity', 'component']
+  group_wait: 10s        # Esperar 10s antes de enviar el primer grupo
+  group_interval: 10s    # Esperar 10s entre grupos subsecuentes
+  repeat_interval: 12h   # Re-enviar alertas cada 12 horas si persisten
+
+  # Receptor por defecto
+  receiver: 'ntfy'
+
+  # Rutas específicas por severidad
+  routes:
+    # Alertas críticas - enviar inmediatamente
+    - match:
+        severity: critical
+      receiver: 'ntfy-critical'
+      group_wait: 0s
+      repeat_interval: 1h
+
+    # Alertas de warning - agrupar más
+    - match:
+        severity: warning
+      receiver: 'ntfy'
+      group_wait: 30s
+      repeat_interval: 12h
+
+# Receptores de alertas
+receivers:
+  # Receptor por defecto (warnings)
+  - name: 'ntfy'
+    webhook_configs:
+      - url: 'http://ntfy-forwarder:8080/webhook'
+        send_resolved: true
+
+  # Receptor para alertas críticas
+  - name: 'ntfy-critical'
+    webhook_configs:
+      - url: 'http://ntfy-forwarder:8080/webhook/critical'
+        send_resolved: true
+
+# Inhibición de alertas - evitar duplicados
+inhibit_rules:
+  # Inhibir warnings si hay critical de lo mismo
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
