@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'codespartan/platform/scripts/**'
+      - 'codespartan/platform/stacks/backups/**'
       - '.github/workflows/deploy-backup-system.yml'
   workflow_dispatch:
 
@@ -22,66 +22,63 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VPS_SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create scripts directory on VPS
+      - name: Create backup scripts directory on VPS
         run: |
-          ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} "mkdir -p /opt/codespartan/scripts"
+          ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} "mkdir -p /opt/codespartan/platform/stacks/backups"
 
-      - name: Deploy backup script
+      - name: Deploy backup scripts
         run: |
-          scp codespartan/platform/scripts/backup.sh \
-            ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/opt/codespartan/scripts/backup.sh
+          scp codespartan/platform/stacks/backups/backup.sh \
+            ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/opt/codespartan/platform/stacks/backups/backup.sh
 
-      - name: Deploy restore script
-        run: |
-          scp codespartan/platform/scripts/restore.sh \
-            ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/opt/codespartan/scripts/restore.sh
+          scp codespartan/platform/stacks/backups/restore.sh \
+            ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/opt/codespartan/platform/stacks/backups/restore.sh
 
-      - name: Set script permissions
+          scp codespartan/platform/stacks/backups/setup-cron.sh \
+            ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/opt/codespartan/platform/stacks/backups/setup-cron.sh
+
+      - name: Set script permissions and create directories
         run: |
           ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} << 'EOF'
-            chmod +x /opt/codespartan/scripts/backup.sh
-            chmod +x /opt/codespartan/scripts/restore.sh
+            chmod +x /opt/codespartan/platform/stacks/backups/backup.sh
+            chmod +x /opt/codespartan/platform/stacks/backups/restore.sh
+            chmod +x /opt/codespartan/platform/stacks/backups/setup-cron.sh
+            mkdir -p /opt/backups
             echo "✅ Scripts deployed and made executable"
+            echo "✅ Backup directory created at /opt/backups"
           EOF
 
-      - name: Create backup directory
-        run: |
-          ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} << 'EOF'
-            mkdir -p /opt/codespartan/backups
-            echo "✅ Backup directory created"
-          EOF
-
-      - name: Configure cron job for daily backups
+      - name: Configure cron job for weekly backups
         run: |
           ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} << 'EOF'
             # Remove existing backup cron job if it exists
-            crontab -l 2>/dev/null | grep -v '/opt/codespartan/scripts/backup.sh' | crontab - || true
+            crontab -l 2>/dev/null | grep -v 'backup.sh' | crontab - || true
 
-            # Add new cron job (daily at 3:00 AM)
-            (crontab -l 2>/dev/null; echo "0 3 * * * /opt/codespartan/scripts/backup.sh >> /var/log/codespartan-backup.log 2>&1") | crontab -
+            # Add new cron job (weekly on Sundays at 2:00 AM)
+            (crontab -l 2>/dev/null; echo "0 2 * * 0 /opt/codespartan/platform/stacks/backups/backup.sh >> /var/log/codespartan-backup.log 2>&1") | crontab -
 
-            echo "✅ Cron job configured: Daily backups at 3:00 AM"
+            echo "✅ Cron job configured: Weekly backups on Sundays at 2:00 AM"
             echo ""
             echo "Current crontab:"
             crontab -l
           EOF
 
-      - name: Test backup script (dry run)
+      - name: Create initial backup
         run: |
           ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} << 'EOF'
-            echo "Testing backup script..."
+            echo "Creating initial backup..."
 
             # Run backup script
-            /opt/codespartan/scripts/backup.sh
+            /opt/codespartan/platform/stacks/backups/backup.sh
 
             # List created backups
             echo ""
             echo "Backups created:"
-            ls -lh /opt/codespartan/backups/
+            ls -lh /opt/backups/
 
             # Show backup info
-            if [ -f /opt/codespartan/backups/backup-*.tar.gz ]; then
-              latest_backup=$(ls -t /opt/codespartan/backups/backup-*.tar.gz | head -1)
+            if ls /opt/backups/backup_*.tar.gz 1> /dev/null 2>&1; then
+              latest_backup=$(ls -t /opt/backups/backup_*.tar.gz | head -1)
               echo ""
               echo "Latest backup details:"
               echo "  File: ${latest_backup}"
@@ -98,13 +95,22 @@ jobs:
           echo "✅ Backup system deployed successfully!"
           echo ""
           echo "📋 Summary:"
-          echo "  - backup.sh: /opt/codespartan/scripts/backup.sh"
-          echo "  - restore.sh: /opt/codespartan/scripts/restore.sh"
-          echo "  - Backup dir: /opt/codespartan/backups/"
-          echo "  - Cron schedule: Daily at 3:00 AM"
-          echo "  - Retention: 7 days local"
+          echo "  - backup.sh: /opt/codespartan/platform/stacks/backups/backup.sh"
+          echo "  - restore.sh: /opt/codespartan/platform/stacks/backups/restore.sh"
+          echo "  - setup-cron.sh: /opt/codespartan/platform/stacks/backups/setup-cron.sh"
+          echo "  - Backup dir: /opt/backups/"
+          echo "  - Cron schedule: Weekly on Sundays at 2:00 AM"
+          echo "  - Retention: Last 7 backups"
           echo ""
-          echo "📚 Next steps:"
-          echo "  1. Review backup logs: ssh root@VPS 'tail -f /var/log/codespartan-backup.log'"
-          echo "  2. Test restore: ssh root@VPS '/opt/codespartan/scripts/restore.sh /opt/codespartan/backups/backup-YYYY-MM-DD.tar.gz'"
-          echo "  3. Configure remote backup (optional): Edit backup.sh environment variables"
+          echo "📦 What gets backed up:"
+          echo "  - Grafana dashboards and datasources"
+          echo "  - VictoriaMetrics data snapshots"
+          echo "  - Loki configuration"
+          echo "  - Traefik SSL certificates (acme.json)"
+          echo "  - All configuration files (docker-compose.yml, .env, etc)"
+          echo ""
+          echo "📚 Commands:"
+          echo "  - Manual backup: ssh leonidas@91.98.137.217 'sudo /opt/codespartan/platform/stacks/backups/backup.sh'"
+          echo "  - List backups: ssh leonidas@91.98.137.217 'ls -lh /opt/backups/'"
+          echo "  - Restore backup: ssh leonidas@91.98.137.217 'sudo /opt/codespartan/platform/stacks/backups/restore.sh /opt/backups/backup_YYYYMMDD_HHMMSS.tar.gz'"
+          echo "  - View logs: ssh leonidas@91.98.137.217 'tail -f /var/log/codespartan-backup.log'"
