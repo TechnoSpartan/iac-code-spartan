@@ -281,6 +281,39 @@ docker exec promtail ls -la /var/lib/docker/containers
 curl http://localhost:3100/ready
 ```
 
+### cadvisor metrics too large (ServiceDown alert)
+
+**Problem**: `ServiceDown` alert for cadvisor repeats every hour.
+
+**Cause**: cadvisor generates metrics that exceed vmagent scrape limit (16 MB default).
+
+**Diagnosis**:
+```bash
+# Check metrics size
+docker exec cadvisor wget -O- http://localhost:8080/metrics 2>/dev/null | wc -c
+
+# Check vmagent errors
+docker logs vmagent | grep cadvisor
+# Look for: "exceeds -promscrape.maxScrapeSize=16777216"
+
+# Verify up metric
+docker exec vmagent wget -qO- "http://victoriametrics:8428/api/v1/query?query=up" | jq '.data.result[] | select(.metric.job=="cadvisor")'
+```
+
+**Solution**: Filter cadvisor metrics by disabling high-cardinality collectors.
+
+Already applied in `docker-compose.yml`:
+```yaml
+cadvisor:
+  command:
+    - --docker_only=true                    # Only Docker containers
+    - --housekeeping_interval=30s           # Reduce collection frequency
+    - --disable_metrics=disk,diskIO,tcp,udp,process,hugetlb,referenced_memory,cpu_topology,resctrl,cpuset,advtcp,memory_numa,sched
+    - --store_container_labels=false        # Don't include all container labels
+```
+
+**Result**: Metrics reduced from ~28 MB to ~180 KB (99.4% reduction).
+
 ## Backup & Recovery
 
 ### Backup Critical Data

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Simple webhook forwarder: Alertmanager → ntfy.sh
-Convierte webhooks de Alertmanager al formato de ntfy.sh
+Multi-channel webhook forwarder: Alertmanager → ntfy.sh + Discord
+Convierte webhooks de Alertmanager a múltiples formatos
 """
 
 import json
@@ -12,6 +12,7 @@ import os
 app = Flask(__name__)
 
 NTFY_URL = os.getenv('NTFY_URL', 'https://ntfy.sh/codespartan-mambo-alerts')
+DISCORD_WEBHOOK = os.getenv('DISCORD_WEBHOOK', '')
 
 def format_alert_message(alert):
     """Formatea una alerta para ntfy.sh"""
@@ -46,14 +47,115 @@ def format_alert_message(alert):
 
     return title, message, severity
 
+def send_to_discord(alert):
+    """Envía alerta a Discord usando embeds"""
+    if not DISCORD_WEBHOOK:
+        return False
+
+    status = alert.get('status', 'unknown')
+    labels = alert.get('labels', {})
+    annotations = alert.get('annotations', {})
+
+    alertname = labels.get('alertname', 'Unknown Alert')
+    severity = labels.get('severity', 'info')
+    component = labels.get('component', 'unknown')
+    instance = labels.get('instance', 'unknown')
+
+    summary = annotations.get('summary', '')
+    description = annotations.get('description', '')
+
+    # Color por severidad
+    color_map = {
+        'critical': 0xFF0000,  # Rojo
+        'warning': 0xFFA500,   # Naranja
+        'info': 0x00BFFF       # Azul
+    }
+    color = color_map.get(severity, 0x808080)
+
+    # Emoji por severidad
+    emoji_map = {
+        'critical': '🔥',
+        'warning': '⚠️',
+        'info': 'ℹ️'
+    }
+    emoji = emoji_map.get(severity, '📢')
+
+    # Estado
+    if status == 'firing':
+        title = f"{emoji} ALERTA: {alertname}"
+        footer_text = "Estado: ACTIVA"
+    else:
+        title = f"✅ RESUELTO: {alertname}"
+        footer_text = "Estado: Resuelta"
+        color = 0x00FF00  # Verde para resueltas
+
+    # Construir embed
+    embed = {
+        "title": title,
+        "description": summary,
+        "color": color,
+        "fields": [
+            {
+                "name": "Descripción",
+                "value": description[:1024] if description else "N/A",
+                "inline": False
+            },
+            {
+                "name": "Componente",
+                "value": component,
+                "inline": True
+            },
+            {
+                "name": "Instancia",
+                "value": instance,
+                "inline": True
+            },
+            {
+                "name": "Severidad",
+                "value": severity.upper(),
+                "inline": True
+            }
+        ],
+        "footer": {
+            "text": footer_text
+        },
+        "timestamp": alert.get('startsAt', alert.get('endsAt', ''))
+    }
+
+    payload = {
+        "username": "CodeSpartan Alerts",
+        "avatar_url": "https://cdn-icons-png.flaticon.com/512/3114/3114883.png",
+        "embeds": [embed]
+    }
+
+    try:
+        response = requests.post(DISCORD_WEBHOOK, json=payload)
+        if response.status_code in [200, 204]:
+            return True
+        else:
+            app.logger.error(f'Discord error: {response.status_code} - {response.text}')
+            return False
+    except Exception as e:
+        app.logger.error(f'Discord exception: {str(e)}')
+        return False
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    """Endpoint principal para todas las alertas"""
+    """Endpoint principal para todas las alertas - envía a ntfy.sh Y Discord"""
     try:
         data = request.json
         alerts = data.get('alerts', [])
 
+        ntfy_success = 0
+        discord_success = 0
+
         for alert in alerts:
+            # Enviar a Discord
+            if DISCORD_WEBHOOK:
+                if send_to_discord(alert):
+                    discord_success += 1
+
+            # Enviar a ntfy.sh
             title, message, severity = format_alert_message(alert)
 
             # Prioridad para ntfy.sh
@@ -78,10 +180,19 @@ def webhook():
             message_with_emoji = f"{title}\n\n{message}"
             response = requests.post(NTFY_URL, data=message_with_emoji.encode('utf-8'), headers=headers)
 
-            if response.status_code != 200:
+            if response.status_code == 200:
+                ntfy_success += 1
+            else:
                 app.logger.error(f'Error sending to ntfy.sh: {response.text}')
 
-        return {'status': 'ok', 'alerts_processed': len(alerts)}, 200
+        result = {
+            'status': 'ok',
+            'alerts_processed': len(alerts),
+            'ntfy_sent': ntfy_success,
+            'discord_sent': discord_success
+        }
+
+        return result, 200
 
     except Exception as e:
         app.logger.error(f'Error processing webhook: {str(e)}')
