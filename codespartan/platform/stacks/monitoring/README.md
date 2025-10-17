@@ -2,6 +2,20 @@
 
 Complete observability stack with metrics, logs, dashboards, and alerting.
 
+## Current Versions
+
+| Component | Version | Updated |
+|-----------|---------|---------|
+| VictoriaMetrics | v1.106.1 | 2025-10-17 |
+| vmagent | v1.106.1 | 2025-10-17 |
+| vmalert | v1.106.1 | 2025-10-17 |
+| Grafana | 10.4.5 | - |
+| Loki | 2.9.0 | - |
+| Promtail | 2.9.0 | - |
+| Alertmanager | v0.27.0 | - |
+| Node Exporter | v1.8.2 | - |
+| cAdvisor | v0.50.0 | 2025-10-17 |
+
 ## Stack Components
 
 ### Metrics (VictoriaMetrics)
