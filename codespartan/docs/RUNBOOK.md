@@ -430,6 +430,32 @@ docker events --filter 'event=oom' --since 1h
 # O reducir carga/optimizar aplicación
 ```
 
+### Problema: Alerta ServiceDown repetitiva para cadvisor
+```bash
+# Síntoma
+# Alerta "ServiceDown" para cadvisor cada hora en Discord/ntfy.sh
+
+# Diagnóstico
+docker logs vmagent | grep cadvisor
+# Buscar: "exceeds -promscrape.maxScrapeSize=16777216"
+
+# Verificar tamaño de métricas
+docker exec cadvisor wget -O- http://localhost:8080/metrics 2>/dev/null | wc -c
+
+# Solución ya aplicada en docker-compose.yml
+# cadvisor está configurado con filtros para reducir métricas:
+#   --docker_only=true
+#   --disable_metrics=disk,diskIO,tcp,udp,process,...
+#   --store_container_labels=false
+
+# Si el problema persiste, verificar que cadvisor use la config correcta
+docker inspect cadvisor | jq '.[0].Args'
+
+# Recrear contenedor si es necesario
+cd /opt/codespartan/platform/stacks/monitoring
+docker compose up -d cadvisor --force-recreate
+```
+
 ## 💾 Backups y Recuperación
 
 ### Datos Críticos a Respaldar

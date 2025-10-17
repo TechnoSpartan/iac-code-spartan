@@ -127,6 +127,7 @@ services:
     container_name: ntfy-forwarder
     environment:
       - NTFY_URL=https://ntfy.sh/codespartan-mambo-alerts
+      - DISCORD_WEBHOOK=https://discord.com/api/webhooks/1428474626413170861/dn_13yS7C27tQ1jdkARIgTFlLt8UkNOr_tUUZmDQCrS9rBWZQ1olrOAfCGCVlE4A8UWx
     networks:
       - monitoring
     restart: unless-stopped
@@ -139,7 +140,7 @@ services:
           cpus: '0.05'
           memory: 32M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -240,6 +241,11 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
     container_name: cadvisor
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=30s
+      - --disable_metrics=disk,diskIO,tcp,udp,process,hugetlb,referenced_memory,cpu_topology,resctrl,cpuset,advtcp,memory_numa,sched
+      - --store_container_labels=false
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro

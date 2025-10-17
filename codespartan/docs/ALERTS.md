@@ -2,18 +2,19 @@
 
 ## Arquitectura
 
-El sistema de alertas usa un pipeline de 3 componentes:
+El sistema de alertas usa un pipeline multi-canal:
 
 ```
-vmalert → Alertmanager → ntfy-forwarder → ntfy.sh
+vmalert → Alertmanager → ntfy-forwarder → ntfy.sh + Discord
 ```
 
 ### Componentes
 
 1. **vmalert** - Evalúa reglas de alertas contra métricas de VictoriaMetrics
 2. **Alertmanager** - Agrupa, deduplica y enruta alertas
-3. **ntfy-forwarder** - Convierte webhooks de Alertmanager a notificaciones ntfy.sh
-4. **ntfy.sh** - Servicio público de notificaciones push
+3. **ntfy-forwarder** - Convierte webhooks de Alertmanager a múltiples formatos (ntfy.sh + Discord)
+4. **ntfy.sh** - Servicio público de notificaciones push móviles
+5. **Discord** - Notificaciones con rich embeds en servidor Discord
 
 ## Reglas de Alertas Configuradas
 
@@ -116,6 +117,30 @@ curl -s ntfy.sh/codespartan-mambo-alerts/json | while read msg; do
   echo "$(date): $msg"
 done
 ```
+
+### Opción 4: Discord (Recomendado para Equipos)
+
+Las alertas también se envían automáticamente a Discord con formato **rich embed**:
+
+**Características:**
+- ✅ **Colores por severidad**: Rojo (critical), Naranja (warning), Azul (info), Verde (resolved)
+- ✅ **Emojis visuales**: 🔥 critical, ⚠️ warning, ℹ️ info, ✅ resolved
+- ✅ **Información estructurada**: Description, Componente, Instancia, Severidad
+- ✅ **Timestamps** automáticos
+
+**Configuración:**
+El webhook de Discord está configurado en `docker-compose.yml`:
+```yaml
+environment:
+  - DISCORD_WEBHOOK=https://discord.com/api/webhooks/YOUR_WEBHOOK_ID
+```
+
+**Ejemplo de alerta en Discord:**
+- **Título**: 🔥 ALERTA: ServiceDown
+- **Color**: Rojo (#FF0000)
+- **Fields**: Componente, Instancia, Severidad
+- **Footer**: Estado: ACTIVA
+- **Bot Name**: CodeSpartan Alerts
 
 ## Gestión de Alertas
 
@@ -286,6 +311,35 @@ inhibit_rules:
 grep -A 5 "webhook_configs:" alertmanager/alertmanager.yml
 # Debería mostrar: send_resolved: true
 ```
+
+### Alerta ServiceDown para cadvisor (Métricas demasiado grandes)
+
+**Síntoma**: Alerta `ServiceDown` para cadvisor se repite cada hora.
+
+**Causa**: cadvisor genera métricas que exceden el límite de scrape de vmagent (16 MB por defecto).
+
+**Diagnóstico**:
+```bash
+# Ver tamaño de métricas de cadvisor
+docker exec cadvisor wget -O- http://localhost:8080/metrics 2>/dev/null | wc -c
+
+# Ver errores de vmagent
+docker logs vmagent | grep cadvisor
+# Buscar: "exceeds -promscrape.maxScrapeSize=16777216"
+```
+
+**Solución Aplicada**:
+Filtrar métricas de cadvisor en `docker-compose.yml`:
+```yaml
+cadvisor:
+  command:
+    - --docker_only=true
+    - --housekeeping_interval=30s
+    - --disable_metrics=disk,diskIO,tcp,udp,process,hugetlb,referenced_memory,cpu_topology,resctrl,cpuset,advtcp,memory_numa,sched
+    - --store_container_labels=false
+```
+
+**Resultado**: Métricas reducidas de ~28 MB a ~180 KB (99.4% reducción).
 
 ## Integración con Otros Servicios
 

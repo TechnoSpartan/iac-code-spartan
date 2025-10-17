@@ -14,6 +14,23 @@ scrape_configs:
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
+    metric_relabel_configs:
+      # Drop high-cardinality metrics
+      - source_labels: [__name__]
+        regex: 'container_(network_tcp_usage_total|network_udp_usage_total|tasks_state|cpu_usage_seconds_total|memory_failures_total)'
+        action: drop
+      # Drop per-process metrics (high cardinality)
+      - source_labels: [__name__]
+        regex: 'container_processes.*'
+        action: drop
+      # Drop detailed filesystem metrics except usage
+      - source_labels: [__name__]
+        regex: 'container_fs_(inodes_free|inodes_total|io_.*|reads_.*|writes_.*|sector_.*)'
+        action: drop
+      # Keep only running containers (drop stopped/exited)
+      - source_labels: [container_label_com_docker_compose_project]
+        regex: ''
+        action: drop
 
   - job_name: 'node-exporter'
     static_configs:
