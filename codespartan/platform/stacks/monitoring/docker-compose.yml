@@ -1,7 +1,6 @@
-version: '3.8'
 services:
   victoriametrics:
-    image: victoriametrics/victoria-metrics:v1.93.0
+    image: victoriametrics/victoria-metrics:v1.106.1
     container_name: victoriametrics
     command:
       - -storageDataPath=/storage
@@ -28,7 +27,7 @@ services:
       start_period: 40s
 
   vmagent:
-    image: victoriametrics/vmagent:v1.93.0
+    image: victoriametrics/vmagent:v1.106.1
     container_name: vmagent
     command:
       - -promscrape.config=/etc/prometheus/prometheus.yml
@@ -57,7 +56,7 @@ services:
       start_period: 20s
 
   vmalert:
-    image: victoriametrics/vmalert:v1.93.0
+    image: victoriametrics/vmalert:v1.106.1
     container_name: vmalert
     command:
       - -datasource.url=http://victoriametrics:8428
@@ -239,7 +238,7 @@ services:
       start_period: 40s
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    image: gcr.io/cadvisor/cadvisor:v0.50.0
     container_name: cadvisor
     command:
       - --docker_only=true
