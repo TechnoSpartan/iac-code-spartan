@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   backoffice:
     image: nginx:alpine
