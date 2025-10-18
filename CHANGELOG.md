@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2025-10-18
+
+### Changed
+- **Grafana Update** (FASE 2):
+  - Grafana: 10.4.5 → 11.3.1
+  - Major version upgrade with new features:
+    - Scenes-powered dashboards (GA)
+    - Explore Logs plugin auto-installed
+    - Enhanced performance and security
+
+### Fixed
+- Traefik middleware configuration issue
+  - Removed invalid `tcp: {}` standalone element from dynamic-config.yml
+  - Fixed "middleware does not exist" errors for all services
+  - Restored access to Grafana, Backoffice, and Traefik dashboard
+
+### Technical Details
+- All datasources verified working (VictoriaMetrics, Loki)
+- 9 dashboards successfully migrated and functional
+- No breaking changes affecting current configuration
+- AngularJS plugins not used, no compatibility issues
+
 ## [1.6.0] - 2025-10-17
 
 ### Added
