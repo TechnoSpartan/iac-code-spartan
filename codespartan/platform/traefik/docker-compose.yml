@@ -1,10 +1,11 @@
 services:
   traefik:
-    image: traefik:v2.11
+    image: traefik:v3.2
     container_name: traefik
     command:
       - --api.dashboard=true
       - --api.insecure=false
+      - --core.defaultRuleSyntax=v2
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
