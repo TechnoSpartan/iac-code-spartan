@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2025-10-18
+
+### Changed
+- **Loki/Promtail Update** (FASE 3A):
+  - Loki: 2.9.0 → 3.2.1
+  - Promtail: 2.9.0 → 3.2.1
+  - Migrated from boltdb-shipper + v11 schema to TSDB + v13 schema
+  - Maintained historical data compatibility with dual schema periods
+  - Enabled structured metadata support
+
+- **Traefik Update** (FASE 3B):
+  - Traefik: v2.11 → v3.2
+  - Added `--core.defaultRuleSyntax=v2` for backward compatibility
+  - All Docker labels remain compatible with v2 syntax
+  - Zero downtime migration achieved
+
+### Technical Details
+
+**Loki 3.2 Migration**:
+- Added new schema period (2025-10-18) with TSDB + v13
+- Preserved historical data with boltdb-shipper + v11 (2023-01-01)
+- Removed deprecated `shared_store` from compactor
+- Added `delete_request_store: filesystem` configuration
+- Removed deprecated `max_look_back_period` from chunk_store_config
+- Verified log ingestion from 18 containers
+
+**Traefik v3 Migration**:
+- Backward compatible upgrade using core.defaultRuleSyntax=v2
+- All existing routing rules work without modification
+- Verified access to critical services:
+  - Grafana (302 redirect)
+  - Backoffice (401 auth)
+  - Traefik Dashboard (401 auth)
+
 ## [1.7.0] - 2025-10-18
 
 ### Changed

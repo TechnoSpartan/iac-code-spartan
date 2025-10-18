@@ -146,7 +146,7 @@ services:
       start_period: 10s
 
   loki:
-    image: grafana/loki:2.9.0
+    image: grafana/loki:3.2.1
     container_name: loki
     command: -config.file=/etc/loki/loki.yml
     volumes:
@@ -171,7 +171,7 @@ services:
       start_period: 30s
 
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:3.2.1
     container_name: promtail
     command: -config.file=/etc/promtail/promtail.yml
     volumes:
