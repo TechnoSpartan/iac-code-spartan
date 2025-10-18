@@ -54,9 +54,6 @@ http:
         accessControlMaxAge: 100
         addVaryHeader: true
 
-# TCP configuration (if needed)
-tcp: {}
-
 # TLS configuration (if needed)
 tls:
   options:
