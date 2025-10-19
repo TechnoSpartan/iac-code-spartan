@@ -25,7 +25,17 @@
       "Read(//Users/krbaio3/Worker/@CodeSpartan/ft-rc-bko-dummy/**)",
       "Bash(mkdir:*)",
       "Bash(gh run view:*)",
-      "Bash(gh workflow run:*)"
+      "Bash(gh workflow run:*)",
+      "Read(//Users/krbaio3/Worker/@CodeSpartan/ms-nd-bko-trucksworks/**)",
+      "Read(//Users/krbaio3/Worker/@CodeSpartan/**)",
+      "Bash(gh run watch:*)",
+      "Bash(dig:*)",
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "Bash(gh api:*)",
+      "Bash(gh secret:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
