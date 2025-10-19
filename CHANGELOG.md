@@ -23,6 +23,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All Docker labels remain compatible with v2 syntax
   - Zero downtime migration achieved
 
+### Fixed
+- **Grafana datasource backward compatibility**:
+  - Removed `deleteDatasources` directive that was deleting Prometheus datasource on restart
+  - Added "Prometheus" datasource (UID: Prometheus) pointing to VictoriaMetrics
+  - Enables legacy dashboards expecting "Prometheus" UID to work alongside new VictoriaMetrics datasource
+
+- **VictoriaMetrics healthcheck IPv4/IPv6 issue**:
+  - Changed healthcheck URL from `localhost` to `127.0.0.1`
+  - Resolved container showing "unhealthy" due to IPv6 resolution
+  - VictoriaMetrics listens on IPv4 0.0.0.0:8428, but `localhost` was resolving to IPv6 [::1]
+
+### Known Issues
+- Some pre-existing Grafana dashboards require reconfiguration:
+  - Docker monitoring dashboard: panels have null datasource/targets
+  - Prometheus Stats dashboard: queries for non-existent `job="prometheus"`
+  - VictoriaMetrics dashboard: panels have null datasource/targets
+- Dashboard troubleshooting postponed for future work session
+
 ### Technical Details
 
 **Loki 3.2 Migration**:
