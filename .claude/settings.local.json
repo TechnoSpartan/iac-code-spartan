@@ -26,9 +26,19 @@
       "Bash(mkdir:*)",
       "Bash(gh run view:*)",
       "Bash(gh workflow run:*)",
+      "Read(//Users/krbaio3/Worker/@CodeSpartan/ms-nd-bko-trucksworks/**)",
+      "Read(//Users/krbaio3/Worker/@CodeSpartan/**)",
+      "Bash(gh run watch:*)",
+      "Bash(dig:*)",
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "Bash(gh api:*)",
+      "Bash(git pull:*)",
+      "Bash(gh secret:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
