@@ -25,7 +25,10 @@
       "Read(//Users/krbaio3/Worker/@CodeSpartan/ft-rc-bko-dummy/**)",
       "Bash(mkdir:*)",
       "Bash(gh run view:*)",
-      "Bash(gh workflow run:*)"
+      "Bash(gh workflow run:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
