@@ -49,7 +49,7 @@ services:
           cpus: '0.05'
           memory: 64M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8429/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8429/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -83,14 +83,14 @@ services:
           cpus: '0.05'
           memory: 64M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8880/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8880/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 20s
 
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: prom/alertmanager:v0.28.1
     container_name: alertmanager
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
@@ -271,7 +271,7 @@ services:
       start_period: 20s
 
   node-exporter:
-    image: prom/node-exporter:v1.8.2
+    image: prom/node-exporter:v1.9.1
     container_name: node-exporter
     pid: host
     volumes:

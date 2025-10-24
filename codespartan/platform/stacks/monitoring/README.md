@@ -12,8 +12,8 @@ Complete observability stack with metrics, logs, dashboards, and alerting.
 | Grafana | 11.3.1 | 2025-10-18 |
 | Loki | 3.2.1 | 2025-10-18 |
 | Promtail | 3.2.1 | 2025-10-18 |
-| Alertmanager | v0.27.0 | - |
-| Node Exporter | v1.8.2 | - |
+| Alertmanager | v0.28.1 | 2025-10-19 |
+| Node Exporter | v1.9.1 | 2025-10-19 |
 | cAdvisor | v0.50.0 | 2025-10-17 |
 
 ## Stack Components

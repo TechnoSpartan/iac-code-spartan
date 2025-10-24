@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2025-10-19
+
+### Changed
+- **Alertmanager & Node Exporter Updates** (FASE 4):
+  - Alertmanager: v0.27.0 → v0.28.1
+  - Node Exporter: v1.8.2 → v1.9.1
+  - Both updates include internal logging system migration to log/slog
+  - No breaking changes in configuration or functionality
+
+### Fixed
+- **IPv4/IPv6 healthcheck issues**:
+  - Fixed vmagent healthcheck (localhost → 127.0.0.1)
+  - Fixed vmalert healthcheck (localhost → 127.0.0.1)
+  - Resolved containers showing "unhealthy" status despite functioning correctly
+  - All VictoriaMetrics stack components now report "healthy" status
+
+### Technical Details
+
+**Alertmanager v0.28.1**:
+- New integrations available: Microsoft Teams (Flows), Rocket.Chat, Jira
+- Improved template functions (since, humanizeDuration, date, tz)
+- Support for silences limits and GOMEMLIMIT/GOMAXPROCS configuration
+- Current configuration unaffected (using ntfy-forwarder webhook)
+
+**Node Exporter v1.9.1**:
+- Performance improvements in Linux filesystem collector
+- Enhanced platform support (NetBSD, AIX)
+- Deprecated collectors (NTP, Supervisord) not in use
+- All metrics collection verified and operational
+
 ## [1.8.0] - 2025-10-18
 
 ### Changed
