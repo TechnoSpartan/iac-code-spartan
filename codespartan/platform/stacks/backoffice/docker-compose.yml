@@ -1,6 +1,6 @@
 services:
   backoffice:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     container_name: backoffice
     volumes:
       - ./html:/usr/share/nginx/html:ro
