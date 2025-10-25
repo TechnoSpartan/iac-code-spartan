@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2025-10-19
+
+### Changed
+- **Platform Services Updates** (FASE 5):
+  - ntfy-forwarder: Updated to Python 3.13-alpine base image
+  - ntfy-forwarder: Pinned dependency versions for reproducible builds
+    - Flask: 3.1.2
+    - requests: 2.32.5
+    - gunicorn: 23.0.0
+  - backoffice: Updated nginx from `alpine` to `stable-alpine` (v1.28.0)
+
+### Technical Details
+
+**ntfy-forwarder**:
+- Python 3.11-alpine → 3.13.9-alpine
+- Fixed dependency versions for reproducible builds and security tracking
+- All dependencies updated to latest stable versions (August 2025)
+- Health endpoint verified operational
+- Alert forwarding to ntfy.sh and Discord confirmed working
+
+**backoffice**:
+- nginx:alpine → nginx:stable-alpine (v1.28.0)
+- Ensures stable, predictable nginx version
+- Service accessible via Traefik with basic auth working
+- HTTP 200 response with valid credentials confirmed
+
 ## [1.9.0] - 2025-10-19
 
 ### Changed
