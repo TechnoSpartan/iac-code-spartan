@@ -1,6 +1,6 @@
 services:
   web:
-    image: traefik/whoami:v1.10
+    image: traefik/whoami:v1.11.0
     container_name: dental-io-web
     labels:
       - traefik.enable=true
@@ -29,12 +29,8 @@ services:
         reservations:
           cpus: '0.05'
           memory: 32M
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+    # Note: traefik/whoami is a minimal scratch image without wget/curl
+    # Healthcheck not needed - Traefik handles health monitoring
 networks:
   web:
     external: true

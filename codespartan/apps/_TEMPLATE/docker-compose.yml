@@ -1,8 +1,8 @@
 
 services:
   app:
-    # Replace with your application image (e.g., node:18-alpine, python:3.11-slim, nginx:alpine)
-    image: nginx:alpine
+    # Replace with your application image (e.g., node:18-alpine, python:3.11-slim, nginx:stable-alpine)
+    image: nginx:stable-alpine
     container_name: ${APP_NAME:-myapp}-app
 
     # Traefik labels for automatic routing and SSL
