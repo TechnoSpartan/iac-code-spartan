@@ -1,7 +1,7 @@
 
 services:
   app:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     container_name: mambo-cloud-app
     labels:
       - traefik.enable=true
