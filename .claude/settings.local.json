@@ -38,7 +38,8 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(python3:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(gh pr view:*)"
     ],
     "deny": [],
     "ask": []
