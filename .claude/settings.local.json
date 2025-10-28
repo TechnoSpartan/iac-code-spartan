@@ -39,7 +39,8 @@
       "WebFetch(domain:github.com)",
       "Bash(python3:*)",
       "Bash(git fetch:*)",
-      "Bash(gh pr view:*)"
+      "Bash(gh pr view:*)",
+      "Read(//Users/krbaio3/.ssh/**)"
     ],
     "deny": [],
     "ask": []
