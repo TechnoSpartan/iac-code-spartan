@@ -29,7 +29,7 @@ services:
           memory: 256M
 
   api:
-    image: ghcr.io/technospartan/ms-nd-bko-trucksworks:latest
+    image: ghcr.io/technospartan/ms-nd-bko-trackworks:latest
     platform: linux/amd64
     container_name: truckworks-api
     restart: unless-stopped
