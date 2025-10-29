@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1] - 2025-10-29
+
+### Fixed
+- **Backend API Image Name Correction** (FASE 7):
+  - Fixed Docker image repository name in cyberdyne/backend
+  - Corrected: `ms-nd-bko-trucksworks` → `ms-nd-bko-trackworks`
+  - Ensures consistency across all Cyberdyne services
+
+### Verification
+- Backend API (production) running healthy with correct image
+- MongoDB connectivity confirmed operational
+- API health endpoint responding correctly
+- Staging environment also using correct image name
+
+### Technical Details
+- Repository name typo corrected in docker-compose.yml
+- No service interruption (containers already running with correct image)
+- Backend networks: web (external) + backend_trackworks (internal)
+- API uptime: 12+ hours, stable operation confirmed
+
 ## [1.11.0] - 2025-10-26
 
 ### Changed
