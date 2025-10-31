@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2025-10-30
+
+### Changed
+- **MongoDB Major Version Upgrade** (FASE 8):
+  - MongoDB: 7.0.25 → 8.0.15 (production and staging)
+  - Updated Feature Compatibility Version (FCV) to 8.0
+  - Switched from mongo:7-jammy to mongo:8.0 image
+  - Both environments upgraded successfully with zero data loss
+
+### Fixed
+- Removed `platform: linux/amd64` from production API configuration
+  - VPS is ARM64, forcing AMD64 caused platform mismatch
+  - API now runs natively on ARM64 architecture
+- Added `pull_policy: never` to prevent unnecessary image pulls
+
+### Technical Details
+
+**MongoDB 8.0 Upgrade Process**:
+- Created backups before upgrade (production + staging)
+- Tested staging environment first before production
+- Set FCV 8.0 with confirmation on both databases
+- All collections preserved: users (1 doc), tasks (1 doc), sync_log (0 docs)
+
+**Staging Environment**:
+- MongoDB: 8.0.15 running on trackworks-mongodb-staging
+- API: trackworks-api-staging healthy and operational
+- Database: trackworks (no authentication)
+- Uptime: 2+ hours stable operation
+
+**Production Environment**:
+- MongoDB: 8.0.15 running on truckworks-mongodb
+- API: truckworks-api healthy and operational
+- Database: truckworks (authenticated with credentials)
+- API endpoint: https://api.cyberdyne-systems.es
+- Uptime: Verified healthy with 84+ seconds
+
+**Note**: MongoDB 8.0 upgrade with FCV 8.0 cannot be downgraded without MongoDB support assistance. This is an irreversible change that enables all MongoDB 8.0 features.
+
 ## [1.11.1] - 2025-10-29
 
 ### Fixed
