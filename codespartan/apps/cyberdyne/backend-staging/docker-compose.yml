@@ -1,0 +1,83 @@
+services:
+  mongodb:
+    image: mongo:7-jammy
+    container_name: trackworks-mongodb-staging
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_DATABASE=trackworks
+    volumes:
+      - trackworks-mongodb-staging-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - trackworks-staging
+
+  api:
+    image: ghcr.io/technospartan/ms-nd-bko-trackworks:staging-latest
+    container_name: trackworks-api-staging
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    ports:
+      - "3002:3001"
+    environment:
+      - NODE_ENV=staging
+      - PORT=3001
+      - API_VERSION=v1
+      - ALLOWED_ORIGINS=https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es
+      - USE_DATABASE=true
+      - MONGODB_URI=mongodb://mongodb:27017/trackworks
+      - API_BASE_PATH=/api
+      - LOG_LEVEL=debug
+    volumes:
+      - trackworks-staging-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.trackworks-api-staging.rule=Host(`api-staging.cyberdyne-systems.es`)
+      - traefik.http.routers.trackworks-api-staging.entrypoints=websecure
+      - traefik.http.routers.trackworks-api-staging.tls=true
+      - traefik.http.routers.trackworks-api-staging.tls.certresolver=le
+      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
+      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolallowheaders=*
+      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolalloworiginlist=https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es
+      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.trackworks-api-staging-cors.headers.addvaryheader=true
+      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolallowcredentials=true
+      - traefik.http.routers.trackworks-api-staging.middlewares=trackworks-api-staging-cors
+      - traefik.docker.network=web
+      - traefik.http.services.trackworks-api-staging.loadbalancer.server.port=3001
+    networks:
+      - web
+      - trackworks-staging
+
+volumes:
+  trackworks-staging-data:
+    driver: local
+  trackworks-mongodb-staging-data:
+    driver: local
+
+networks:
+  web:
+    external: true
+  trackworks-staging:
+    driver: bridge
