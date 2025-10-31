@@ -1,7 +1,7 @@
 services:
   mongodb:
-    image: mongo:7-jammy
-    container_name: trackworks-mongodb
+    image: mongo:8.0
+    container_name: truckworks-mongodb
     restart: unless-stopped
     environment:
       - MONGO_INITDB_DATABASE=trackworks
@@ -23,7 +23,8 @@ services:
 
   api:
     image: ghcr.io/technospartan/ms-nd-bko-trackworks:latest
-    container_name: trackworks-api
+    pull_policy: never
+    container_name: truckworks-api
     restart: unless-stopped
     depends_on:
       - mongodb
