@@ -17,7 +17,7 @@ Asegúrate de que tu repositorio de IaC (`iac-code-spartan`) tenga estos secrets
 
 ### 2. Repositorio de la API
 
-El repositorio `ms-nd-bko-truckworks` debe tener:
+El repositorio `ms-nd-bko-trackworks` debe tener:
 
 - ✅ Un `Dockerfile` en la raíz que construya la imagen de la API
 - ✅ Un endpoint `/health` que responda con status 200 OK
@@ -170,7 +170,7 @@ El workflow registra métricas en `/tmp/deploy_metrics.txt`:
 
 Para desplegar una nueva versión de la API:
 
-1. Haz cambios en el repositorio `ms-nd-bko-truckworks`
+1. Haz cambios en el repositorio `ms-nd-bko-trackworks`
 2. Ejecuta el workflow "Deploy Cyberdyne API" manualmente desde GitHub Actions
 3. El workflow:
    - Construirá la nueva imagen Docker

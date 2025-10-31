@@ -6,7 +6,7 @@ Infraestructura para el despliegue de la aplicación TruckWorks en cyberdyne-sys
 
 ```
 cyberdyne/
-├── backend/          # API Backend (ms-nd-bko-truckworks)
+├── backend/          # API Backend (ms-nd-bko-trackworks)
 │   └── docker-compose.yml
 └── frontend/         # Frontend React (ft-rc-bko-dummy)
     └── docker-compose.yml
@@ -18,7 +18,7 @@ cyberdyne/
 - **Dominio principal**: `api.cyberdyne-systems.es`
 - **Puerto**: 3001
 - **Healthcheck**: `/api/v1/health`
-- **Imagen Docker**: `ghcr.io/krbaio3/ms-nd-bko-truckworks:latest`
+- **Imagen Docker**: `ghcr.io/krbaio3/ms-nd-bko-trackworks:latest`
 
 ### Frontend
 - **Dominio principal**: `www.cyberdyne-systems.es`
