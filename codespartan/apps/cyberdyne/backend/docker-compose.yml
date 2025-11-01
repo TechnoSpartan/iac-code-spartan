@@ -1,9 +1,11 @@
 services:
   mongodb:
     image: mongo:8.0
-    container_name: truckworks-mongodb
+    container_name: trackworks-mongodb
     restart: unless-stopped
     environment:
+      - MONGO_INITDB_ROOT_USERNAME=trackworks
+      - MONGO_INITDB_ROOT_PASSWORD=trackworks_secure_password_2025
       - MONGO_INITDB_DATABASE=trackworks
     volumes:
       - trackworks-mongodb-data:/data/db
@@ -24,7 +26,7 @@ services:
   api:
     image: ghcr.io/technospartan/ms-nd-bko-trackworks:latest
     pull_policy: never
-    container_name: truckworks-api
+    container_name: trackworks-api
     restart: unless-stopped
     depends_on:
       - mongodb
@@ -36,7 +38,7 @@ services:
       - API_VERSION=v1
       - ALLOWED_ORIGINS=https://cyberdyne-systems.es,https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://api.cyberdyne-systems.es
       - USE_DATABASE=true
-      - MONGODB_URI=mongodb://mongodb:27017/trackworks
+      - MONGODB_URI=mongodb://trackworks:trackworks_secure_password_2025@mongodb:27017/trackworks?authSource=admin
       - API_BASE_PATH=/api
       - LOG_LEVEL=info
     volumes:
