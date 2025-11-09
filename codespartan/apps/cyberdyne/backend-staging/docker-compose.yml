@@ -2,6 +2,8 @@ services:
   mongodb:
     image: mongo:8.0
     container_name: trackworks-mongodb-staging
+    ports:
+      - "27018:27017"
     restart: unless-stopped
     environment:
       - MONGO_INITDB_DATABASE=trackworks
