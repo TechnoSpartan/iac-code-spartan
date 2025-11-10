@@ -1,0 +1,27 @@
+name: Diagnostic - VPS Structure
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-vps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check VPS directory structure
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== /opt/codespartan/apps structure ==="
+            ls -la /opt/codespartan/apps/ 2>/dev/null || echo "Directory doesn't exist"
+            echo ""
+            echo "=== Subdirectories in apps/ ==="
+            find /opt/codespartan/apps -maxdepth 2 -type d 2>/dev/null | sort || echo "No subdirs"
+            echo ""
+            echo "=== Running Docker containers ==="
+            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E "(cyberdyne|dental|mambo|openproject)" || echo "No matching containers"
+            echo ""
+            echo "=== Traefik status ==="
+            docker ps | grep traefik || echo "Traefik not running"
