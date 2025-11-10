@@ -1,0 +1,30 @@
+name: VPS Diagnostics
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check structure and containers
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== /opt/codespartan/apps structure ==="
+            ls -la /opt/codespartan/apps/ || echo "apps/ doesn't exist"
+            echo ""
+            echo "=== All subdirectories in apps/ ==="
+            find /opt/codespartan/apps -maxdepth 2 -type d | sort || echo "No subdirs"
+            echo ""
+            echo "=== Files in apps subdirectories ==="
+            find /opt/codespartan/apps -name "docker-compose.yml" | sort || echo "No docker-compose files"
+            echo ""
+            echo "=== Running Docker containers ==="
+            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+            echo ""
+            echo "=== Docker networks ==="
+            docker network ls
