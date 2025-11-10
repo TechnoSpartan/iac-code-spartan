@@ -71,13 +71,13 @@ jobs:
           echo "Looking for server..."
           SERVER_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
             https://api.hetzner.cloud/v1/servers | \
-            jq -r '.servers[] | select(.name=="codespartan-vps") | .id')
+            jq -r '.servers[] | select(.name=="CodeSpartan-alma") | .id')
 
           if [ -n "$SERVER_ID" ]; then
             echo "Found server with ID: $SERVER_ID, importing..."
             terraform import 'hcloud_server.vps' "$SERVER_ID" || echo "Server already imported"
           else
-            echo "Server 'codespartan-vps' not found in Hetzner Cloud"
+            echo "Server 'CodeSpartan-alma' not found in Hetzner Cloud"
           fi
 
           # Obtener zonas DNS y importar si existen
