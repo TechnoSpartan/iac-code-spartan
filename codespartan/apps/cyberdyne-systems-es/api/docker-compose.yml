@@ -1,0 +1,85 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: trackworks-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=truckworks
+      - MONGO_INITDB_ROOT_PASSWORD=truckworks_secure_password_2025
+      - MONGO_INITDB_DATABASE=trackworks
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - trackworks
+
+  api:
+    image: ghcr.io/technospartan/ms-nd-bko-trackworks:latest
+    container_name: trackworks-api
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - API_VERSION=v1
+      - ALLOWED_ORIGINS=https://cyberdyne-systems.es,https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://api.cyberdyne-systems.es
+      - USE_DATABASE=true
+      - MONGODB_URI=mongodb://truckworks:truckworks_secure_password_2025@mongodb:27017/trackworks?authSource=admin
+      - API_BASE_PATH=/api
+      - LOG_LEVEL=info
+    volumes:
+      - trackworks-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.trackworks-api.rule=Host(`api.cyberdyne-systems.es`)
+      - traefik.http.routers.trackworks-api.entrypoints=websecure
+      - traefik.http.routers.trackworks-api.tls=true
+      - traefik.http.routers.trackworks-api.tls.certresolver=le
+      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
+      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolallowheaders=*
+      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolalloworiginlist=https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://cyberdyne-systems.es
+      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolmaxage=100
+      - traefik.http.middlewares.trackworks-api-cors.headers.addvaryheader=true
+      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolallowcredentials=true
+      - traefik.http.routers.trackworks-api.middlewares=trackworks-api-cors
+      - traefik.docker.network=web
+      - traefik.http.services.trackworks-api.loadbalancer.server.port=3001
+    networks:
+      - web
+      - trackworks
+
+volumes:
+  trackworks-data:
+    driver: local
+  mongodb-data:
+    driver: local
+
+networks:
+  web:
+    external: true
+  trackworks:
+    driver: bridge

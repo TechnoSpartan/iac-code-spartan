@@ -15,8 +15,8 @@ firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]
 
 # DNS (Hetzner DNS)
 # Nota: codespartan.es (www en Hostinger/WordPress) no se gestiona aquí.
-domains    = ["mambo-cloud.com", "cyberdyne-systems.es"]
-subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "api", "api-staging", "project"]
+domains    = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud"]
+subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo"]
 
 # IPv4/IPv6 concretos para los registros A/AAAA
 manual_ipv4_address  = "91.98.137.217"
