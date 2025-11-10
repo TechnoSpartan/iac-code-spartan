@@ -1,0 +1,41 @@
+name: Diagnostic Check - Server and DNS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List all servers in Hetzner Cloud
+        run: |
+          echo "=== All Servers in Hetzner Cloud ==="
+          curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
+            https://api.hetzner.cloud/v1/servers | \
+            jq -r '.servers[] | "Name: \(.name), ID: \(.id), IPv4: \(.public_net.ipv4.ip)"'
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+
+      - name: List all DNS zones
+        run: |
+          echo "=== All DNS Zones ==="
+          curl -s -H "Auth-API-Token: $TF_VAR_hetzner_dns_token" \
+            https://dns.hetzner.com/api/v1/zones | \
+            jq -r '.zones[] | "Name: \(.name), ID: \(.id), Records: \(.records_count)"'
+        env:
+          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
+
+      - name: List DNS records for mambo-cloud.com
+        run: |
+          echo "=== DNS Records for mambo-cloud.com ==="
+          ZONE_ID=$(curl -s -H "Auth-API-Token: $TF_VAR_hetzner_dns_token" \
+            https://dns.hetzner.com/api/v1/zones | \
+            jq -r '.zones[] | select(.name=="mambo-cloud.com") | .id')
+
+          echo "Zone ID: $ZONE_ID"
+
+          curl -s -H "Auth-API-Token: $TF_VAR_hetzner_dns_token" \
+            "https://dns.hetzner.com/api/v1/records?zone_id=$ZONE_ID" | \
+            jq -r '.records[] | "\(.type) \(.name) -> \(.value) (ID: \(.id))"'
+        env:
+          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
