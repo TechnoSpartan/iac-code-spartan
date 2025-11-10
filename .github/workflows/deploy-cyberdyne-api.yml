@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'codespartan/apps/cyberdyne/backend/**'
+      - 'codespartan/apps/cyberdyne-systems-es/api/**'
 
 jobs:
   deploy:
@@ -19,9 +19,9 @@ jobs:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "codespartan/apps/cyberdyne/backend/docker-compose.yml"
-          target: "/opt/codespartan/apps/cyberdyne/backend/"
-          strip_components: 4
+          source: "codespartan/apps/cyberdyne-systems-es/api/docker-compose.yml"
+          target: "/opt/codespartan/apps/cyberdyne-systems-es/api/"
+          strip_components: 5
 
       - name: Deploy API on VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -34,7 +34,7 @@ jobs:
           envs: GHCR_TOKEN
           script: |
             set -euo pipefail
-            cd /opt/codespartan/apps/cyberdyne/backend
+            cd /opt/codespartan/apps/cyberdyne-systems-es/api
 
             DEPLOY_START=$(date +%s)
 

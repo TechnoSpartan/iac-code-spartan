@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'codespartan/apps/mambo-cloud/**'
+      - 'codespartan/apps/mambo-cloud-com/www/**'
 
 jobs:
   deploy:
@@ -15,7 +15,7 @@ jobs:
       - name: Prepare files
         run: |
           mkdir -p artifacts/mambo-cloud
-          cp -r codespartan/apps/mambo-cloud/* artifacts/mambo-cloud/
+          cp -r codespartan/apps/mambo-cloud-com/www/* artifacts/mambo-cloud/
 
       - name: Prepare remote dir
         uses: appleboy/ssh-action@v1.0.3
@@ -24,7 +24,7 @@ jobs:
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            mkdir -p /opt/codespartan/apps/mambo-cloud
+            mkdir -p /opt/codespartan/apps/mambo-cloud-com/www
 
       - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -33,7 +33,7 @@ jobs:
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "artifacts/mambo-cloud/*"
-          target: "/opt/codespartan/apps/mambo-cloud"
+          target: "/opt/codespartan/apps/mambo-cloud-com/www"
           strip_components: 2
 
       - name: Deploy on VPS
@@ -46,6 +46,6 @@ jobs:
           script: |
             set -euxo pipefail
             docker network create web || true
-            cd /opt/codespartan/apps/mambo-cloud
+            cd /opt/codespartan/apps/mambo-cloud-com/www
             docker compose pull
             docker compose up -d

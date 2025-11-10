@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'codespartan/apps/dental-io/**'
+      - 'codespartan/apps/dental-io-com/www/**'
 
 jobs:
   deploy:
@@ -19,9 +19,9 @@ jobs:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "codespartan/apps/dental-io/*"
-          target: "/opt/codespartan/apps/dental-io/"
-          strip_components: 3
+          source: "codespartan/apps/dental-io-com/www/*"
+          target: "/opt/codespartan/apps/dental-io-com/www/"
+          strip_components: 5
 
       - name: Deploy stack
         uses: appleboy/ssh-action@v1.0.3
@@ -31,10 +31,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -euo pipefail
-            mkdir -p /opt/codespartan/apps/dental-io
-            cat > /opt/codespartan/apps/dental-io/.env <<EOF
+            mkdir -p /opt/codespartan/apps/dental-io-com/www
+            cat > /opt/codespartan/apps/dental-io-com/www/.env <<EOF
             BASE_DOMAIN=${{ secrets.DENTAL_BASE_DOMAIN }}
             EOF
-            cd /opt/codespartan/apps/dental-io
+            cd /opt/codespartan/apps/dental-io-com/www
             docker compose --env-file .env up -d
 
