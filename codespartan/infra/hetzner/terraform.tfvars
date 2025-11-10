@@ -1,6 +1,6 @@
 # Valores específicos para la plataforma (mambo-cloud.com)
 
-server_name = "codespartan-vps"
+server_name = "CodeSpartan-alma"
 image       = "alma-9"
 server_type = "cax11"
 location    = "nbg1"
