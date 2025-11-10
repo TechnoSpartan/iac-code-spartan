@@ -50,7 +50,11 @@
       "Bash(export HETZNER_DNS_TOKEN=\"qXX85vnd6fPWWSf9Ubpkia2ERV5OMwEq\")",
       "Bash(gh repo list:*)",
       "Bash(git remote set-url:*)",
-      "Bash(gh workflow list:*)"
+      "Bash(gh workflow list:*)",
+      "Bash(xargs:*)",
+      "Bash(tree:*)",
+      "Bash(gh run cancel:*)",
+      "Bash(ssh-keygen:*)"
     ],
     "deny": [],
     "ask": []

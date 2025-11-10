@@ -41,59 +41,8 @@ jobs:
 
       - name: Import existing resources (if not already imported)
         run: |
-          # Obtener SSH Key ID y importar si existe
-          echo "Looking for SSH key..."
-          SSH_KEY_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
-            https://api.hetzner.cloud/v1/ssh_keys | \
-            jq -r '.ssh_keys[] | select(.name=="codespartan") | .id')
-
-          if [ -n "$SSH_KEY_ID" ]; then
-            echo "Found SSH key with ID: $SSH_KEY_ID, importing..."
-            terraform import 'hcloud_ssh_key.main' "$SSH_KEY_ID" || echo "SSH key already imported"
-          else
-            echo "SSH key 'codespartan' not found in Hetzner Cloud"
-          fi
-
-          # Obtener Firewall ID y importar si existe
-          echo "Looking for firewall..."
-          FIREWALL_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
-            https://api.hetzner.cloud/v1/firewalls | \
-            jq -r '.firewalls[] | select(.name=="codespartan-basic") | .id')
-
-          if [ -n "$FIREWALL_ID" ]; then
-            echo "Found firewall with ID: $FIREWALL_ID, importing..."
-            terraform import 'hcloud_firewall.basic' "$FIREWALL_ID" || echo "Firewall already imported"
-          else
-            echo "Firewall 'codespartan-basic' not found in Hetzner Cloud"
-          fi
-
-          # Obtener Server ID y importar si existe
-          echo "Looking for server..."
-          SERVER_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
-            https://api.hetzner.cloud/v1/servers | \
-            jq -r '.servers[] | select(.name=="CodeSpartan-alma") | .id')
-
-          if [ -n "$SERVER_ID" ]; then
-            echo "Found server with ID: $SERVER_ID, importing..."
-            terraform import 'hcloud_server.vps' "$SERVER_ID" || echo "Server already imported"
-          else
-            echo "Server 'CodeSpartan-alma' not found in Hetzner Cloud"
-          fi
-
-          # Obtener zonas DNS y importar si existen
-          echo "Looking for DNS zones..."
-          for domain in "mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud"; do
-            ZONE_ID=$(curl -s -H "Auth-API-Token: $TF_VAR_hetzner_dns_token" \
-              https://dns.hetzner.com/api/v1/zones | \
-              jq -r ".zones[] | select(.name==\"$domain\") | .id")
-
-            if [ -n "$ZONE_ID" ]; then
-              echo "Found DNS zone '$domain' with ID: $ZONE_ID, importing..."
-              terraform import "hetznerdns_zone.zones[\"$domain\"]" "$ZONE_ID" || echo "Zone $domain already imported"
-            else
-              echo "DNS zone '$domain' not found in Hetzner DNS"
-            fi
-          done
+          chmod +x ./import-existing-resources.sh
+          ./import-existing-resources.sh
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
