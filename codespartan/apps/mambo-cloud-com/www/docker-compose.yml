@@ -1,0 +1,55 @@
+
+services:
+  app:
+    image: nginx:stable-alpine
+    container_name: mambo-cloud-app
+    labels:
+      - traefik.enable=true
+      # Rutas para diferentes subdominios
+      - traefik.http.routers.mambo-www.rule=Host(`www.mambo-cloud.com`)
+      - traefik.http.routers.mambo-www.entrypoints=websecure
+      - traefik.http.routers.mambo-www.tls.certresolver=le
+      - traefik.http.routers.mambo-www.service=mambo-app
+
+      - traefik.http.routers.mambo-staging.rule=Host(`staging.mambo-cloud.com`)
+      - traefik.http.routers.mambo-staging.entrypoints=websecure
+      - traefik.http.routers.mambo-staging.tls.certresolver=le
+      - traefik.http.routers.mambo-staging.service=mambo-app
+
+      - traefik.http.routers.mambo-lab.rule=Host(`lab.mambo-cloud.com`)
+      - traefik.http.routers.mambo-lab.entrypoints=websecure
+      - traefik.http.routers.mambo-lab.tls.certresolver=le
+      - traefik.http.routers.mambo-lab.service=mambo-app
+
+      - traefik.http.services.mambo-app.loadbalancer.server.port=80
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    networks:
+      - web       # Accesible por Traefik
+      - mambo_net # Red interna de la aplicación
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  web:
+    external: true
+  mambo_net:
+    name: mambo_internal
+    driver: bridge
+    internal: false # Permite acceso a internet si es necesario
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
