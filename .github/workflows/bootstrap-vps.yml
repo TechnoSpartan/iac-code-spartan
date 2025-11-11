@@ -1,0 +1,105 @@
+name: Bootstrap VPS from Scratch
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_traefik:
+        description: 'Deploy Traefik'
+        type: boolean
+        default: true
+      deploy_monitoring:
+        description: 'Deploy Monitoring Stack'
+        type: boolean
+        default: false
+      deploy_apps:
+        description: 'Deploy Applications'
+        type: boolean
+        default: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout IaC repo
+        uses: actions/checkout@v4
+
+      - name: Create base directory structure
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Creating base directory structure ==="
+            sudo mkdir -p /opt/codespartan/{platform,apps,docs}
+            sudo mkdir -p /opt/codespartan/platform/{traefik,stacks}
+            sudo mkdir -p /opt/codespartan/platform/stacks/{monitoring,backoffice}
+
+            # Create apps structure
+            sudo mkdir -p /opt/codespartan/apps/codespartan-cloud/{api,api-staging,mambo,project,staging,traefik,ui,www}
+            sudo mkdir -p /opt/codespartan/apps/cyberdyne-systems-es/{api,api-staging,mambo,staging,traefik,ui,www}
+            sudo mkdir -p /opt/codespartan/apps/dental-io-com/{api,api-staging,mambo,staging,traefik,ui,www}
+            sudo mkdir -p /opt/codespartan/apps/mambo-cloud-com/{api,api-staging,backoffice,mambo,staging,traefik,ui,www}
+
+            # Set ownership
+            sudo chown -R $USER:$USER /opt/codespartan/
+
+            echo "=== Verifying Docker installation ==="
+            docker --version
+            docker compose version
+
+            echo "=== Verifying web network ==="
+            docker network ls | grep web || docker network create web
+
+            echo "✅ Base structure created successfully"
+            tree -L 3 /opt/codespartan/ || find /opt/codespartan -type d | head -20
+
+      - name: Deploy Traefik (if enabled)
+        if: inputs.deploy_traefik == true
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Deploying Traefik ==="
+            cd /opt/codespartan/platform/traefik
+
+            # Note: traefik files should be deployed via separate workflow
+            if [ -f "docker-compose.yml" ]; then
+              docker compose pull
+              docker compose up -d
+
+              echo "✅ Traefik deployed"
+              docker ps | grep traefik
+            else
+              echo "⚠️ Traefik docker-compose.yml not found. Run deploy-traefik workflow first."
+              exit 1
+            fi
+
+      - name: Summary
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== Bootstrap Summary ==="
+            echo ""
+            echo "Directory structure:"
+            ls -la /opt/codespartan/
+            echo ""
+            echo "Running containers:"
+            docker ps
+            echo ""
+            echo "Docker networks:"
+            docker network ls
+            echo ""
+            echo "Next steps:"
+            echo "1. Deploy Traefik: gh workflow run deploy-traefik.yml"
+            echo "2. Deploy Monitoring: gh workflow run deploy-monitoring.yml"
+            echo "3. Deploy Apps: gh workflow run deploy-<app>.yml"
