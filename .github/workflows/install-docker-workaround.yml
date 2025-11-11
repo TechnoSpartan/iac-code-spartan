@@ -1,0 +1,62 @@
+name: Install Docker (Workaround for AlmaLinux ARM64 connectivity)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  install-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Docker using get.docker.com script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Checking current Docker status ==="
+            docker --version 2>/dev/null || echo "Docker not installed"
+
+            echo "=== Downloading Docker installation script ==="
+            curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+
+            echo "=== Installing Docker (this may take a few minutes) ==="
+            sudo sh /tmp/get-docker.sh
+
+            echo "=== Verifying Docker installation ==="
+            docker --version
+            docker compose version
+
+            echo "=== Enabling Docker service ==="
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            sudo systemctl status docker --no-pager
+
+            echo "=== Adding users to docker group ==="
+            sudo usermod -aG docker $USER || echo "User already in docker group"
+
+            # If github user exists, add it too
+            if id "github" &>/dev/null; then
+              sudo usermod -aG docker github
+              echo "✓ Added github user to docker group"
+            else
+              echo "⚠️ github user doesn't exist yet (will need to be added later)"
+            fi
+
+            echo "=== Creating web network ==="
+            docker network create web 2>/dev/null || echo "web network already exists"
+
+            echo "=== Docker installation complete ==="
+            echo ""
+            echo "✅ Docker version:"
+            docker --version
+            echo ""
+            echo "✅ Docker Compose version:"
+            docker compose version
+            echo ""
+            echo "✅ Docker networks:"
+            docker network ls
+            echo ""
+            echo "⚠️ IMPORTANT: You may need to log out and log back in for group changes to take effect"
