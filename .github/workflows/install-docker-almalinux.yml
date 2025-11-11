@@ -1,0 +1,63 @@
+name: Install Docker (AlmaLinux Manual Installation)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  install-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Docker on AlmaLinux
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Checking current Docker status ==="
+            docker --version 2>/dev/null && echo "Docker already installed, skipping" && exit 0 || echo "Docker not found, proceeding with installation"
+
+            echo "=== Installing prerequisites ==="
+            sudo dnf -y install yum-utils device-mapper-persistent-data lvm2
+
+            echo "=== Adding Docker repository (CentOS/RHEL compatible) ==="
+            sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+            echo "=== Installing Docker packages ==="
+            sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+            echo "=== Enabling and starting Docker service ==="
+            sudo systemctl enable docker
+            sudo systemctl start docker
+
+            echo "=== Verifying Docker installation ==="
+            docker --version
+            docker compose version
+
+            echo "=== Checking Docker service status ==="
+            sudo systemctl status docker --no-pager
+
+            echo "=== Adding users to docker group ==="
+            sudo usermod -aG docker github || echo "github user already in docker group"
+            sudo usermod -aG docker $USER || echo "$USER already in docker group"
+
+            echo "=== Creating web network ==="
+            sudo docker network create web 2>/dev/null || echo "web network already exists"
+
+            echo "=== Docker installation complete ==="
+            echo ""
+            echo "✅ Docker version:"
+            docker --version
+            echo ""
+            echo "✅ Docker Compose version:"
+            docker compose version
+            echo ""
+            echo "✅ Docker service status:"
+            sudo systemctl is-active docker
+            echo ""
+            echo "✅ Docker networks:"
+            sudo docker network ls
+            echo ""
+            echo "✅ Installation successful!"
