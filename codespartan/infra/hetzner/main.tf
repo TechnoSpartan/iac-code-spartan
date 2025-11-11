@@ -61,10 +61,46 @@ resource "hcloud_firewall" "basic" {
     source_ips = ["0.0.0.0/0", "::/0"]
   }
 
-  # Salida permitida (por defecto Hetzner la permite, esto es explícito)
+  # Reglas de salida (outbound)
   rule {
     direction       = "out"
     protocol        = "icmp"
+    destination_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction       = "out"
+    protocol        = "tcp"
+    port            = "80"
+    destination_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction       = "out"
+    protocol        = "tcp"
+    port            = "443"
+    destination_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction       = "out"
+    protocol        = "tcp"
+    port            = "53"
+    destination_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction       = "out"
+    protocol        = "udp"
+    port            = "53"
+    destination_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  # NTP for time synchronization
+  rule {
+    direction       = "out"
+    protocol        = "udp"
+    port            = "123"
     destination_ips = ["0.0.0.0/0", "::/0"]
   }
 }

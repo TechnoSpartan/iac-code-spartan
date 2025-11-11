@@ -109,7 +109,7 @@ subdomains = [
   # existing...
   # Add for codespartan.cloud:
   "www", "staging", "api", "api-staging",
-  "lab", "lab-staging", "ui", "mambo"
+  "lab", "api-lab", "ui", "mambo"
 ]
 ```
 

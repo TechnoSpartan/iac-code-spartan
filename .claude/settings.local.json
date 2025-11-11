@@ -54,7 +54,9 @@
       "Bash(xargs:*)",
       "Bash(tree:*)",
       "Bash(gh run cancel:*)",
-      "Bash(ssh-keygen:*)"
+      "Bash(ssh-keygen:*)",
+      "Bash(for dir in codespartan/apps/cyberdyne codespartan/apps/cyberdyne-api codespartan/apps/dental-io codespartan/apps/mambo-cloud codespartan/apps/openproject)",
+      "Bash(do echo '=== $dir ===' find $dir -type f)"
     ],
     "deny": [],
     "ask": []
