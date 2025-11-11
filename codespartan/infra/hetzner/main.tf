@@ -164,10 +164,12 @@ resource "hcloud_server" "vps" {
       fi
   CLOUD
 
-  # Ignorar cambios en ssh_keys y user_data para servidores existentes
+  # Ignorar cambios en estos atributos para servidores existentes
   # Estos parámetros solo se usan durante la creación inicial
+  # Ignorar image previene recreaciones cuando Hetzner actualiza las imágenes base
   lifecycle {
     ignore_changes = [
+      image,
       ssh_keys,
       user_data
     ]
