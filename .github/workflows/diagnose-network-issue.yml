@@ -1,0 +1,98 @@
+name: Diagnose Network Issue (AlmaLinux Mirrors)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run network diagnostics on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "========================================="
+            echo "VPS Network Diagnostics"
+            echo "========================================="
+            echo ""
+
+            echo "=== 1. Basic Connectivity ==="
+            echo "Testing connectivity to Google DNS..."
+            if ping -c 3 8.8.8.8 > /dev/null 2>&1; then
+                echo "✅ Can reach 8.8.8.8 (Google DNS)"
+            else
+                echo "❌ Cannot reach 8.8.8.8 (Google DNS)"
+            fi
+            echo ""
+
+            echo "Testing DNS resolution..."
+            if ping -c 3 google.com > /dev/null 2>&1; then
+                echo "✅ DNS resolution works"
+            else
+                echo "❌ DNS resolution FAILED"
+            fi
+            echo ""
+
+            echo "=== 2. AlmaLinux Mirror DNS ==="
+            nslookup repo.almalinux.org || echo "❌ DNS lookup failed"
+            echo ""
+
+            echo "=== 3. HTTPS Connectivity to AlmaLinux ==="
+            echo "Testing with 10 second timeout..."
+            curl -v --max-time 10 https://repo.almalinux.org 2>&1 | head -30
+            echo ""
+
+            echo "=== 4. Alternative Mirrors ==="
+            echo "CloudFlare mirror:"
+            curl -I --max-time 10 https://cloudflare.almalinux.org 2>&1 | head -5
+            echo ""
+
+            echo "European mirror:"
+            curl -I --max-time 10 https://mirrors.xtom.nl/almalinux/ 2>&1 | head -5
+            echo ""
+
+            echo "=== 5. Network Configuration ==="
+            echo "Routing:"
+            ip route show
+            echo ""
+
+            echo "Interfaces:"
+            ip addr show | grep -E "^[0-9]+:|inet "
+            echo ""
+
+            echo "MTU:"
+            ip link show | grep mtu
+            echo ""
+
+            echo "=== 6. DNS Configuration ==="
+            cat /etc/resolv.conf
+            echo ""
+
+            echo "=== 7. IPv6 Status ==="
+            if [ -f /proc/sys/net/ipv6/conf/all/disable_ipv6 ]; then
+                IPV6=$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6)
+                if [ "$IPV6" = "0" ]; then
+                    echo "IPv6 is ENABLED"
+                else
+                    echo "IPv6 is DISABLED"
+                fi
+            fi
+            echo ""
+
+            echo "=== 8. Current Repository Config ==="
+            if [ -f /etc/yum.repos.d/almalinux.repo ]; then
+                grep "^baseurl\|^mirrorlist" /etc/yum.repos.d/almalinux*.repo | head -10
+            else
+                echo "⚠️ almalinux.repo not found"
+            fi
+            echo ""
+
+            echo "========================================="
+            echo "Diagnostics Complete"
+            echo "========================================="

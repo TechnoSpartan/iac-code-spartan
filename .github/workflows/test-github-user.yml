@@ -1,0 +1,33 @@
+name: Test GitHub User SSH Connection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test SSH connection with github user
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== Testing SSH Connection ==="
+            whoami
+            echo ""
+
+            echo "=== Testing sudo without password ==="
+            sudo whoami
+            echo ""
+
+            echo "=== Testing Docker group membership ==="
+            groups
+            echo ""
+
+            echo "=== Checking network connectivity ==="
+            curl -I https://repo.almalinux.org 2>&1 | head -5
+            echo ""
+
+            echo "✅ All tests passed!"
