@@ -54,6 +54,23 @@ http:
         accessControlMaxAge: 100
         addVaryHeader: true
 
+    # HTTP to HTTPS redirect
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  routers:
+    # Global HTTP to HTTPS redirect (applies to all HTTP traffic)
+    http-catchall:
+      rule: "HostRegexp(`{host:.+}`)"
+      entrypoints:
+        - web
+      middlewares:
+        - https-redirect
+      service: noop@internal
+      priority: 1
+
 # TLS configuration (if needed)
 tls:
   options:
