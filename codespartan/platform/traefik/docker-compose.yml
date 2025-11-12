@@ -1,6 +1,8 @@
 services:
   traefik:
-    image: traefik:v3.6.0
+    # Using contributor's image with Docker API auto-negotiation fix (PR #12256)
+    # TODO: Switch back to official traefik:v3.6.1 when released
+    image: felixbuenemann/traefik:v3.6.1
     container_name: traefik
     command:
       - --api.dashboard=true
