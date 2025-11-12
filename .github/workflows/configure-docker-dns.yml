@@ -1,0 +1,50 @@
+name: Configure Docker DNS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  configure-dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure Docker daemon DNS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Creating Docker daemon configuration with DNS servers ==="
+            sudo mkdir -p /etc/docker
+
+            # Create daemon.json with Google and Cloudflare DNS
+            sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
+            {
+              "dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"],
+              "log-driver": "json-file",
+              "log-opts": {
+                "max-size": "10m",
+                "max-file": "3"
+              }
+            }
+            EOF
+
+            echo "=== Docker daemon configuration created ==="
+            cat /etc/docker/daemon.json
+
+            echo "=== Restarting Docker service ==="
+            sudo systemctl restart docker
+
+            echo "=== Waiting for Docker to be ready ==="
+            sleep 5
+
+            echo "=== Verifying Docker is running ==="
+            sudo systemctl status docker --no-pager
+            docker version
+
+            echo "=== Testing DNS resolution from Docker ==="
+            docker run --rm alpine:latest nslookup pypi.org
+
+            echo "✅ Docker DNS configuration complete!"
