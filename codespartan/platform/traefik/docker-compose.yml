@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.2
+    image: traefik:v3.2.3
     container_name: traefik
     command:
       - --api.dashboard=true
@@ -12,6 +12,7 @@ services:
       - --entrypoints.websecure.address=:443
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.file.filename=/etc/traefik/dynamic-config.yml
       - --providers.file.watch=true
       - --certificatesresolvers.le.acme.httpchallenge=true
