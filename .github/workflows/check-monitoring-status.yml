@@ -1,0 +1,40 @@
+name: Check Monitoring Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check monitoring stack status
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Docker Container Status ==="
+            docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+            echo ""
+            echo "=== Grafana Container Logs (last 20 lines) ==="
+            docker logs grafana --tail 20
+
+            echo ""
+            echo "=== Traefik Container Logs (last 20 lines) ==="
+            docker logs traefik --tail 20
+
+            echo ""
+            echo "=== Check Grafana environment variables ==="
+            docker exec grafana env | grep GF_
+
+            echo ""
+            echo "=== Test internal Grafana connectivity ==="
+            docker exec grafana wget -O- http://localhost:3000/api/health
+
+            echo ""
+            echo "=== Check .env file ==="
+            cat /opt/codespartan/platform/stacks/monitoring/.env
