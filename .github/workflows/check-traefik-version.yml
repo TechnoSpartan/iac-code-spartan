@@ -1,0 +1,30 @@
+name: Check Traefik Version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Traefik version and image
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Traefik Container Info ==="
+            docker inspect traefik --format='Image: {{.Config.Image}}'
+            docker inspect traefik --format='ImageID: {{.Image}}'
+
+            echo ""
+            echo "=== Traefik Version from Container ==="
+            docker exec traefik traefik version
+
+            echo ""
+            echo "=== Available traefik:v3.6.0 image info ==="
+            docker pull traefik:v3.6.0
+            docker inspect traefik:v3.6.0 | grep -A 5 "Architecture"
