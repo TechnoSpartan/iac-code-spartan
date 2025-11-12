@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2025-11-12
+
+### Fixed
+- **Traefik Health Check and SSL Configuration**:
+  - Fixed health check command from non-functional `traefik healthcheck --ping` to `wget` on ping endpoint
+  - Removed global HTTP→HTTPS redirect from entrypoint that could interfere with ACME challenges
+  - Implemented middleware-based HTTPS redirect with proper priority for Let's Encrypt compatibility
+  - Added INFO level logging and access logs for better troubleshooting
+
+### Added
+- **Traefik Documentation**:
+  - Created `.env.example` file for Traefik configuration reference
+  - Enhanced troubleshooting section in Traefik README
+  - Documented common SSL certificate issues and solutions
+
+### Technical Details
+
+**Health Check Fix**:
+- Previous: `["CMD", "traefik", "healthcheck", "--ping"]` (not available in felixbuenemann/traefik:v3.6.1)
+- New: `["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/ping"]`
+- Eliminates continuous health check errors in Docker logs
+
+**HTTPS Redirect Optimization**:
+- Moved from entrypoint-level redirect to middleware-based approach
+- Added `http-catchall` router with priority 1 in `dynamic-config.yml`
+- Ensures ACME HTTP-01 challenges have higher priority and can complete successfully
+- Maintains automatic HTTP→HTTPS redirect for all services
+
+**Logging Improvements**:
+- Added `--log.level=INFO` for detailed Traefik operations
+- Enabled `--accesslog=true` for request tracking
+- Facilitates debugging of routing and certificate issues
+
+**SSL Certificate Status**:
+- Verified Let's Encrypt certificates working correctly
+- Issuer: Let's Encrypt (R13)
+- Valid until: Feb 10, 2026
+- Dashboard accessible at: https://traefik.mambo-cloud.com
+
 ## [1.12.0] - 2025-10-30
 
 ### Changed
