@@ -13,6 +13,8 @@ override.tf.json
 # Local environment
 .env
 .env.*
+!.env.example
+!**/.env.example
 
 # Compose artifacts
 **/letsencrypt/
