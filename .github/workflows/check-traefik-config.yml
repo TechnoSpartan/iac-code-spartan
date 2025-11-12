@@ -1,0 +1,36 @@
+name: Check Traefik Configuration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Traefik configuration and routing
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Traefik .env file ==="
+            cat /opt/codespartan/platform/traefik/.env || echo "No .env file found"
+
+            echo ""
+            echo "=== Traefik container labels ==="
+            docker inspect traefik --format='{{range $key, $value := .Config.Labels}}{{$key}}={{$value}}{{println}}{{end}}'
+
+            echo ""
+            echo "=== Traefik routing table (API query) ==="
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers || echo "API not accessible"
+
+            echo ""
+            echo "=== Check if Traefik detects itself ==="
+            docker exec traefik wget -qO- http://localhost:8080/api/http/services || echo "API not accessible"
+
+            echo ""
+            echo "=== DNS resolution test ==="
+            nslookup traefik.mambo-cloud.com || echo "DNS not resolving"
