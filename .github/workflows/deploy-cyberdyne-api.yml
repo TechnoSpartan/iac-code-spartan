@@ -55,7 +55,7 @@ jobs:
 
             # Health check
             echo "🔍 Running health checks..."
-            if docker ps | grep -q truckworks-api; then
+            if docker ps | grep -q trackworks-api; then
               echo "✅ Container is running"
 
               # Esperar a que el health check interno de Docker pase
@@ -64,7 +64,7 @@ jobs:
               MAX_ATTEMPTS=24
 
               while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-                HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' truckworks-api 2>/dev/null || echo "unknown")
+                HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' trackworks-api 2>/dev/null || echo "unknown")
                 
                 if [ "$HEALTH_STATUS" = "healthy" ]; then
                   echo "✅ Health check passed"
@@ -78,7 +78,7 @@ jobs:
                   docker image prune -f
 
                   echo "✨ API deployed successfully in ${DEPLOY_TIME}s!"
-                  docker ps | grep truckworks-api
+                  docker ps | grep trackworks-api
                   exit 0
                 fi
                 
@@ -89,7 +89,7 @@ jobs:
 
               echo "❌ Health check failed after $((MAX_ATTEMPTS * 3)) seconds"
               echo "📋 Container logs:"
-              docker logs --tail 50 truckworks-api
+              docker logs --tail 50 trackworks-api
               
               echo "DEPLOY_STATUS=health_check_failed" >> /tmp/deploy_metrics.txt
               exit 1
