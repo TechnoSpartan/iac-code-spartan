@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "codespartan/apps/cyberdyne-systems-es/www/docker-compose.yml"
           target: "/opt/codespartan/apps/cyberdyne-systems-es/www/"
-          strip_components: 5
+          strip_components: 4
 
       - name: Deploy Frontend on VPS
         uses: appleboy/ssh-action@v1.0.3
