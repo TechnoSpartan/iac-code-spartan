@@ -1,0 +1,33 @@
+---
+###############################################################################
+#                         Users Database                                     #
+###############################################################################
+
+# FASE 2: User authentication database for Authelia SSO
+# Password format: Argon2id hash
+
+users:
+  admin:
+    displayname: "Administrator"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$VGhpc0lzQVNhbHRTdHJpbmc$iZQMvKroqXAJzxeyNxJTeaBtVyXJVZeuKbgisSSoOtI"  # Password: codespartan123
+    email: admin@mambo-cloud.com
+    groups:
+      - admins
+      - dev
+
+# Password generation command:
+# docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'your-password-here'
+
+# Para generar un nuevo hash de password:
+# 1. SSH al VPS o ejecutar localmente
+# 2. docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'tu-nueva-contraseña'
+# 3. Copiar el hash generado y reemplazar el campo 'password' arriba
+# 4. Redeploy Authelia
+
+# Ejemplo de usuario adicional (comentado):
+# john:
+#   displayname: "John Doe"
+#   password: "$argon2id$v=19$m=65536,t=3,p=4$..."
+#   email: john@mambo-cloud.com
+#   groups:
+#     - dev
