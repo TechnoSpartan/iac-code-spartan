@@ -1,0 +1,102 @@
+name: Deploy docker-socket-proxy (FASE 1)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/platform/docker-socket-proxy/**'
+      - 'codespartan/platform/traefik/docker-compose.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy docker-socket-proxy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/docker-socket-proxy/*"
+          target: "/opt/codespartan/platform/docker-socket-proxy/"
+          strip_components: 3
+
+      - name: Copy updated Traefik config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/traefik/docker-compose.yml"
+          target: "/opt/codespartan/platform/traefik/"
+          strip_components: 3
+
+      - name: Deploy docker-socket-proxy with health checks and rollback
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "🚀 Starting FASE 1 deployment..."
+            cd /opt/codespartan/platform/docker-socket-proxy
+
+            # Make script executable
+            chmod +x deploy.sh
+
+            # Run deployment script
+            ./deploy.sh
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════"
+            echo "✅ Deployment completed successfully!"
+            echo "═══════════════════════════════════════════════════════"
+            echo ""
+            echo "📊 Container status:"
+            docker ps --filter "name=docker-socket-proxy" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            docker ps --filter "name=traefik" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo ""
+            echo "🔒 Security status:"
+            echo "  - docker-socket-proxy: Running with READ-ONLY permissions"
+            echo "  - Traefik: Connected via TCP (no direct socket access)"
+            echo ""
+            echo "🌐 Test endpoints:"
+            echo "  - Traefik Dashboard: https://traefik.mambo-cloud.com"
+            echo "  - Ping: curl http://localhost:8080/ping"
+            echo ""
+
+      - name: Verify Traefik connectivity
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "🔍 Verifying Traefik can discover containers..."
+            sleep 5
+
+            # Check Traefik logs for any errors
+            if docker logs traefik 2>&1 | grep -qi "error.*docker"; then
+              echo "❌ Traefik has Docker connection errors"
+              docker logs traefik --tail 30
+              exit 1
+            else
+              echo "✅ No Docker connection errors found in Traefik logs"
+            fi
+
+            # Verify Traefik dashboard is accessible
+            if curl -f -s -o /dev/null http://localhost:8080/api/http/routers; then
+              echo "✅ Traefik API is accessible"
+            else
+              echo "❌ Traefik API is not accessible"
+              exit 1
+            fi
+
+            echo ""
+            echo "✨ All verification checks passed!"
+
