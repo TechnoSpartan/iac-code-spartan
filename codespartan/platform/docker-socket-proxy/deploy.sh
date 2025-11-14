@@ -117,7 +117,9 @@ cd "$TRAEFIK_DIR"
 
 # Recrear Traefik con nueva configuración
 log_info "Recreando contenedor de Traefik..."
-docker compose down
+docker compose down --remove-orphans
+# Forzar eliminación de contenedores huérfanos
+docker rm -f traefik 2>/dev/null || true
 docker compose up -d
 
 # ============================================================================
@@ -144,7 +146,8 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
 
         # Restaurar Traefik
         cd "$TRAEFIK_DIR"
-        docker compose down
+        docker compose down --remove-orphans
+        docker rm -f traefik 2>/dev/null || true
         cp -r "$BACKUP_DIR/traefik/"* "$TRAEFIK_DIR/"
         docker compose up -d
 
@@ -181,7 +184,8 @@ else
 
         log_warn "🔄 Iniciando rollback..."
         cd "$TRAEFIK_DIR"
-        docker compose down
+        docker compose down --remove-orphans
+        docker rm -f traefik 2>/dev/null || true
         cp -r "$BACKUP_DIR/traefik/"* "$TRAEFIK_DIR/"
         docker compose up -d
 
