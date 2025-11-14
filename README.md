@@ -27,34 +27,37 @@ Plataforma de infraestructura completamente containerizada que proporciona:
 
 ## 🏗️ Arquitectura
 
+**Plataforma replicable** diseñada con arquitectura Zero Trust para despliegue en múltiples VPS.
+
+### Vista Simplificada (Estado Actual)
+
 ```mermaid
-graph TD
-    A[GitHub Repository] --> B[GitHub Actions]
-    B --> C[Hetzner VPS ARM64]
-    C --> D[Traefik Reverse Proxy]
-    D --> E[Applications]
-    D --> F[Monitoring Stack]
-    D --> G[Backoffice]
-    
-    H[Hetzner DNS] --> D
-    I[Let's Encrypt] --> D
-    
-    subgraph "Monitoring"
-        F1[Grafana]
-        F2[VictoriaMetrics]
-        F3[vmagent]
-        F4[Loki]
-        F5[Promtail]
-        F6[cAdvisor]
-        F7[Node Exporter]
-    end
-    
-    subgraph "Applications"
-        E1[Mambo Cloud]
-        E2[Cyberdyne]
-        E3[Dental-IO]
-    end
+graph TB
+    Internet[🌍 Internet] --> Traefik[🚪 Traefik<br/>SSL + Routing]
+
+    Traefik --> Apps[📱 Aplicaciones<br/>Cyberdyne, Dental-IO, TrackWorks]
+    Traefik --> Mon[📊 Monitoring<br/>Grafana, VictoriaMetrics, Loki]
+    Traefik --> Back[🏢 Backoffice]
+
+    DNS[Hetzner DNS] -.-> Traefik
+    LE[Let's Encrypt] -.-> Traefik
+
+    CI[GitHub Actions] --> VPS[Hetzner VPS ARM64]
+    VPS --> Traefik
 ```
+
+### Arquitectura Objetivo (Zero Trust)
+
+**🎯 Roadmap de Seguridad:**
+- ✅ Traefik Edge con SSL automático
+- 🔄 docker-socket-proxy (en implementación)
+- 🔄 Kong API Gateway por dominio
+- 🔄 Authelia SSO + MFA
+- 🔄 Portainer read-only
+- 🔄 Aislamiento completo por red
+
+**📖 Para ver la arquitectura completa, diagramas técnicos y roadmap detallado:**
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Arquitectura completa con diagramas de alto y bajo nivel
 
 ## 🚀 Quick Start
 
@@ -283,27 +286,61 @@ dig traefik.mambo-cloud.com
 
 ## 📚 Documentación
 
-- **[RUNBOOK.md](codespartan/docs/RUNBOOK.md)** - Guía operativa completa
-- **[BEGINNER.md](codespartan/docs/BEGINNER.md)** - Tutorial para principiantes  
-- **[GITHUB.md](codespartan/docs/GITHUB.md)** - Configuración GitHub Actions
+### Arquitectura y Diseño
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - 🏗️ Arquitectura completa, diagramas de alto/bajo nivel, roadmap de seguridad
+
+### Operaciones
+- **[RUNBOOK.md](codespartan/docs/RUNBOOK.md)** - 📚 Guía operativa completa
+- **[BEGINNER.md](codespartan/docs/BEGINNER.md)** - 👶 Tutorial para principiantes
+
+### CI/CD y Deployment
+- **[GITHUB.md](codespartan/docs/GITHUB.md)** - 🐙 Configuración GitHub Actions
+- **[DEPLOY.md](DEPLOY.md)** - 🚀 Guía de despliegue paso a paso
+
+### Seguridad y Alertas
+- **[ALERTS.md](codespartan/docs/ALERTS.md)** - 🚨 Sistema de alertas y notificaciones
 
 ## 🔒 Seguridad
 
-- **Firewall**: Hetzner Cloud Firewall (22, 80, 443)
-- **SSL**: Certificados automáticos Let's Encrypt
-- **Auth**: Autenticación básica en servicios de gestión
-- **SSH**: Acceso solo por clave pública
-- **Docker**: Red aislada, logs rotados
-- **Fail2ban**: Protección SSH contra ataques
+### Estado Actual
+- ✅ **Firewall**: Hetzner Cloud Firewall (22, 80, 443)
+- ✅ **SSL**: Certificados automáticos Let's Encrypt
+- ✅ **Auth**: Autenticación básica en servicios de gestión
+- ✅ **SSH**: Acceso solo por clave pública
+- ⚠️ **Docker**: Red compartida (mejora en roadmap)
+- ✅ **Fail2ban**: Protección SSH contra ataques
+
+### Mejoras de Seguridad (Roadmap)
+- 🔄 **docker-socket-proxy**: Filtro de seguridad para API de Docker (elimina acceso directo de Traefik)
+- 🔄 **Redes aisladas**: Cada dominio en su red interna (sin comunicación cruzada)
+- 🔄 **Kong API Gateway**: Rate limiting, auth y logging por dominio
+- 🔄 **Authelia**: SSO con MFA para todos los dashboards
+- 🔄 **Portainer**: Dashboard read-only protegido por Authelia
+
+**📖 Ver arquitectura de seguridad completa:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## 🎯 Roadmap
 
+### Seguridad (Prioridad Alta 🔴)
+- [ ] **docker-socket-proxy** - Filtro de seguridad para Docker API
+- [ ] **Aislamiento de redes** - Redes internas por dominio
+- [ ] **Kong API Gateway** - Rate limiting y auth por dominio
+- [ ] **Authelia** - SSO con MFA para dashboards
+- [ ] **Portainer read-only** - Dashboard seguro de contenedores
+
+### Infraestructura
 - [ ] **Backups automáticos** (S3-compatible)
-- [ ] **Alertas por email/Slack**  
+- [ ] **Alertas por email/Slack**
 - [ ] **Multi-environment** (dev/staging/prod)
 - [ ] **Blue/Green deployments**
 - [ ] **Auto-scaling** con múltiples VPS
 - [ ] **Disaster recovery** automation
+
+### Replicabilidad
+- [ ] **Template generator** - CLI para generar nueva instancia del stack
+- [ ] **Multi-VPS management** - Gestionar múltiples despliegues desde un único repo
+
+**📖 Ver roadmap detallado con fases:** [docs/ARCHITECTURE.md#estado-actual-vs-objetivo](docs/ARCHITECTURE.md#estado-actual-vs-objetivo)
 
 ## 📞 Soporte
 
