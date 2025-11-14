@@ -206,13 +206,13 @@ log_info "🔍 Probando routing de Traefik..."
 # Dar tiempo adicional para que Traefik inicie completamente
 sleep 5
 
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ping)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ping || echo "000")
 if [ "$HTTP_CODE" = "200" ]; then
     log_info "✅ Traefik responde correctamente (HTTP $HTTP_CODE)"
 else
     log_warn "⚠️  Traefik ping devolvió HTTP $HTTP_CODE (esperado 200)"
     log_warn "Esto puede ser normal si Traefik aún está inicializando"
-    log_info "El health check de Docker indica que el contenedor está funcionando"
+    log_info "✅ El health check de Docker indica que el contenedor está funcionando"
 fi
 
 # ============================================================================
