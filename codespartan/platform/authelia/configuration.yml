@@ -1,0 +1,162 @@
+---
+###############################################################################
+#                           Authelia Configuration                           #
+###############################################################################
+
+# FASE 2: Single Sign-On with Multi-Factor Authentication
+# This configuration provides centralized authentication for all dashboards
+
+theme: dark
+
+server:
+  host: 0.0.0.0
+  port: 9091
+  path: ""
+  enable_pprof: false
+  enable_expvars: false
+
+  # Asset path for custom branding (optional)
+  asset_path: /config/assets/
+
+  # Headers sent to backend
+  headers:
+    csp_template: ""
+
+log:
+  level: info
+  format: text
+  file_path: /config/authelia.log
+
+# TOTP (Time-based One-Time Password) configuration
+totp:
+  disable: false
+  issuer: mambo-cloud.com
+  algorithm: sha1
+  digits: 6
+  period: 30
+  skew: 1
+  secret_size: 32
+
+# WebAuthn (hardware keys like YubiKey - optional)
+webauthn:
+  disable: true  # Set to false if you want to enable hardware keys
+  timeout: 60s
+  display_name: Mambo Cloud
+  attestation_conveyance_preference: indirect
+  user_verification: preferred
+
+# Duo Push (optional - requires Duo account)
+duo_api:
+  disable: true
+  hostname: api-XXXXXXXX.duosecurity.com
+  integration_key: YOUR_INTEGRATION_KEY
+  secret_key: YOUR_SECRET_KEY
+  enable_self_enrollment: false
+
+# Authentication backend
+authentication_backend:
+  password_reset:
+    disable: false
+    custom_url: ""
+
+  refresh_interval: 5m
+
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2
+      argon2:
+        variant: argon2id
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+
+# Access Control Rules
+access_control:
+  default_policy: deny
+
+  rules:
+    # Allow Authelia portal itself
+    - domain: auth.mambo-cloud.com
+      policy: bypass
+
+    # Dashboards - require authentication + MFA
+    - domain:
+        - traefik.mambo-cloud.com
+        - grafana.mambo-cloud.com
+        - backoffice.mambo-cloud.com
+      policy: two_factor
+      subject:
+        - "group:admins"
+
+    # Public apps - no auth required
+    - domain:
+        - www.mambo-cloud.com
+        - staging.mambo-cloud.com
+        - www.cyberdyne-systems.es
+        - staging.cyberdyne-systems.es
+        - www.dental-io.com
+      policy: bypass
+
+# Session configuration
+session:
+  name: authelia_session
+  domain: mambo-cloud.com  # Root domain for SSO
+  same_site: lax
+  secret: insecure_session_secret  # CHANGE IN PRODUCTION
+  expiration: 1h
+  inactivity: 5m
+  remember_me_duration: 1M
+
+  redis:
+    host: authelia-redis
+    port: 6379
+    username: ""
+    password: ""
+    database_index: 0
+    maximum_active_connections: 8
+    minimum_idle_connections: 0
+
+# Session storage (Redis for performance)
+regulation:
+  max_retries: 3
+  find_time: 2m
+  ban_time: 5m
+
+# Storage backend (SQLite for simplicity)
+storage:
+  encryption_key: insecure_encryption_key  # CHANGE IN PRODUCTION (min 20 chars)
+
+  local:
+    path: /config/db.sqlite3
+
+# Notification Provider (file-based for now)
+notifier:
+  disable_startup_check: false
+
+  filesystem:
+    filename: /config/notifications.txt
+
+  # SMTP configuration (uncomment to enable email notifications)
+  # smtp:
+  #   host: smtp.gmail.com
+  #   port: 587
+  #   timeout: 5s
+  #   username: your-email@gmail.com
+  #   password: your-app-password
+  #   sender: "Mambo Cloud Auth <noreply@mambo-cloud.com>"
+  #   identifier: mambo-cloud.com
+  #   subject: "[Mambo Cloud] {title}"
+  #   startup_check_address: test@authelia.com
+  #   disable_require_tls: false
+  #   disable_html_emails: false
+
+# NTP configuration (for TOTP accuracy)
+ntp:
+  address: time.cloudflare.com:123
+  version: 4
+  max_desync: 3s
+  disable_startup_check: false
+  disable_failure: false
