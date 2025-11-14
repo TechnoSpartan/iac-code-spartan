@@ -74,5 +74,5 @@ networks:
     internal: true  # ⚠️ Red INTERNA - Sin acceso a internet
     ipam:
       config:
-        - subnet: 172.20.0.0/24
+        - subnet: 172.19.0.0/24
 
