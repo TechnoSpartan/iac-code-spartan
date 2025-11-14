@@ -11,6 +11,10 @@ VPS: `91.98.137.217` (IPv4), `2a01:4f8:1c1a:7d21::1` (IPv6)
 
 ## Architecture
 
+**📖 For complete architecture documentation with diagrams:** See `docs/ARCHITECTURE.md`
+
+### Current State (Functional)
+
 The platform consists of three main layers:
 
 1. **Infrastructure Layer** (`codespartan/infra/`)
@@ -28,6 +32,21 @@ The platform consists of three main layers:
    - Multiple web applications with automatic subdomain routing
    - Examples: mambo-cloud, cyberdyne, dental-io
    - Each app has its own `docker-compose.yml` with Traefik labels for routing
+
+### Target State (Zero Trust Security - In Progress)
+
+**Security Roadmap:**
+- 🔄 **docker-socket-proxy**: Filter for Docker API (eliminates Traefik direct access to socket)
+- 🔄 **Kong API Gateway**: One per domain for rate limiting, auth, logging
+- 🔄 **Authelia**: SSO with MFA for all dashboards
+- 🔄 **Portainer**: Read-only dashboard behind Authelia
+- 🔄 **Network Isolation**: Each domain in its own internal network
+
+**Key Concepts:**
+- **docker-socket-proxy**: Security proxy that only allows GET operations to Docker API
+- **Zero Trust**: Never trust, always verify - minimum privilege for all components
+- **Network Isolation**: Each application domain has its own isolated network
+- **Dual-Homed Containers**: Kong gateways bridge public (web) and private (internal) networks
 
 ## Common Commands
 
@@ -348,6 +367,7 @@ Services:
 
 ## Important Notes
 
+### Platform Characteristics
 - The VPS is ARM64 architecture - ensure all Docker images support ARM64/linux/arm64
 - Traefik handles automatic SSL certificate generation and renewal via Let's Encrypt
 - All services log to stdout/stderr, collected by Promtail and queryable in Grafana → Loki
@@ -355,13 +375,53 @@ Services:
 - Monitoring includes: CPU, RAM, Disk, Docker container metrics, HTTP request metrics from Traefik
 - Alerts configured for: CPU > 80%, RAM > 90%, Disk > 85%, Service down > 2min
 
+### Security Considerations (Current State)
+
+⚠️ **Known Security Gaps (Being Addressed):**
+1. **Traefik has direct Docker socket access** (line 42 in `platform/traefik/docker-compose.yml`)
+   - Risk: If Traefik is compromised, attacker has full Docker control
+   - Solution: Implement docker-socket-proxy (see `docs/ARCHITECTURE.md`)
+
+2. **Shared network between applications**
+   - Risk: `cyberdyne-frontend` can communicate with `dental-io-db`
+   - Solution: Implement network isolation per domain (see `docs/ARCHITECTURE.md`)
+
+3. **No API Gateway**
+   - Risk: No rate limiting, no request transformation, limited logging
+   - Solution: Implement Kong per domain (see `docs/ARCHITECTURE.md`)
+
+4. **No centralized authentication**
+   - Risk: Each dashboard has separate credentials
+   - Solution: Implement Authelia SSO (see `docs/ARCHITECTURE.md`)
+
+**When making changes to the architecture, consult `docs/ARCHITECTURE.md` for the target state and migration plan.**
+
+### Replicability
+
+This project is designed as a **replicable template**:
+- Each new project/client = 1 dedicated VPS with full stack
+- Customize `terraform.tfvars` and `.env` files for new domain
+- Deploy full stack in ~30 minutes via GitHub Actions
+- Independent infrastructure per project (no multi-tenancy)
+
 ## Documentation
 
+### Architecture and Design
+- **`docs/ARCHITECTURE.md`** - 🏗️ Complete architecture with high/low-level diagrams, security roadmap, and glossary of concepts (docker-socket-proxy, Kong, Authelia, Zero Trust)
+
+### Quick Start and Overview
 - `README.md` - Quick start guide and project overview
 - `DEPLOY.md` - Detailed deployment checklist with troubleshooting
+
+### Operations
 - `codespartan/docs/RUNBOOK.md` - Complete operational guide
 - `codespartan/docs/BEGINNER.md` - Step-by-step beginner tutorial
-- `codespartan/docs/GITHUB.md` - GitHub Actions CI/CD documentation
 - `codespartan/docs/RESOURCES.md` - Resource limits and management guide
+
+### CI/CD and Deployment
+- `codespartan/docs/GITHUB.md` - GitHub Actions CI/CD documentation
+
+### Security and Monitoring
 - `codespartan/docs/ALERTS.md` - Complete alerting system documentation
 - `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` - Network isolation patterns
+- `codespartan/platform/traefik/README.md` - Traefik configuration and SSL troubleshooting
