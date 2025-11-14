@@ -74,16 +74,7 @@ log_info "🚀 Desplegando docker-socket-proxy..."
 
 cd "$SCRIPT_DIR"
 
-# Crear la red docker_api si no existe
-if ! docker network ls | grep -q "docker_api"; then
-    log_info "Creando red docker_api..."
-    docker network create docker_api \
-        --driver bridge \
-        --internal \
-        --subnet 172.20.0.0/24
-fi
-
-# Deploy docker-socket-proxy
+# Deploy docker-socket-proxy (la red se crea automáticamente)
 log_info "Iniciando docker-socket-proxy..."
 docker compose up -d
 
@@ -108,7 +99,7 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
         log_error "$(docker logs docker-socket-proxy --tail 50)"
 
         log_warn "🔄 Iniciando rollback..."
-        docker compose down
+        docker compose down --volumes --remove-orphans
         exit 1
     fi
 
@@ -157,10 +148,9 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
         cp -r "$BACKUP_DIR/traefik/"* "$TRAEFIK_DIR/"
         docker compose up -d
 
-        # Eliminar docker-socket-proxy
+        # Eliminar docker-socket-proxy (y su red)
         cd "$SCRIPT_DIR"
-        docker compose down
-        docker network rm docker_api || true
+        docker compose down --volumes --remove-orphans
 
         log_error "Rollback completado. Revisa los logs para más detalles."
         exit 1
@@ -196,8 +186,7 @@ else
         docker compose up -d
 
         cd "$SCRIPT_DIR"
-        docker compose down
-        docker network rm docker_api || true
+        docker compose down --volumes --remove-orphans
 
         exit 1
     else
