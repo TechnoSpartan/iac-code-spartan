@@ -1,0 +1,78 @@
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-socket-proxy
+    environment:
+      # ===== INFORMACIÓN BÁSICA =====
+      # Permitir lectura de información básica de contenedores
+      CONTAINERS: 1       # ✅ Listar contenedores (GET /containers/json)
+      NETWORKS: 1         # ✅ Listar redes (GET /networks)
+      SERVICES: 1         # ✅ Listar servicios (GET /services) - para Swarm
+      TASKS: 1            # ✅ Listar tasks (GET /tasks) - para Swarm
+
+      # ===== CONTROL DE ESCRITURA =====
+      # Bloquear operaciones peligrosas
+      POST: 0             # ❌ Bloquear creación de recursos
+      DELETE: 0           # ❌ Bloquear eliminación de recursos
+      PUT: 0              # ❌ Bloquear actualización de recursos
+      PATCH: 0            # ❌ Bloquear modificación parcial de recursos
+
+      # ===== OPERACIONES ESPECÍFICAS =====
+      # Bloquear operaciones críticas de seguridad
+      EXEC: 0             # ❌ Bloquear ejecución de comandos en contenedores
+      BUILD: 0            # ❌ Bloquear construcción de imágenes
+      COMMIT: 0           # ❌ Bloquear commits de contenedores
+      CONFIGS: 0          # ❌ Bloquear gestión de configs (Swarm)
+      SECRETS: 0          # ❌ Bloquear gestión de secrets (Swarm)
+      VOLUMES: 0          # ❌ Bloquear gestión de volúmenes
+      IMAGES: 0           # ❌ Bloquear gestión de imágenes
+      INFO: 1             # ✅ Permitir info del sistema Docker
+      DISTRIBUTION: 0     # ❌ Bloquear info de distribución de imágenes
+      SESSION: 0          # ❌ Bloquear inicio de sesión
+      AUTH: 0             # ❌ Bloquear autenticación
+      SWARM: 0            # ❌ Bloquear gestión de Swarm
+      NODES: 0            # ❌ Bloquear gestión de nodos Swarm
+      PLUGINS: 0          # ❌ Bloquear gestión de plugins
+      EVENTS: 1           # ✅ Permitir stream de eventos (útil para Traefik)
+      VERSION: 1          # ✅ Permitir lectura de versión Docker
+      PING: 1             # ✅ Permitir health checks
+
+      # ===== CONFIGURACIÓN DE RED =====
+      # Logs detallados para debugging (cambiar a 0 en producción)
+      LOG_LEVEL: info     # Nivel de logs (debug, info, warning, error)
+
+    volumes:
+      # Montar Docker socket en modo READ-ONLY
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    networks:
+      # Red interna SOLO para comunicación con Traefik
+      - docker_api
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2375/version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  docker_api:
+    name: docker_api
+    driver: bridge
+    internal: true  # ⚠️ Red INTERNA - Sin acceso a internet
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
