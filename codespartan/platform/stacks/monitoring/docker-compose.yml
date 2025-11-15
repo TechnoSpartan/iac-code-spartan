@@ -205,6 +205,15 @@ services:
       - GF_SERVER_DOMAIN=${GRAFANA_HOST}
       - GF_SERVER_ROOT_URL=https://${GRAFANA_HOST}
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      # FASE 2: Authelia SSO Integration
+      - GF_AUTH_PROXY_ENABLED=true
+      - GF_AUTH_PROXY_HEADER_NAME=Remote-User
+      - GF_AUTH_PROXY_HEADER_PROPERTY=username
+      - GF_AUTH_PROXY_AUTO_SIGN_UP=true
+      - GF_AUTH_PROXY_HEADERS=Name:Remote-Name Email:Remote-Email
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_AUTO_ASSIGN_ORG=true
+      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Admin
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -217,7 +226,8 @@ services:
       - traefik.http.routers.grafana.tls=true
       - traefik.http.routers.grafana.tls.certresolver=le
       - traefik.docker.network=web
-      - traefik.http.routers.grafana.middlewares=rate-limit-global@file,security-headers@file,compression@file
+      # FASE 2: Authelia SSO protection
+      - traefik.http.routers.grafana.middlewares=authelia@docker,rate-limit-global@file,security-headers@file,compression@file
     networks:
       - web  # Public access via Traefik
       - monitoring  # Access to VictoriaMetrics and Loki
