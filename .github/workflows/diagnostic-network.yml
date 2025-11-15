@@ -1,0 +1,62 @@
+name: Diagnostic - Network Connectivity
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check network connectivity
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 NETWORKS"
+            echo "════════════════════════════════════════════════════════════"
+            docker network ls
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 WEB NETWORK INSPECT"
+            echo "════════════════════════════════════════════════════════════"
+            docker network inspect web | grep -A 2 "Name\|IPv4Address"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 AUTHELIA_INTERNAL NETWORK INSPECT"
+            echo "════════════════════════════════════════════════════════════"
+            docker network inspect authelia_internal | grep -A 2 "Name\|IPv4Address" || echo "Network doesn't exist"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📦 AUTHELIA NETWORKS"
+            echo "════════════════════════════════════════════════════════════"
+            docker inspect authelia --format='{{range $net,$v := .NetworkSettings.Networks}}{{printf "%s\n" $net}}{{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📦 TRAEFIK NETWORKS"
+            echo "════════════════════════════════════════════════════════════"
+            docker inspect traefik --format='{{range $net,$v := .NetworkSettings.Networks}}{{printf "%s\n" $net}}{{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔌 TEST: Can Traefik reach Authelia?"
+            echo "════════════════════════════════════════════════════════════"
+            docker exec traefik wget -O- --timeout=2 http://authelia:9091/api/health 2>&1 || echo "❌ Cannot reach"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔌 TEST: Can Authelia be reached by IP?"
+            echo "════════════════════════════════════════════════════════════"
+            AUTHELIA_IP=$(docker inspect authelia --format='{{range $net,$v := .NetworkSettings.Networks}}{{if eq $net "web"}}{{$v.IPAddress}}{{end}}{{end}}')
+            echo "Authelia IP in web network: $AUTHELIA_IP"
+            if [ -n "$AUTHELIA_IP" ]; then
+              docker exec traefik wget -O- --timeout=2 http://${AUTHELIA_IP}:9091/api/health 2>&1 || echo "❌ Cannot reach by IP"
+            else
+              echo "❌ Authelia NOT in web network!"
+            fi
