@@ -1,0 +1,155 @@
+name: Deploy Authelia (FASE 2 - SSO)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/platform/authelia/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy Authelia files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/authelia/*"
+          target: "/opt/codespartan/platform/authelia/"
+          strip_components: 3
+
+      - name: Deploy Authelia on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/codespartan/platform/authelia
+
+            DEPLOY_START=$(date +%s)
+
+            echo "🚀 FASE 2: Deploying Authelia SSO..."
+
+            # Ensure web network exists
+            docker network create web || true
+
+            # Deploy Authelia + Redis
+            echo "📦 Starting Authelia and Redis..."
+            docker compose up -d
+
+            # Wait for Redis to be healthy
+            echo "⏳ Waiting for Redis..."
+            MAX_ATTEMPTS=30
+            ATTEMPT=0
+
+            while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+              REDIS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' authelia-redis 2>/dev/null || echo "unknown")
+
+              if [ "$REDIS_HEALTH" = "healthy" ]; then
+                echo "✅ Redis is healthy"
+                break
+              fi
+
+              if [ $ATTEMPT -eq $((MAX_ATTEMPTS - 1)) ]; then
+                echo "❌ Redis failed to become healthy"
+                docker logs authelia-redis --tail 30
+                exit 1
+              fi
+
+              echo -n "."
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 2
+            done
+
+            # Wait for Authelia to be healthy
+            echo "⏳ Waiting for Authelia..."
+            ATTEMPT=0
+
+            while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+              AUTHELIA_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' authelia 2>/dev/null || echo "unknown")
+
+              if [ "$AUTHELIA_HEALTH" = "healthy" ]; then
+                echo "✅ Authelia is healthy"
+                break
+              fi
+
+              if [ $ATTEMPT -eq $((MAX_ATTEMPTS - 1)) ]; then
+                echo "❌ Authelia failed to become healthy"
+                docker logs authelia --tail 50
+                exit 1
+              fi
+
+              echo -n "."
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 2
+            done
+
+            DEPLOY_END=$(date +%s)
+            DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✨ Authelia deployed successfully in ${DEPLOY_TIME}s!"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "📊 Container status:"
+            docker ps --filter "name=authelia" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo ""
+
+      - name: Verify Authelia portal accessibility
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "🔍 Verifying Authelia portal..."
+            sleep 5
+
+            # Check if Authelia API is responding
+            if curl -f -s -o /dev/null http://localhost:9091/api/health; then
+              echo "✅ Authelia API is accessible (health check passed)"
+            else
+              echo "⚠️  Authelia API health check failed"
+              echo "Container may still be initializing..."
+            fi
+
+            # Check for errors in logs
+            if docker logs authelia 2>&1 | grep -qi "level=error"; then
+              echo "⚠️  Found errors in Authelia logs:"
+              docker logs authelia 2>&1 | grep -i "level=error" | tail -10
+            else
+              echo "✅ No errors found in Authelia logs"
+            fi
+
+            # Check Redis connection
+            if docker logs authelia 2>&1 | grep -qi "session.*redis"; then
+              echo "✅ Authelia connected to Redis"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 Next Steps:"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "1. Access https://auth.mambo-cloud.com in your browser"
+            echo "2. Login with: admin / codespartan123"
+            echo "3. Configure MFA (scan QR code with Google Authenticator)"
+            echo ""
+            echo "⚠️  IMPORTANT: Traefik and Grafana are NOT yet protected by Authelia"
+            echo "They still use Basic Auth / direct login."
+            echo ""
+            echo "To complete FASE 2, run these workflows IN ORDER:"
+            echo "  1. ✅ deploy-authelia.yml (THIS WORKFLOW - DONE)"
+            echo "  2. ⏳ update-traefik-authelia.yml (NOT CREATED YET)"
+            echo "  3. ⏳ update-grafana-authelia.yml (NOT CREATED YET)"
+            echo ""
+            echo "Or update manually after verifying Authelia works."
+            echo "════════════════════════════════════════════════════════════"
