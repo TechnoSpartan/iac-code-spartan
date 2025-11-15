@@ -33,14 +33,16 @@ services:
       - traefik.http.routers.traefik.tls=true
       - traefik.http.routers.traefik.tls.certresolver=le
       - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.middlewares.traefik-auth.basicauth.usersfile=/users.htpasswd
-      - traefik.http.routers.traefik.middlewares=traefik-auth,rate-limit-strict@file,security-headers@file
+      # FASE 2: Authelia SSO replaces Basic Auth
+      # - traefik.http.middlewares.traefik-auth.basicauth.usersfile=/users.htpasswd
+      - traefik.http.routers.traefik.middlewares=authelia@docker,rate-limit-strict@file,security-headers@file
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./letsencrypt:/letsencrypt
-      - ./users.htpasswd:/users.htpasswd:ro
+      # FASE 2: Basic Auth replaced by Authelia SSO
+      # - ./users.htpasswd:/users.htpasswd:ro
       - ./dynamic-config.yml:/etc/traefik/dynamic-config.yml:ro
     networks:
       - web
