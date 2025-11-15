@@ -22,6 +22,7 @@ jobs:
           source: "codespartan/platform/authelia/*"
           target: "/opt/codespartan/platform/authelia/"
           strip_components: 3
+          overwrite: true
 
       - name: Deploy Authelia on VPS
         uses: appleboy/ssh-action@v1.0.3
