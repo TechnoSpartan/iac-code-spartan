@@ -1,5 +1,6 @@
 name: Enable Authelia for Traefik Dashboard
 
+# Manually triggered workflow to enable Authelia SSO for Traefik
 on:
   workflow_dispatch:
     inputs:
