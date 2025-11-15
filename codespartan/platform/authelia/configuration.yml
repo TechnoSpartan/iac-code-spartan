@@ -15,8 +15,8 @@ server:
   enable_pprof: false
   enable_expvars: false
 
-  # Asset path for custom branding (optional)
-  asset_path: /config/assets/
+  # Asset path for custom branding (optional - disabled, directory doesn't exist)
+  # asset_path: /config/assets/
 
   # Headers sent to backend
   headers:
@@ -25,7 +25,7 @@ server:
 log:
   level: info
   format: text
-  file_path: /config/authelia.log
+  file_path: /data/authelia.log
 
 # TOTP (Time-based One-Time Password) configuration
 totp:
@@ -52,6 +52,16 @@ duo_api:
   integration_key: YOUR_INTEGRATION_KEY
   secret_key: YOUR_SECRET_KEY
   enable_self_enrollment: false
+
+# Identity Providers
+identity_providers:
+  oidc:
+    enable_client_debug_messages: false
+
+# Identity Validation
+identity_validation:
+  reset_password:
+    jwt_secret: insecure_jwt_secret_please_change_in_production
 
 # Authentication backend
 authentication_backend:
@@ -130,14 +140,14 @@ storage:
   encryption_key: insecure_encryption_key  # CHANGE IN PRODUCTION (min 20 chars)
 
   local:
-    path: /config/db.sqlite3
+    path: /data/db.sqlite3
 
 # Notification Provider (file-based for now)
 notifier:
   disable_startup_check: false
 
   filesystem:
-    filename: /config/notifications.txt
+    filename: /data/notifications.txt
 
   # SMTP configuration (uncomment to enable email notifications)
   # smtp:

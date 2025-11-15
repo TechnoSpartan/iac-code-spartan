@@ -3,9 +3,9 @@ services:
     image: authelia/authelia:latest
     container_name: authelia
     volumes:
-      - ./configuration.yml:/config/configuration.yml:ro
-      - ./users_database.yml:/config/users_database.yml:ro
-      - authelia_data:/config
+      - ./configuration.yml:/config/configuration.yml
+      - ./users_database.yml:/config/users_database.yml
+      - authelia_data:/data
     networks:
       - web
       - authelia_internal
