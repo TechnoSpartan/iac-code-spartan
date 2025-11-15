@@ -1,5 +1,6 @@
 name: Enable Authelia for Grafana
 
+# Manually triggered workflow to enable Authelia SSO for Grafana
 on:
   workflow_dispatch:
     inputs:
