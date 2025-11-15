@@ -1,0 +1,141 @@
+name: Enable Authelia for Grafana
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "ENABLE" to confirm Authelia is working'
+        required: true
+        default: ''
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "ENABLE" ]; then
+            echo "❌ Confirmation required. Please type ENABLE in the workflow input."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Grafana config for Authelia
+        run: |
+          echo "🔧 Updating Grafana configuration..."
+
+          # Update middlewares to include Authelia
+          sed -i 's/rate-limit-global@file,security-headers@file,compression@file/authelia@docker,rate-limit-global@file,security-headers@file,compression@file/' \
+            codespartan/platform/stacks/monitoring/docker-compose.yml
+
+          # Add Authelia SSO environment variables
+          # This is complex, so we'll do it in the deployment step via sed
+
+          echo "Changes made to middlewares"
+
+      - name: Copy updated Grafana config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/stacks/monitoring/docker-compose.yml"
+          target: "/opt/codespartan/platform/stacks/monitoring/"
+          strip_components: 4
+
+      - name: Update Grafana with Authelia SSO
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "🔄 Updating Grafana to use Authelia SSO..."
+
+            # Verify Authelia is running
+            if ! docker ps | grep -q "authelia.*Up"; then
+              echo "❌ Authelia is not running! Please deploy Authelia first."
+              exit 1
+            fi
+
+            # Backup current config
+            BACKUP_DIR="/tmp/grafana-backup-$(date +%s)"
+            mkdir -p "$BACKUP_DIR"
+            cp /opt/codespartan/platform/stacks/monitoring/docker-compose.yml "$BACKUP_DIR/"
+            echo "💾 Backup created: $BACKUP_DIR"
+
+            cd /opt/codespartan/platform/stacks/monitoring
+
+            # Add Authelia proxy configuration to Grafana environment
+            cat >> docker-compose.yml.tmp << 'GRAFANA_EOF'
+      # FASE 2: Authelia SSO Integration
+      - GF_AUTH_PROXY_ENABLED=true
+      - GF_AUTH_PROXY_HEADER_NAME=Remote-User
+      - GF_AUTH_PROXY_HEADER_PROPERTY=username
+      - GF_AUTH_PROXY_AUTO_SIGN_UP=true
+      - GF_AUTH_PROXY_HEADERS=Name:Remote-Name Email:Remote-Email
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_AUTO_ASSIGN_ORG=true
+      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Admin
+GRAFANA_EOF
+
+            # Insert the new environment variables after GF_SERVER_SERVE_FROM_SUB_PATH
+            sed -i '/GF_SERVER_SERVE_FROM_SUB_PATH/r docker-compose.yml.tmp' docker-compose.yml
+            rm docker-compose.yml.tmp
+
+            # Recreate Grafana
+            docker compose up -d grafana --force-recreate
+
+            # Wait a bit for Grafana to start
+            echo "⏳ Waiting for Grafana to initialize..."
+            sleep 15
+
+            # Check if Grafana is responding
+            if docker ps | grep -q "grafana.*Up"; then
+              echo "✅ Grafana container is running"
+            else
+              echo "❌ Grafana failed to start - ROLLING BACK"
+              docker logs grafana --tail 50
+
+              # Rollback
+              cp "$BACKUP_DIR/docker-compose.yml" /opt/codespartan/platform/stacks/monitoring/
+              docker compose up -d grafana --force-recreate
+
+              exit 1
+            fi
+
+            # Check for errors in logs
+            if docker logs grafana 2>&1 | grep -qi "level=error\|failed"; then
+              echo "⚠️  Found errors in Grafana logs:"
+              docker logs grafana --tail 20
+              echo ""
+              echo "Check if errors are critical. If so, rollback manually:"
+              echo "  cp $BACKUP_DIR/docker-compose.yml /opt/codespartan/platform/stacks/monitoring/"
+              echo "  docker compose up -d grafana --force-recreate"
+            else
+              echo "✅ No critical errors in Grafana logs"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✨ Grafana now protected by Authelia SSO!"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "🌐 Test: https://grafana.mambo-cloud.com"
+            echo "   Should redirect to: https://auth.mambo-cloud.com"
+            echo ""
+            echo "✅ FASE 2 Complete!"
+            echo ""
+            echo "All dashboards now use Authelia SSO with MFA:"
+            echo "  - https://traefik.mambo-cloud.com"
+            echo "  - https://grafana.mambo-cloud.com"
+            echo ""
+            echo "Login once at https://auth.mambo-cloud.com"
+            echo "  Username: admin"
+            echo "  Password: codespartan123"
+            echo "  MFA: Scan QR code with Google Authenticator"
+            echo "════════════════════════════════════════════════════════════"

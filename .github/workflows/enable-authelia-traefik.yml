@@ -1,0 +1,149 @@
+name: Enable Authelia for Traefik Dashboard
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "ENABLE" to confirm Authelia is working'
+        required: true
+        default: ''
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "ENABLE" ]; then
+            echo "❌ Confirmation required. Please type ENABLE in the workflow input."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Traefik config for Authelia
+        run: |
+          echo "🔧 Updating Traefik configuration..."
+
+          # Update docker-compose.yml to use Authelia middleware
+          sed -i 's/traefik-auth,rate-limit-strict@file,security-headers@file/authelia@docker,rate-limit-strict@file,security-headers@file/' \
+            codespartan/platform/traefik/docker-compose.yml
+
+          # Remove users.htpasswd volume (no longer needed)
+          sed -i '/users.htpasswd/d' codespartan/platform/traefik/docker-compose.yml
+
+          # Show changes
+          echo "Changes made:"
+          git diff codespartan/platform/traefik/docker-compose.yml
+
+      - name: Copy updated Traefik config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/traefik/docker-compose.yml"
+          target: "/opt/codespartan/platform/traefik/"
+          strip_components: 3
+
+      - name: Recreate Traefik with Authelia
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "🔄 Updating Traefik to use Authelia..."
+
+            # Verify Authelia is running
+            if ! docker ps | grep -q "authelia.*Up"; then
+              echo "❌ Authelia is not running! Please deploy Authelia first."
+              exit 1
+            fi
+
+            # Backup current config
+            BACKUP_DIR="/tmp/traefik-backup-$(date +%s)"
+            mkdir -p "$BACKUP_DIR"
+            cp -r /opt/codespartan/platform/traefik "$BACKUP_DIR/"
+            echo "💾 Backup created: $BACKUP_DIR"
+
+            cd /opt/codespartan/platform/traefik
+
+            # Recreate Traefik
+            docker compose down --remove-orphans
+            docker rm -f traefik 2>/dev/null || true
+            docker compose up -d
+
+            # Wait for health
+            echo "⏳ Waiting for Traefik to be healthy..."
+            MAX_ATTEMPTS=30
+            ATTEMPT=0
+
+            while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+              HEALTH=$(docker inspect --format='{{.State.Health.Status}}' traefik 2>/dev/null || echo "unknown")
+
+              if [ "$HEALTH" = "healthy" ]; then
+                echo "✅ Traefik is healthy"
+                break
+              fi
+
+              if [ $ATTEMPT -eq $((MAX_ATTEMPTS - 1)) ]; then
+                echo "❌ Traefik failed health check - ROLLING BACK"
+                docker logs traefik --tail 50
+
+                # Rollback
+                docker compose down
+                cp -r "$BACKUP_DIR/traefik/"* /opt/codespartan/platform/traefik/
+                docker compose up -d
+
+                exit 1
+              fi
+
+              echo -n "."
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 2
+            done
+
+            # Check for middleware errors
+            if docker logs traefik 2>&1 | grep -qi 'middleware.*authelia.*does not exist'; then
+              echo "❌ Authelia middleware not found - ROLLING BACK"
+              docker logs traefik --tail 30
+
+              docker compose down
+              cp -r "$BACKUP_DIR/traefik/"* /opt/codespartan/platform/traefik/
+              docker compose up -d
+
+              exit 1
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✨ Traefik now protected by Authelia SSO!"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "🌐 Test: https://traefik.mambo-cloud.com"
+            echo "   Should redirect to: https://auth.mambo-cloud.com"
+            echo ""
+            echo "Next: Enable Authelia for Grafana"
+            echo "  Run workflow: enable-authelia-grafana.yml"
+            echo "════════════════════════════════════════════════════════════"
+
+      - name: Commit updated configuration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add codespartan/platform/traefik/docker-compose.yml
+          git commit -m "feat: Enable Authelia SSO for Traefik dashboard
+
+Traefik dashboard now protected by Authelia with MFA.
+
+- Replaced Basic Auth with authelia@docker middleware
+- Removed users.htpasswd volume
+- Access requires login via https://auth.mambo-cloud.com
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)" || echo "No changes to commit"
+
+          git push || echo "Nothing to push"
