@@ -53,11 +53,6 @@ duo_api:
   secret_key: YOUR_SECRET_KEY
   enable_self_enrollment: false
 
-# Identity Providers
-identity_providers:
-  oidc:
-    enable_client_debug_messages: false
-
 # Identity Validation
 identity_validation:
   reset_password:
