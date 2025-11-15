@@ -1,0 +1,68 @@
+name: FIX - Recreate Authelia Container
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force recreate Authelia container
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "🔥 Stopping and removing Authelia container..."
+            cd /opt/codespartan/platform/authelia
+
+            # Stop and remove containers
+            docker compose down
+
+            # Remove any orphaned containers
+            docker rm -f authelia authelia-redis 2>/dev/null || true
+
+            echo "🚀 Creating new containers with fresh configuration..."
+            docker compose up -d --force-recreate
+
+            echo "⏳ Waiting for containers to be healthy..."
+            sleep 10
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📊 CONTAINER STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps --filter "name=authelia" --format "table {{.Names}}\t{{.Status}}"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📝 FRESH LOGS (last 50 lines)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs authelia --tail 50
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CHECK FOR OIDC ERRORS"
+            echo "════════════════════════════════════════════════════════════"
+            if docker logs authelia 2>&1 | grep -q "identity_providers.*oidc"; then
+              echo "❌ STILL HAS OIDC ERROR!"
+              docker logs authelia 2>&1 | grep "oidc\|jwks\|clients"
+            else
+              echo "✅ NO OIDC ERRORS FOUND!"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CHECK HEALTH"
+            echo "════════════════════════════════════════════════════════════"
+            HEALTH=$(docker inspect --format='{{.State.Health.Status}}' authelia 2>/dev/null || echo "unknown")
+            echo "Authelia health: $HEALTH"
+
+            if [ "$HEALTH" = "healthy" ]; then
+              echo "✅ Authelia is HEALTHY!"
+            else
+              echo "⚠️  Authelia is NOT healthy yet"
+            fi
