@@ -1,0 +1,65 @@
+name: Deep Diagnostic - Authelia Configuration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deep investigation
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "📁 FILES IN AUTHELIA DIRECTORY"
+            echo "════════════════════════════════════════════════════════════"
+            ls -lah /opt/codespartan/platform/authelia/
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CONFIGURATION FILE CONTENT (first 100 lines)"
+            echo "════════════════════════════════════════════════════════════"
+            head -100 /opt/codespartan/platform/authelia/configuration.yml
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔎 SEARCH FOR 'identity_providers' IN CONFIG"
+            echo "════════════════════════════════════════════════════════════"
+            grep -n "identity_providers\|oidc" /opt/codespartan/platform/authelia/configuration.yml || echo "Not found"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔎 SEARCH FOR 'identity_validation' IN CONFIG"
+            echo "════════════════════════════════════════════════════════════"
+            grep -n "identity_validation\|jwt_secret" /opt/codespartan/platform/authelia/configuration.yml || echo "Not found"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📊 FILE TIMESTAMPS"
+            echo "════════════════════════════════════════════════════════════"
+            stat /opt/codespartan/platform/authelia/configuration.yml | grep -E "Modify|Change"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🐳 DOCKER COMPOSE FILE"
+            echo "════════════════════════════════════════════════════════════"
+            cat /opt/codespartan/platform/authelia/docker-compose.yml
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📦 CONTAINER VOLUMES"
+            echo "════════════════════════════════════════════════════════════"
+            docker inspect authelia | grep -A 20 "Mounts"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔄 RESTART AUTHELIA AND WATCH LOGS"
+            echo "════════════════════════════════════════════════════════════"
+            cd /opt/codespartan/platform/authelia
+            docker compose restart authelia
+            sleep 5
+            docker logs authelia --tail 100
