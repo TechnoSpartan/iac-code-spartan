@@ -1,0 +1,50 @@
+name: Diagnostic - Authelia Issues
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check container status
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "📊 CONTAINER STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "authelia|traefik|grafana"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 AUTHELIA LOGS (últimas 50 líneas)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs authelia --tail 50 2>&1 || echo "Authelia container not found"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 TRAEFIK LOGS (últimas 30 líneas - filtrado authelia)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs traefik --tail 100 2>&1 | grep -i authelia | tail -30 || echo "No authelia logs in traefik"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 GRAFANA LOGS (últimas 30 líneas)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs grafana --tail 30 2>&1 || echo "Grafana container not found"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 NETWORK STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker network ls | grep -E "web|authelia"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔌 AUTHELIA CONNECTIVITY TEST"
+            echo "════════════════════════════════════════════════════════════"
+            docker exec traefik wget -O- --timeout=5 http://authelia:9091/api/health 2>&1 || echo "Cannot reach Authelia from Traefik"
