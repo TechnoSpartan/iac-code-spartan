@@ -19,6 +19,8 @@ services:
       - traefik.http.routers.authelia.tls.certresolver=le
       - traefik.http.routers.authelia.service=authelia
       - traefik.http.services.authelia.loadbalancer.server.port=9091
+      - traefik.http.services.authelia.loadbalancer.healthCheck.path=/api/health
+      - traefik.http.services.authelia.loadbalancer.responseForwarding.flushInterval=100ms
 
       # Middleware definition
       - traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/verify?rd=https://auth.mambo-cloud.com
