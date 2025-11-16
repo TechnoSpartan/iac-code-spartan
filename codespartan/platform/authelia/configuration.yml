@@ -137,26 +137,29 @@ storage:
   local:
     path: /data/db.sqlite3
 
-# Notification Provider
+# Notification Provider (file-based for now)
 notifier:
   disable_startup_check: false
 
-  # SMTP configuration (Hostinger)
-  smtp:
-    host: smtp.hostinger.com
-    port: 465
-    timeout: 5s
-    username: iam@codespartan.es
-    password: Codespartan$2
-    sender: "Mambo Cloud Auth <noreply@codespartan.es>"
-    identifier: mambo-cloud.com
-    subject: "[Mambo Cloud] {title}"
-    startup_check_address: iam@codespartan.es
-    disable_require_tls: false
-    disable_html_emails: false
-    tls:
-      server_name: smtp.hostinger.com
-      skip_verify: false
+  filesystem:
+    filename: /data/notifications.txt
+
+  # SMTP configuration (Hostinger) - DISABLED until we test file-based works
+  # smtp:
+  #   host: smtp.hostinger.com
+  #   port: 465
+  #   timeout: 5s
+  #   username: iam@codespartan.es
+  #   password: Codespartan$2
+  #   sender: "Mambo Cloud Auth <noreply@codespartan.es>"
+  #   identifier: mambo-cloud.com
+  #   subject: "[Mambo Cloud] {title}"
+  #   startup_check_address: iam@codespartan.es
+  #   disable_require_tls: false
+  #   disable_html_emails: false
+  #   tls:
+  #     server_name: smtp.hostinger.com
+  #     skip_verify: false
 
 # NTP configuration (for TOTP accuracy)
 ntp:
