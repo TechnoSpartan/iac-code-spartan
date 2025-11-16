@@ -1,0 +1,217 @@
+name: Update Authelia Configuration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Authelia configuration
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔧 UPDATING AUTHELIA CONFIGURATION"
+            echo "════════════════════════════════════════════════════════════"
+
+            # Create backup
+            sudo cp /opt/codespartan/platform/authelia/configuration.yml /opt/codespartan/platform/authelia/configuration.yml.backup
+
+            # Update configuration with new identity_validation settings
+            cat > /tmp/new_config.yml << 'EOF'
+---
+###############################################################################
+#                           Authelia Configuration                           #
+###############################################################################
+
+# FASE 2: Single Sign-On with Multi-Factor Authentication
+# This configuration provides centralized authentication for all dashboards
+
+theme: dark
+
+server:
+  host: 0.0.0.0
+  port: 9091
+  path: ""
+  enable_pprof: false
+  enable_expvars: false
+
+  # Asset path for custom branding (optional - disabled, directory doesn't exist)
+  # asset_path: /config/assets/
+
+  # Headers sent to backend
+  headers:
+    csp_template: ""
+
+log:
+  level: info
+  format: text
+  file_path: /data/authelia.log
+
+# TOTP (Time-based One-Time Password) configuration
+totp:
+  disable: false
+  issuer: mambo-cloud.com
+  algorithm: sha1
+  digits: 6
+  period: 30
+  skew: 1
+  secret_size: 32
+
+# WebAuthn (hardware keys like YubiKey - optional)
+webauthn:
+  disable: true  # Set to false if you want to enable hardware keys
+  timeout: 60s
+  display_name: Mambo Cloud
+  attestation_conveyance_preference: indirect
+  user_verification: preferred
+
+# Duo Push (optional - requires Duo account)
+duo_api:
+  disable: true
+  hostname: api-XXXXXXXX.duosecurity.com
+  integration_key: YOUR_INTEGRATION_KEY
+  secret_key: YOUR_SECRET_KEY
+  enable_self_enrollment: false
+
+# Identity Validation
+identity_validation:
+  reset_password:
+    jwt_secret: insecure_jwt_secret_please_change_in_production
+
+  # Disable email validation for device registration (TOTP, WebAuthn)
+  # This allows users to register MFA devices without email confirmation
+  elevated_session:
+    elevation_duration: 5m
+    characters: 6
+    require_second_factor: false
+    skip_second_factor: true
+
+# Authentication backend
+authentication_backend:
+  password_reset:
+    disable: false
+    custom_url: ""
+
+  refresh_interval: 5m
+
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2
+      argon2:
+        variant: argon2id
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+
+# Access Control Rules
+access_control:
+  default_policy: deny
+
+  rules:
+    # Allow Authelia portal itself
+    - domain: auth.mambo-cloud.com
+      policy: bypass
+
+    # Dashboards - require authentication + MFA
+    - domain:
+        - traefik.mambo-cloud.com
+        - grafana.mambo-cloud.com
+        - backoffice.mambo-cloud.com
+      policy: two_factor
+      subject:
+        - "group:admins"
+
+    # Public apps - no auth required
+    - domain:
+        - mambo-cloud.com
+        - www.mambo-cloud.com
+        - staging.mambo-cloud.com
+      policy: bypass
+
+# Session configuration
+session:
+  name: authelia_session
+  domain: mambo-cloud.com
+  same_site: lax
+  expiration: 1h
+  inactivity: 30m
+  remember_me_duration: 1M
+
+  redis:
+    host: authelia-redis
+    port: 6379
+    database_index: 0
+
+# Storage (for user preferences, devices, etc.)
+storage:
+  encryption_key: insecure_encryption_key_please_change_in_production
+
+  local:
+    path: /data/db.sqlite3
+
+# Notifier configuration
+notifier:
+  disable_startup_check: false
+
+  filesystem:
+    filename: /data/notifications.txt
+
+  # SMTP configuration (uncomment to enable email notifications)
+  # smtp:
+  #   host: smtp.gmail.com
+  #   port: 587
+  #   timeout: 5s
+  #   username: your-email@gmail.com
+  #   password: your-app-password
+  #   sender: "Mambo Cloud Auth <noreply@mambo-cloud.com>"
+  #   identifier: mambo-cloud.com
+  #   subject: "[Mambo Cloud] {title}"
+  #   startup_check_address: test@authelia.com
+  #   disable_require_tls: false
+  #   disable_html_emails: false
+
+# NTP configuration (for TOTP accuracy)
+ntp:
+  address: time.cloudflare.com:123
+  version: 4
+  max_desync: 3s
+  disable_startup_check: false
+  disable_failure: false
+EOF
+
+            # Move to correct location with sudo
+            sudo mv /tmp/new_config.yml /opt/codespartan/platform/authelia/configuration.yml
+            sudo chown root:root /opt/codespartan/platform/authelia/configuration.yml
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔄 RESTARTING AUTHELIA"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/platform/authelia
+            docker compose restart authelia
+
+            echo "⏳ Waiting 10 seconds for Authelia to restart..."
+            sleep 10
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✅ VERIFICATION"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker ps --filter "name=authelia" --format "table {{.Names}}\t{{.Status}}"
+
+            echo ""
+            echo "📋 Last 10 log lines:"
+            docker logs authelia --tail 10
