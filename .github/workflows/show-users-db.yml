@@ -1,0 +1,32 @@
+name: Show Users Database
+
+on:
+  workflow_dispatch:
+
+jobs:
+  show:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show users_database.yml
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "📄 USERS DATABASE FILE"
+            echo "════════════════════════════════════════════════════════════"
+            cat /opt/codespartan/platform/authelia/users_database.yml
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🐳 AUTHELIA STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps --filter "name=authelia" --format "table {{.Names}}\t{{.Status}}"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📝 AUTHELIA LOGS (last 20 lines)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs authelia --tail 20
