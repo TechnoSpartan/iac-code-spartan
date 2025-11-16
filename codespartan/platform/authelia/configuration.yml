@@ -58,14 +58,6 @@ identity_validation:
   reset_password:
     jwt_secret: insecure_jwt_secret_please_change_in_production
 
-  # Disable email validation for device registration (TOTP, WebAuthn)
-  # This allows users to register MFA devices without email confirmation
-  elevated_session:
-    elevation_duration: 5m
-    characters: 6
-    require_second_factor: false
-    skip_second_factor: true
-
 # Authentication backend
 authentication_backend:
   password_reset:
