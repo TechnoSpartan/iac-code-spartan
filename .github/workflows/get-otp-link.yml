@@ -1,0 +1,31 @@
+name: Get OTP Registration Link
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get OTP registration link from notifications
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "📧 CHECKING NOTIFICATIONS FILE FOR OTP LINK"
+            echo "════════════════════════════════════════════════════════════"
+
+            # Check if notifications file exists
+            if docker exec authelia test -f /data/notifications.txt; then
+              echo "✅ Notifications file found"
+              echo ""
+              echo "Last notification:"
+              docker exec authelia tail -100 /data/notifications.txt
+            else
+              echo "❌ No notifications file found yet"
+              echo ""
+              echo "You need to click 'Añadir' in the OTP section first"
+            fi
