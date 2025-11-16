@@ -9,7 +9,7 @@
 users:
   admin:
     displayname: "Administrator"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$VGhpc0lzQVNhbHRTdHJpbmc$iZQMvKroqXAJzxeyNxJTeaBtVyXJVZeuKbgisSSoOtI"  # Password: codespartan123
+    password: "$argon2id$v=19$m=65536,t=3,p=4$dQywv9A4Yq8vgx0kTVkFug$GOtoD0iWR1f2qH82H9Up9f1y5tFDDo91l538hb6l6H4"  # Password: codespartan123
     email: admin@mambo-cloud.com
     groups:
       - admins
