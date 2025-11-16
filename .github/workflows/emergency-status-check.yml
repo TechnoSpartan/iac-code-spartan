@@ -1,0 +1,59 @@
+name: Emergency - Full Status Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🐳 ALL DOCKER CONTAINERS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps -a
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 TRAEFIK STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps | grep traefik || echo "❌ Traefik NOT running"
+            docker inspect traefik --format='Status: {{.State.Status}} | Health: {{.State.Health.Status}}' 2>/dev/null || echo "Cannot inspect Traefik"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 AUTHELIA STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps | grep authelia || echo "❌ Authelia NOT running"
+            docker inspect authelia --format='Status: {{.State.Status}} | Health: {{.State.Health.Status}}' 2>/dev/null || echo "Cannot inspect Authelia"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📝 TRAEFIK LOGS (last 50 lines)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs traefik --tail 50 2>&1 || echo "Cannot get Traefik logs"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📝 AUTHELIA LOGS (last 30 lines)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs authelia --tail 30 2>&1 || echo "Cannot get Authelia logs"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 DOCKER NETWORKS"
+            echo "════════════════════════════════════════════════════════════"
+            docker network ls
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "💻 SYSTEM RESOURCES"
+            echo "════════════════════════════════════════════════════════════"
+            free -h
+            df -h /
