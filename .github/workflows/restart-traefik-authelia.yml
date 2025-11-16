@@ -1,0 +1,52 @@
+name: Restart Traefik and Authelia
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔄 RESTARTING TRAEFIK AND AUTHELIA"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/platform/traefik
+            docker compose restart traefik
+
+            sleep 5
+
+            cd /opt/codespartan/platform/authelia
+            docker compose restart authelia
+
+            echo "⏳ Waiting 30 seconds for services to start..."
+            sleep 30
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📊 CONTAINER STATUS"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker ps --filter "name=traefik" --format "table {{.Names}}\t{{.Status}}"
+            docker ps --filter "name=authelia" --format "table {{.Names}}\t{{.Status}}"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 TRAEFIK ROUTERS"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>/dev/null | python3 -m json.tool | grep -A 5 '"name"' | grep -i authelia || echo "No authelia router found"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✅ TESTING ACCESS"
+            echo "════════════════════════════════════════════════════════════"
+
+            curl -s -o /dev/null -w "auth.mambo-cloud.com: HTTP %{http_code}\n" https://auth.mambo-cloud.com
