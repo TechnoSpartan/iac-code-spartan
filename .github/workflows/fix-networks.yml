@@ -1,0 +1,83 @@
+name: FIX - Recreate Networks and Services
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix network connectivity
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CHECK WEB NETWORK"
+            echo "════════════════════════════════════════════════════════════"
+
+            if docker network inspect web >/dev/null 2>&1; then
+              echo "✅ Web network exists"
+              docker network inspect web --format='{{.Name}}: {{range .Containers}}{{.Name}} {{end}}'
+            else
+              echo "❌ Web network DOES NOT exist - creating it..."
+              docker network create web
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔄 RESTART AUTHELIA WITH PROPER NETWORKS"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/platform/authelia
+            docker compose down
+            docker compose up -d
+
+            echo "⏳ Waiting 15 seconds for services to start..."
+            sleep 15
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 VERIFY AUTHELIA NETWORKS"
+            echo "════════════════════════════════════════════════════════════"
+            docker inspect authelia --format='Networks: {{range $net,$v := .NetworkSettings.Networks}}{{$net}} ({{$v.IPAddress}}) {{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CHECK WEB NETWORK MEMBERS"
+            echo "════════════════════════════════════════════════════════════"
+            docker network inspect web --format='Containers in web network:{{range .Containers}} {{.Name}}{{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔄 RESTART TRAEFIK TO DETECT AUTHELIA"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/platform/traefik
+            docker compose restart traefik
+
+            echo "⏳ Waiting 10 seconds for Traefik..."
+            sleep 10
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✅ SERVICES STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps --filter "name=authelia" --filter "name=traefik" --format "table {{.Names}}\t{{.Status}}"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🧪 TEST INTERNAL CONNECTIVITY"
+            echo "════════════════════════════════════════════════════════════"
+            echo "Testing if Traefik can reach Authelia..."
+            docker exec traefik wget -O- --timeout=2 http://authelia:9091/api/health 2>&1 | head -5 || echo "❌ Cannot reach Authelia from Traefik"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📝 RECENT TRAEFIK LOGS"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs traefik --tail 20
