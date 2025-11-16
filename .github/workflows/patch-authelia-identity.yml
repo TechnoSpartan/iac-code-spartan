@@ -1,0 +1,61 @@
+name: Patch Authelia Identity Validation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Patch Authelia configuration
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔧 PATCHING IDENTITY VALIDATION CONFIG"
+            echo "════════════════════════════════════════════════════════════"
+
+            # Create backup
+            sudo cp /opt/codespartan/platform/authelia/configuration.yml /opt/codespartan/platform/authelia/configuration.yml.patch-backup
+
+            # Check if elevated_session already exists
+            if grep -q "elevated_session:" /opt/codespartan/platform/authelia/configuration.yml; then
+              echo "✓ elevated_session configuration already exists"
+            else
+              echo "Adding elevated_session configuration..."
+
+              # Add elevated_session after reset_password
+              sudo sed -i '/reset_password:/,/jwt_secret:/a\
+\
+  # Disable email validation for device registration (TOTP, WebAuthn)\
+  # This allows users to register MFA devices without email confirmation\
+  elevated_session:\
+    elevation_duration: 5m\
+    characters: 6\
+    require_second_factor: false\
+    skip_second_factor: true' /opt/codespartan/platform/authelia/configuration.yml
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📋 VERIFICATION"
+            echo "════════════════════════════════════════════════════════════"
+
+            echo "Updated configuration:"
+            cat /opt/codespartan/platform/authelia/configuration.yml | grep -A 15 "identity_validation:"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔄 RESTARTING AUTHELIA"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/platform/authelia
+            docker compose restart authelia
+
+            echo "⏳ Waiting 10 seconds for Authelia to restart..."
+            sleep 10
+
+            docker ps --filter "name=authelia" --format "table {{.Names}}\t{{.Status}}"
