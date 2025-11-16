@@ -1,0 +1,79 @@
+name: Debug Authelia Login
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug Authelia authentication
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "📋 AUTHELIA CONTAINER STATUS"
+            echo "════════════════════════════════════════════════════════════"
+            docker ps | grep authelia
+            docker inspect authelia --format='Health: {{.State.Health.Status}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📁 USERS DATABASE CONTENT"
+            echo "════════════════════════════════════════════════════════════"
+            cat /opt/codespartan/platform/authelia/users_database.yml
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔐 VALIDATE PASSWORD HASH"
+            echo "════════════════════════════════════════════════════════════"
+
+            # Extract the hash
+            HASH=$(grep -A 1 "password:" /opt/codespartan/platform/authelia/users_database.yml | tail -1 | sed 's/.*"\(.*\)".*/\1/')
+            echo "Hash extracted: $HASH"
+            echo ""
+
+            # Test password with correct syntax
+            echo "Testing password: codespartan123"
+            docker exec authelia authelia crypto hash validate argon2 \
+              --password 'codespartan123' \
+              -- "$HASH"
+
+            VALIDATION_RESULT=$?
+            if [ $VALIDATION_RESULT -eq 0 ]; then
+              echo "✅ Password hash is VALID"
+            else
+              echo "❌ Password hash is INVALID (exit code: $VALIDATION_RESULT)"
+              echo ""
+              echo "Generating new hash for 'codespartan123'..."
+              docker exec authelia authelia crypto hash generate argon2 \
+                --password 'codespartan123'
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📝 AUTHELIA RECENT LOGS (last 50 lines)"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs authelia --tail 50
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 AUTHENTICATION ERRORS IN LOGS"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs authelia 2>&1 | grep -i "authentication\|failed\|error\|unauthorized" | tail -20 || echo "No authentication errors found"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🗂️ VERIFY FILE PATHS IN CONTAINER"
+            echo "════════════════════════════════════════════════════════════"
+            docker exec authelia ls -la /config/ || echo "/config/ directory not found"
+            docker exec authelia ls -la /data/ || echo "/data/ directory not found"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CHECK IF CONTAINER CAN READ users_database.yml"
+            echo "════════════════════════════════════════════════════════════"
+            docker exec authelia cat /config/users_database.yml 2>&1 || echo "Cannot read /config/users_database.yml"
