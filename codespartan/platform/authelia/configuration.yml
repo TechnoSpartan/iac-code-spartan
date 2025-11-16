@@ -149,10 +149,6 @@ storage:
 notifier:
   disable_startup_check: false
 
-  # Keep filesystem as fallback (will store copy in file)
-  filesystem:
-    filename: /data/notifications.txt
-
   # SMTP configuration (Hostinger)
   smtp:
     host: smtp.hostinger.com
