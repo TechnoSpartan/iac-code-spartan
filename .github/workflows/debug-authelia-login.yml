@@ -31,8 +31,8 @@ jobs:
             echo "🔐 VALIDATE PASSWORD HASH"
             echo "════════════════════════════════════════════════════════════"
 
-            # Extract the hash
-            HASH=$(grep -A 1 "password:" /opt/codespartan/platform/authelia/users_database.yml | tail -1 | sed 's/.*"\(.*\)".*/\1/')
+            # Extract the hash (get the actual password field, not comments)
+            HASH=$(grep '    password:' /opt/codespartan/platform/authelia/users_database.yml | grep -v '^#' | head -1 | sed 's/.*password: "\([^"]*\)".*/\1/')
             echo "Hash extracted: $HASH"
             echo ""
 
@@ -44,11 +44,13 @@ jobs:
 
             VALIDATION_RESULT=$?
             if [ $VALIDATION_RESULT -eq 0 ]; then
-              echo "✅ Password hash is VALID"
+              echo "✅ Password hash is VALID - codespartan123 matches!"
             else
               echo "❌ Password hash is INVALID (exit code: $VALIDATION_RESULT)"
               echo ""
-              echo "Generating new hash for 'codespartan123'..."
+              echo "The hash in the database does NOT match 'codespartan123'"
+              echo ""
+              echo "Generating new CORRECT hash for 'codespartan123'..."
               docker exec authelia authelia crypto hash generate argon2 \
                 --password 'codespartan123'
             fi
