@@ -1,0 +1,75 @@
+name: Verify Traefik Labels
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check container labels
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🏷️  TRAEFIK LABELS - WWW CONTAINER"
+            echo "════════════════════════════════════════════════════════════"
+            docker inspect codespartan-www --format='{{range $key, $value := .Config.Labels}}{{$key}}={{$value}}{{"\n"}}{{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🏷️  TRAEFIK LABELS - UI CONTAINER"
+            echo "════════════════════════════════════════════════════════════"
+            docker inspect codespartan-ui --format='{{range $key, $value := .Config.Labels}}{{$key}}={{$value}}{{"\n"}}{{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 TRAEFIK ROUTERS VIA API"
+            echo "════════════════════════════════════════════════════════════"
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>/dev/null | python3 -c "
+import sys, json
+routers = json.load(sys.stdin)
+print(f'Total routers: {len(routers)}')
+print()
+for router in routers:
+    name = router.get('name', '')
+    print(f'Router: {name}')
+    print(f'  Rule: {router.get(\"rule\", \"\")}')
+    print(f'  Status: {router.get(\"status\", \"\")}')
+    print(f'  Service: {router.get(\"service\", \"\")}')
+    print(f'  Provider: {router.get(\"provider\", \"\")}')
+    if 'error' in router:
+        print(f'  ERROR: {router[\"error\"]}')
+    print()
+"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔌 TRAEFIK SERVICES VIA API"
+            echo "════════════════════════════════════════════════════════════"
+            docker exec traefik wget -qO- http://localhost:8080/api/http/services 2>/dev/null | python3 -c "
+import sys, json
+services = json.load(sys.stdin)
+print(f'Total services: {len(services)}')
+print()
+for svc in services:
+    name = svc.get('name', '')
+    print(f'Service: {name}')
+    print(f'  Type: {svc.get(\"type\", \"\")}')
+    print(f'  Status: {svc.get(\"status\", \"\")}')
+    print(f'  Provider: {svc.get(\"provider\", \"\")}')
+    lb = svc.get('loadBalancer', {})
+    servers = lb.get('servers', [])
+    for server in servers:
+        print(f'  Server URL: {server.get(\"url\", \"\")}')
+    print()
+"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📋 TRAEFIK LOGS - DOCKER PROVIDER"
+            echo "════════════════════════════════════════════════════════════"
+            docker logs traefik --tail 100 2>&1 | grep -E "(provider.*docker|codespartan)" || echo "No relevant logs"
