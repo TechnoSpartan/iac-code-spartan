@@ -1,0 +1,39 @@
+name: Check Docker Proxy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check docker-socket-proxy status
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔌 DOCKER SOCKET PROXY STATUS"
+            echo "═══════════════════════════════════════════════════════════"
+            docker ps --filter "name=docker-socket-proxy" --format "table {{.Names}}\t{{.Status}}\t{{.Networks}}"
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🌐 DOCKER_API NETWORK"
+            echo "═══════════════════════════════════════════════════════════"
+            docker network inspect docker_api --format='{{range .Containers}}{{.Name}}: {{.IPv4Address}}{{"\n"}}{{end}}'
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🧪 TEST FROM TRAEFIK TO PROXY"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "Can Traefik reach docker-socket-proxy?"
+            docker exec traefik wget -qO- http://docker-socket-proxy:2375/containers/json 2>&1 | head -10
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "📋 TRAEFIK LOGS (Docker provider)"
+            echo "═══════════════════════════════════════════════════════════"
+            docker logs traefik --tail 50 2>&1 | grep -i "provider.*docker" || echo "No docker provider logs"
