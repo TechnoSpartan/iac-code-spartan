@@ -1,0 +1,45 @@
+name: Debug Traefik Discovery
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deep Traefik diagnostics
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🏷️  CONTAINER LABELS"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "WWW labels:"
+            docker inspect codespartan-www --format='{{json .Config.Labels}}' | python3 -m json.tool
+
+            echo ""
+            echo "UI labels:"
+            docker inspect codespartan-ui --format='{{json .Config.Labels}}' | python3 -m json.tool
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🌐 TRAEFIK ROUTERS"
+            echo "═══════════════════════════════════════════════════════════"
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers | python3 -m json.tool | head -200
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔧 TRAEFIK CONFIG"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "Docker provider enabled?"
+            docker exec traefik cat /etc/traefik/traefik.yml | grep -A 10 docker || echo "No docker config found"
+
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🐳 DOCKER SOCKET ACCESS"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "Can Traefik access docker socket?"
+            docker exec traefik ls -la /var/run/docker.sock 2>&1 || echo "No docker socket access"
