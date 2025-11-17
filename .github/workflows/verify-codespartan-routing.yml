@@ -1,0 +1,42 @@
+name: Verify CodeSpartan Routing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar routing de CodeSpartan
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔍 VERIFICACIÓN ROUTING CODESPARTAN"
+            echo "═══════════════════════════════════════════════════════════"
+            
+            echo ""
+            echo "1️⃣ Verificar que dynamic-config.yml tiene los routers:"
+            grep -A 5 "codespartan-www" /opt/codespartan/platform/traefik/dynamic-config.yml | head -10
+            
+            echo ""
+            echo "2️⃣ Logs de Traefik (últimos 30, filtrados por error/warn):"
+            docker logs traefik --tail 30 2>&1 | grep -E "(error|warn|codespartan)" -i || echo "No hay errores relevantes"
+            
+            echo ""
+            echo "3️⃣ Test de conectividad desde Traefik a contenedores:"
+            echo "  - codespartan-www:"
+            docker exec traefik wget -qO- --timeout=3 http://codespartan-www:80 2>&1 | head -3 || echo "  ❌ No se puede conectar"
+            echo "  - codespartan-ui:"
+            docker exec traefik wget -qO- --timeout=3 http://codespartan-ui:80 2>&1 | head -3 || echo "  ❌ No se puede conectar"
+            
+            echo ""
+            echo "4️⃣ Test HTTP directo desde el VPS:"
+            echo "  - www.codespartan.cloud:"
+            curl -Ik https://www.codespartan.cloud 2>&1 | head -10
+            echo "  - ui.codespartan.cloud:"
+            curl -Ik https://ui.codespartan.cloud 2>&1 | head -10
+
