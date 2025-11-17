@@ -1,0 +1,101 @@
+name: Debug CodeSpartan Routing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deep routing diagnostics
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 NETWORK INSPECTION"
+            echo "════════════════════════════════════════════════════════════"
+
+            echo "Networks for codespartan-www:"
+            docker inspect codespartan-www --format='{{range $net, $v := .NetworkSettings.Networks}}{{$net}}: {{$v.IPAddress}} {{end}}'
+
+            echo ""
+            echo "Networks for codespartan-ui:"
+            docker inspect codespartan-ui --format='{{range $net, $v := .NetworkSettings.Networks}}{{$net}}: {{$v.IPAddress}} {{end}}'
+
+            echo ""
+            echo "All containers in 'web' network:"
+            docker network inspect web --format='{{range .Containers}}{{.Name}}: {{.IPv4Address}} {{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🏷️  TRAEFIK LABELS"
+            echo "════════════════════════════════════════════════════════════"
+
+            echo "Labels for codespartan-www:"
+            docker inspect codespartan-www --format='{{range $key, $value := .Config.Labels}}{{$key}}={{$value}}{{"\n"}}{{end}}' | grep traefik
+
+            echo ""
+            echo "Labels for codespartan-ui:"
+            docker inspect codespartan-ui --format='{{range $key, $value := .Config.Labels}}{{$key}}={{$value}}{{"\n"}}{{end}}' | grep traefik
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 TRAEFIK ROUTERS"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>/dev/null | python3 -c "
+import sys, json
+routers = json.load(sys.stdin)
+for router in routers:
+    name = router.get('name', '')
+    if 'codespartan' in name.lower():
+        print(f\"Router: {name}\")
+        print(f\"  Rule: {router.get('rule', '')}\")
+        print(f\"  Status: {router.get('status', '')}\")
+        print(f\"  Service: {router.get('service', '')}\")
+        print()
+" || echo "No codespartan routers found or error parsing"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔌 TRAEFIK SERVICES"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker exec traefik wget -qO- http://localhost:8080/api/http/services 2>/dev/null | python3 -c "
+import sys, json
+services = json.load(sys.stdin)
+for svc in services:
+    name = svc.get('name', '')
+    if 'codespartan' in name.lower():
+        print(f\"Service: {name}\")
+        print(f\"  Type: {svc.get('type', '')}\")
+        lb = svc.get('loadBalancer', {})
+        servers = lb.get('servers', [])
+        for server in servers:
+            print(f\"  Server: {server.get('url', '')}\")
+        print()
+" || echo "No codespartan services found or error parsing"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🧪 DIRECT CONTAINER ACCESS TEST"
+            echo "════════════════════════════════════════════════════════════"
+
+            WWW_IP=$(docker inspect codespartan-www --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' | head -1)
+            UI_IP=$(docker inspect codespartan-ui --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' | head -1)
+
+            echo "Testing www at $WWW_IP:"
+            curl -s -o /dev/null -w "HTTP %{http_code}\n" http://$WWW_IP/ || echo "Failed"
+
+            echo "Testing ui at $UI_IP:"
+            curl -s -o /dev/null -w "HTTP %{http_code}\n" http://$UI_IP/ || echo "Failed"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📋 TRAEFIK LOGS (last 30 lines with codespartan)"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker logs traefik --tail 100 2>&1 | grep -i codespartan || echo "No codespartan mentions in recent logs"
