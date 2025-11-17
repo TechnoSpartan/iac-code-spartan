@@ -1,0 +1,78 @@
+name: Check Docker Socket Proxy Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check docker-socket-proxy deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CHECKING DOCKER SOCKET PROXY"
+            echo "════════════════════════════════════════════════════════════"
+
+            # Check if container exists
+            if docker ps -a --filter "name=socket" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -q socket; then
+              echo "✅ Docker socket proxy container found:"
+              docker ps -a --filter "name=socket" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            else
+              echo "❌ No docker socket proxy container found"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 CHECK docker_api NETWORK"
+            echo "════════════════════════════════════════════════════════════"
+
+            if docker network ls | grep -q docker_api; then
+              echo "✅ docker_api network exists:"
+              docker network ls | grep docker_api
+              echo ""
+              echo "Containers connected to docker_api:"
+              docker network inspect docker_api --format='{{range .Containers}}{{.Name}} {{end}}'
+            else
+              echo "❌ docker_api network does not exist"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 CHECK IF TRAEFIK USES SOCKET PROXY"
+            echo "════════════════════════════════════════════════════════════"
+
+            # Check Traefik environment variables
+            echo "Environment variables containing DOCKER:"
+            docker inspect traefik --format='{{range .Config.Env}}{{println .}}{{end}}' | grep DOCKER || echo "❌ No DOCKER_HOST env var found"
+
+            echo ""
+            echo "Checking if Traefik mounts docker socket directly:"
+            if docker inspect traefik --format='{{range .Mounts}}{{if eq .Destination "/var/run/docker.sock"}}{{.Source}}{{end}}{{end}}' | grep -q docker.sock; then
+              echo "⚠️  DIRECT SOCKET MOUNT DETECTED:"
+              docker inspect traefik --format='{{range .Mounts}}{{if eq .Destination "/var/run/docker.sock"}}Source: {{.Source}} → Destination: {{.Destination}}{{end}}{{end}}'
+            else
+              echo "✅ No direct docker socket mount (good - using proxy)"
+            fi
+
+            echo ""
+            echo "Networks Traefik is connected to:"
+            docker inspect traefik --format='{{range $net, $v := .NetworkSettings.Networks}}{{$net}} {{end}}'
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📁 CHECK DEPLOYMENT FILES ON VPS"
+            echo "════════════════════════════════════════════════════════════"
+
+            if [ -d "/opt/codespartan/platform/docker-socket-proxy" ]; then
+              echo "✅ Directory exists: /opt/codespartan/platform/docker-socket-proxy"
+              echo ""
+              echo "Files present:"
+              ls -lh /opt/codespartan/platform/docker-socket-proxy/
+            else
+              echo "❌ Directory does not exist: /opt/codespartan/platform/docker-socket-proxy"
+            fi
