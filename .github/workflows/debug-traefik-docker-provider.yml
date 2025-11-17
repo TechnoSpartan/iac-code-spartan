@@ -1,0 +1,66 @@
+name: Debug Traefik Docker Provider
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug Traefik Docker Provider
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔍 DEBUG TRAEFIK DOCKER PROVIDER"
+            echo "═══════════════════════════════════════════════════════════"
+            
+            echo ""
+            echo "1️⃣ Verificar configuración de Traefik:"
+            docker exec traefik cat /proc/1/cmdline | tr '\0' ' ' | grep -o "providers.docker[^ ]*" || echo "No encontrado en cmdline"
+            
+            echo ""
+            echo "2️⃣ Test de conectividad desde Traefik al docker-socket-proxy:"
+            echo "  - Test /version:"
+            docker exec traefik wget -qO- --timeout=5 http://docker-socket-proxy:2375/version 2>&1 | head -3
+            echo "  - Test /containers/json:"
+            docker exec traefik wget -qO- --timeout=5 "http://docker-socket-proxy:2375/containers/json?all=true" 2>&1 | python3 -c "
+            import sys, json
+            try:
+              containers = json.load(sys.stdin)
+              codespartan = [c for c in containers if 'codespartan' in c.get('Names', [''])[0].lower()]
+              print(f'Total containers: {len(containers)}')
+              print(f'Codespartan containers: {len(codespartan)}')
+              for c in codespartan:
+                print(f\"  - {c.get('Names', [''])[0]}: {c.get('State', 'unknown')}\")
+            except Exception as e:
+              print(f'Error: {e}')
+            " 2>&1 | head -10
+            
+            echo ""
+            echo "3️⃣ Logs completos de Traefik (últimos 100 líneas):"
+            docker logs traefik --tail 100 2>&1 | grep -E "(docker|provider|error|warn|fail)" -i | tail -30
+            
+            echo ""
+            echo "4️⃣ Verificar que docker-socket-proxy está escuchando:"
+            docker exec docker-socket-proxy netstat -tlnp 2>/dev/null | grep 2375 || docker exec docker-socket-proxy ss -tlnp | grep 2375 || echo "No se pudo verificar"
+            
+            echo ""
+            echo "5️⃣ Verificar variables de entorno de Traefik:"
+            docker exec traefik env | grep -i docker || echo "No hay variables DOCKER"
+            
+            echo ""
+            echo "6️⃣ Forzar refresh del provider Docker:"
+            echo "  (Esto requiere reiniciar Traefik)"
+            cd /opt/codespartan/platform/traefik
+            docker compose restart traefik
+            echo "  ⏳ Esperando 15 segundos..."
+            sleep 15
+            
+            echo ""
+            echo "7️⃣ Verificar logs después del reinicio:"
+            docker logs traefik --tail 30 2>&1 | grep -E "(docker|provider)" -i
+
