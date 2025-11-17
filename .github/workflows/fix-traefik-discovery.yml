@@ -1,0 +1,183 @@
+name: Fix Traefik Container Discovery
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔍 Diagnóstico completo y solución
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔍 DIAGNÓSTICO COMPLETO - TRAEFIK DISCOVERY"
+            echo "═══════════════════════════════════════════════════════════"
+            
+            # 1. Verificar docker-socket-proxy
+            echo ""
+            echo "1️⃣ Verificando docker-socket-proxy..."
+            if docker ps --filter "name=docker-socket-proxy" --format "{{.Names}}" | grep -q "docker-socket-proxy"; then
+              echo "✅ docker-socket-proxy está corriendo"
+              docker ps --filter "name=docker-socket-proxy" --format "table {{.Names}}\t{{.Status}}\t{{.Networks}}"
+            else
+              echo "❌ docker-socket-proxy NO está corriendo"
+              echo "🚀 Desplegando docker-socket-proxy..."
+              
+              # Verificar que existe el directorio
+              if [ ! -d "/opt/codespartan/platform/docker-socket-proxy" ]; then
+                echo "❌ Directorio no existe. Necesitas desplegar docker-socket-proxy primero."
+                exit 1
+              fi
+              
+              cd /opt/codespartan/platform/docker-socket-proxy
+              docker compose up -d
+              
+              # Esperar a que esté healthy
+              echo "⏳ Esperando a que docker-socket-proxy esté healthy..."
+              for i in {1..30}; do
+                if docker inspect --format='{{.State.Health.Status}}' docker-socket-proxy 2>/dev/null | grep -q "healthy"; then
+                  echo "✅ docker-socket-proxy está healthy"
+                  break
+                fi
+                if [ $i -eq 30 ]; then
+                  echo "⚠️ docker-socket-proxy no pasó el health check, pero continuamos..."
+                fi
+                sleep 2
+              done
+            fi
+            
+            # 2. Verificar red docker_api
+            echo ""
+            echo "2️⃣ Verificando red docker_api..."
+            if docker network ls | grep -q "docker_api"; then
+              echo "✅ Red docker_api existe"
+              echo "Contenedores en docker_api:"
+              docker network inspect docker_api --format='{{range .Containers}}{{.Name}}: {{.IPv4Address}}{{"\n"}}{{end}}' || echo "Ninguno"
+            else
+              echo "❌ Red docker_api NO existe"
+              echo "🚀 Creando red docker_api..."
+              docker network create docker_api
+            fi
+            
+            # 3. Verificar que Traefik está en docker_api
+            echo ""
+            echo "3️⃣ Verificando que Traefik está en red docker_api..."
+            if docker network inspect docker_api --format='{{range .Containers}}{{.Name}}{{"\n"}}{{end}}' | grep -q "traefik"; then
+              echo "✅ Traefik está en docker_api"
+            else
+              echo "❌ Traefik NO está en docker_api"
+              echo "🔗 Conectando Traefik a docker_api..."
+              docker network connect docker_api traefik || echo "⚠️ Error conectando (puede que ya esté conectado)"
+            fi
+            
+            # 4. Verificar que docker-socket-proxy está en docker_api
+            echo ""
+            echo "4️⃣ Verificando que docker-socket-proxy está en red docker_api..."
+            if docker network inspect docker_api --format='{{range .Containers}}{{.Name}}{{"\n"}}{{end}}' | grep -q "docker-socket-proxy"; then
+              echo "✅ docker-socket-proxy está en docker_api"
+            else
+              echo "❌ docker-socket-proxy NO está en docker_api"
+              echo "🔗 Conectando docker-socket-proxy a docker_api..."
+              docker network connect docker_api docker-socket-proxy || echo "⚠️ Error conectando (puede que ya esté conectado)"
+            fi
+            
+            # 5. Test de conectividad desde Traefik al proxy
+            echo ""
+            echo "5️⃣ Test de conectividad Traefik → docker-socket-proxy..."
+            if docker exec traefik wget -qO- --timeout=5 http://docker-socket-proxy:2375/version 2>&1 | head -5; then
+              echo "✅ Traefik puede conectarse al proxy"
+            else
+              echo "❌ Traefik NO puede conectarse al proxy"
+              echo "⚠️ Esto puede ser normal si el proxy no responde a /version"
+            fi
+            
+            # 6. Verificar contenedores codespartan
+            echo ""
+            echo "6️⃣ Verificando contenedores codespartan..."
+            docker ps --filter "name=codespartan" --format "table {{.Names}}\t{{.Status}}\t{{.Networks}}"
+            
+            # 7. Verificar labels de Traefik en los contenedores
+            echo ""
+            echo "7️⃣ Verificando labels de Traefik..."
+            for container in codespartan-www codespartan-ui; do
+              if docker ps --format "{{.Names}}" | grep -q "$container"; then
+                echo "Labels de $container:"
+                docker inspect "$container" --format='{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' | grep traefik || echo "  ⚠️ No se encontraron labels de Traefik"
+              fi
+            done
+            
+            # 8. Verificar routers en Traefik API
+            echo ""
+            echo "8️⃣ Verificando routers registrados en Traefik..."
+            if docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>/dev/null | python3 -c "
+            import sys, json
+            try:
+              routers = json.load(sys.stdin)
+              print(f'Total routers: {len(routers)}')
+              for r in routers:
+                if 'codespartan' in r.get('name', '').lower():
+                  print(f\"  ✅ {r.get('name')}: {r.get('status', 'unknown')}\")
+            except:
+              print('Error parseando routers')
+            " 2>&1; then
+              echo ""
+            else
+              echo "⚠️ No se pudieron obtener los routers"
+            fi
+            
+            # 9. Reiniciar Traefik para forzar rediscovery
+            echo ""
+            echo "9️⃣ Reiniciando Traefik para forzar rediscovery..."
+            cd /opt/codespartan/platform/traefik
+            docker compose restart traefik
+            
+            echo "⏳ Esperando a que Traefik se reinicie..."
+            sleep 10
+            
+            # 10. Verificar logs de Traefik
+            echo ""
+            echo "🔟 Últimos logs de Traefik (Docker provider):"
+            docker logs traefik --tail 30 2>&1 | grep -i "docker\|provider" | tail -10 || echo "No hay logs relevantes"
+            
+            # 11. Verificar routers después del reinicio
+            echo ""
+            echo "1️⃣1️⃣ Verificando routers después del reinicio..."
+            sleep 5
+            if docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>/dev/null | python3 -c "
+            import sys, json
+            try:
+              routers = json.load(sys.stdin)
+              codespartan_routers = [r for r in routers if 'codespartan' in r.get('name', '').lower()]
+              print(f'Routers codespartan encontrados: {len(codespartan_routers)}')
+              for r in codespartan_routers:
+                print(f\"  - {r.get('name')}: {r.get('status', 'unknown')}\")
+              if len(codespartan_routers) == 0:
+                print('  ⚠️ No se encontraron routers de codespartan')
+            except Exception as e:
+              print(f'Error: {e}')
+            " 2>&1; then
+              echo ""
+            fi
+            
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "✅ DIAGNÓSTICO COMPLETADO"
+            echo "═══════════════════════════════════════════════════════════"
+            echo ""
+            echo "📋 Resumen:"
+            echo "  - docker-socket-proxy: $(docker ps --filter 'name=docker-socket-proxy' --format '{{.Status}}' || echo 'NO CORRIENDO')"
+            echo "  - Traefik: $(docker ps --filter 'name=traefik' --format '{{.Status}}' || echo 'NO CORRIENDO')"
+            echo "  - codespartan-www: $(docker ps --filter 'name=codespartan-www' --format '{{.Status}}' || echo 'NO CORRIENDO')"
+            echo "  - codespartan-ui: $(docker ps --filter 'name=codespartan-ui' --format '{{.Status}}' || echo 'NO CORRIENDO')"
+            echo ""
+            echo "🧪 Prueba manual:"
+            echo "  curl -Ik https://www.codespartan.cloud"
+            echo "  curl -Ik https://ui.codespartan.cloud"
+
