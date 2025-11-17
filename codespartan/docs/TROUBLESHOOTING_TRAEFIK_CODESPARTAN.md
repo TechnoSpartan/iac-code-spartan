@@ -406,6 +406,116 @@ Si en el futuro el Docker Provider empieza a descubrir los contenedores automát
 
 ---
 
+## 🔧 Problema Adicional: Puerto 80 vs Puerto 3000 (Next.js)
+
+### Síntomas
+
+Después de resolver el problema de discovery de Traefik, el contenedor `codespartan-www` se iniciaba correctamente pero se cerraba inmediatamente:
+
+```bash
+docker logs codespartan-www
+# ▲ Next.js 16.0.3
+# - Local:         http://localhost:80
+# - Network:       http://0.0.0.0:80
+# ✓ Starting...
+# ✓ Ready in 379ms
+# Process exited with status 1
+```
+
+El contenedor aparecía como "unhealthy" y no respondía a peticiones HTTP.
+
+### Root Cause
+
+**Problema de privilegios de puerto**:
+
+- En Linux, los puertos < 1024 (como el 80) requieren privilegios de **root**
+- El Dockerfile usa el usuario `nextjs` (no-root) por **seguridad**
+- Next.js no puede bindear al puerto 80 sin privilegios de root
+- El proceso se inicia pero falla al intentar escuchar en el puerto 80
+
+### Solución Implementada
+
+**Cambio a puerto no-privilegiado (3000)**:
+
+1. **Dockerfile** (`trackworks-maqueta/Dockerfile`):
+   ```dockerfile
+   EXPOSE 3000
+   ENV PORT=3000
+   ENV HOSTNAME="0.0.0.0"
+   
+   HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+   ```
+
+2. **docker-compose.yml**:
+   ```yaml
+   labels:
+     - traefik.http.services.codespartan-www.loadbalancer.server.port=3000
+   
+   healthcheck:
+     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+   ```
+
+3. **Traefik dynamic-config.yml**:
+   ```yaml
+   services:
+     codespartan-www-service:
+       loadBalancer:
+         servers:
+           - url: "http://codespartan-www:3000"
+   ```
+
+### Verificación
+
+```bash
+# Verificar que el contenedor está corriendo
+docker ps | grep codespartan-www
+# codespartan-www   Up 5 minutes (healthy)   3000/tcp
+
+# Verificar que escucha en el puerto 3000
+docker exec codespartan-www wget -qO- http://localhost:3000/health
+# {"status":"OK"}
+
+# Verificar desde fuera del contenedor
+curl -Ik https://www.codespartan.cloud
+# HTTP/2 200
+```
+
+### Lecciones Aprendidas
+
+1. **Puertos privilegiados**: Siempre usar puertos > 1024 cuando se ejecuta como usuario no-root
+2. **Seguridad primero**: Es mejor usar puerto 3000 con usuario no-root que puerto 80 con root
+3. **Traefik transparente**: Traefik maneja el routing interno, el puerto 3000 es transparente para usuarios finales
+4. **Health checks**: Asegurar que el healthcheck use el mismo puerto que la aplicación
+
+### Alternativas Consideradas
+
+1. **Usar nginx como reverse proxy interno**:
+   - Pros: Podría usar puerto 80
+   - Contras: Más complejidad, más recursos, capa adicional innecesaria
+   - **Decisión**: No necesario, Traefik ya hace el routing
+
+2. **Usar capabilities de Linux**:
+   ```dockerfile
+   RUN setcap 'cap_net_bind_service=+ep' /usr/local/bin/node
+   ```
+   - Pros: Podría usar puerto 80
+   - Contras: Menos seguro, requiere capabilities adicionales
+   - **Decisión**: No recomendado por seguridad
+
+3. **Ejecutar como root**:
+   - Pros: Podría usar puerto 80
+   - Contras: **Riesgo de seguridad crítico**
+   - **Decisión**: ❌ Nunca recomendado
+
+### Referencias
+
+- [Next.js Docker Documentation](https://nextjs.org/docs/deployment#docker-image)
+- [Docker Security Best Practices](https://docs.docker.com/engine/security/)
+- [Linux Port Privileges](https://www.w3.org/Daemon/User/Installation/PrivilegedPorts.html)
+
+---
+
 **Última actualización**: 2025-11-17  
 **Estado**: ✅ Resuelto y documentado
 
