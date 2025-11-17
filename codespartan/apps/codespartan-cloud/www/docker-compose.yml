@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -32,7 +32,7 @@ services:
       - traefik.http.routers.codespartan-www.entrypoints=websecure
       - traefik.http.routers.codespartan-www.tls=true
       - traefik.http.routers.codespartan-www.tls.certresolver=le
-      - traefik.http.services.codespartan-www.loadbalancer.server.port=80
+      - traefik.http.services.codespartan-www.loadbalancer.server.port=3000
       - traefik.docker.network=web
 
     networks:
