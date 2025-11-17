@@ -1,0 +1,26 @@
+name: Quick Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check containers
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "🐳 All containers:"
+            docker ps -a --filter "name=codespartan" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+
+            echo ""
+            echo "📋 WWW logs (last 100 lines):"
+            docker logs codespartan-www --tail 100 2>&1 || echo "Container doesn't exist"
+
+            echo ""
+            echo "📋 UI logs (last 100 lines):"
+            docker logs codespartan-ui --tail 100 2>&1 || echo "Container doesn't exist"
