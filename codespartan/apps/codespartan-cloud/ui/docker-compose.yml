@@ -1,0 +1,43 @@
+services:
+  storybook:
+    image: ghcr.io/technospartan/codespartan-ui:latest
+    container_name: codespartan-ui
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.codespartan-ui.rule=Host(`ui.codespartan.cloud`)
+      - traefik.http.routers.codespartan-ui.entrypoints=websecure
+      - traefik.http.routers.codespartan-ui.tls=true
+      - traefik.http.routers.codespartan-ui.tls.certresolver=le
+      - traefik.http.services.codespartan-ui.loadbalancer.server.port=80
+      - traefik.docker.network=web
+
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
