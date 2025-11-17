@@ -1,0 +1,85 @@
+name: Check Traefik Routers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-routers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Traefik router registration
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 TRAEFIK API - ROUTERS"
+            echo "════════════════════════════════════════════════════════════"
+
+            echo "All HTTP routers in Traefik:"
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers | python3 -c "
+import sys, json
+routers = json.load(sys.stdin)
+print(f'Total routers: {len(routers)}')
+print()
+for router in routers:
+    name = router.get('name', '')
+    print(f'Router: {name}')
+    print(f'  Rule: {router.get(\"rule\", \"\")}')
+    print(f'  Status: {router.get(\"status\", \"\")}')
+    print(f'  Service: {router.get(\"service\", \"\")}')
+    print(f'  Priority: {router.get(\"priority\", \"\")}')
+    print(f'  EntryPoints: {router.get(\"entryPoints\", [])}')
+    print(f'  Using: {router.get(\"using\", [])}')
+    print()
+" 2>/dev/null || echo "Error parsing routers"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔌 TRAEFIK API - SERVICES"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker exec traefik wget -qO- http://localhost:8080/api/http/services | python3 -c "
+import sys, json
+services = json.load(sys.stdin)
+print(f'Total services: {len(services)}')
+print()
+for svc in services:
+    name = svc.get('name', '')
+    print(f'Service: {name}')
+    print(f'  Type: {svc.get(\"type\", \"\")}')
+    print(f'  Status: {svc.get(\"status\", \"\")}')
+    lb = svc.get('loadBalancer', {})
+    servers = lb.get('servers', [])
+    for server in servers:
+        print(f'  Server URL: {server.get(\"url\", \"\")}')
+    print()
+" 2>/dev/null || echo "Error parsing services"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🏷️  CONTAINER LABELS (ACTUAL)"
+            echo "════════════════════════════════════════════════════════════"
+
+            echo "codespartan-www labels:"
+            docker inspect codespartan-www --format='{{range $key, $value := .Config.Labels}}{{$key}}={{$value}}{{"\n"}}{{end}}' 2>/dev/null | grep traefik || echo "No traefik labels found!"
+
+            echo ""
+            echo "codespartan-ui labels:"
+            docker inspect codespartan-ui --format='{{range $key, $value := .Config.Labels}}{{$key}}={{$value}}{{"\n"}}{{end}}' 2>/dev/null | grep traefik || echo "No traefik labels found!"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🐳 DOCKER PROVIDER STATUS"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker logs traefik --tail 200 2>&1 | grep -E "(codespartan|provider.docker|Configuration received)" | tail -20
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "📊 CONTAINER STATES"
+            echo "════════════════════════════════════════════════════════════"
+
+            docker ps --filter "name=codespartan" --format "table {{.Names}}\t{{.Status}}\t{{.Networks}}"
