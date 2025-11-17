@@ -1,0 +1,52 @@
+name: Check Traefik Routers (Final)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar routers en Traefik
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔍 VERIFICACIÓN FINAL - ROUTERS TRAEFIK"
+            echo "═══════════════════════════════════════════════════════════"
+            
+            echo ""
+            echo "1️⃣ Contenedores con labels de Traefik:"
+            docker ps --format "{{.Names}}" | while read container; do
+              if docker inspect "$container" --format='{{range $k, $v := .Config.Labels}}{{$k}}{{"\n"}}{{end}}' | grep -q "^traefik.enable=true$"; then
+                echo "  ✅ $container"
+                docker inspect "$container" --format='{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' | grep "^traefik.http.routers" | head -3
+              fi
+            done
+            
+            echo ""
+            echo "2️⃣ Routers desde API de Traefik (raw):"
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>&1 | head -50
+            
+            echo ""
+            echo "3️⃣ Servicios desde API de Traefik:"
+            docker exec traefik wget -qO- http://localhost:8080/api/http/services 2>&1 | head -50
+            
+            echo ""
+            echo "4️⃣ Logs de Traefik (últimos 50, filtrados por docker):"
+            docker logs traefik --tail 50 2>&1 | grep -i "docker\|container\|provider" | tail -20
+            
+            echo ""
+            echo "5️⃣ Test de conectividad directa a contenedores:"
+            echo "  codespartan-www:"
+            docker exec traefik wget -qO- --timeout=3 http://codespartan-www:80 2>&1 | head -5 || echo "  ❌ No se puede conectar"
+            echo "  codespartan-ui:"
+            docker exec traefik wget -qO- --timeout=3 http://codespartan-ui:80 2>&1 | head -5 || echo "  ❌ No se puede conectar"
+            
+            echo ""
+            echo "6️⃣ Verificar que contenedores están en red web:"
+            docker network inspect web --format='{{range .Containers}}{{.Name}}: {{.IPv4Address}}{{"\n"}}{{end}}' | grep codespartan
+
