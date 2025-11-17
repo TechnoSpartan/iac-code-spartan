@@ -1,0 +1,93 @@
+name: Fix CodeSpartan Networks
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reconnect containers to web network
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔧 FIXING CODESPARTAN NETWORKS"
+            echo "════════════════════════════════════════════════════════════"
+
+            # Ensure web network exists
+            docker network create web 2>/dev/null || echo "Web network already exists"
+
+            # Stop containers
+            echo "Stopping containers..."
+            docker stop codespartan-www codespartan-ui 2>/dev/null || echo "Some containers already stopped"
+
+            # Remove containers
+            echo "Removing containers..."
+            docker rm codespartan-www codespartan-ui 2>/dev/null || echo "Some containers already removed"
+
+            # Recreate with proper network
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚀 DEPLOYING WWW"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/apps/codespartan-cloud/www
+            docker compose up -d --force-recreate
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚀 DEPLOYING UI"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/apps/codespartan-cloud/ui
+            docker compose up -d --force-recreate
+
+            echo ""
+            echo "Waiting 10 seconds for containers to start..."
+            sleep 10
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✅ VERIFICATION"
+            echo "════════════════════════════════════════════════════════════"
+
+            echo "Container status:"
+            docker ps --filter "name=codespartan" --format "table {{.Names}}\t{{.Status}}"
+
+            echo ""
+            echo "WWW networks:"
+            docker inspect codespartan-www --format='{{range $net, $v := .NetworkSettings.Networks}}{{$net}}: {{$v.IPAddress}} {{end}}'
+
+            echo ""
+            echo "UI networks:"
+            docker inspect codespartan-ui --format='{{range $net, $v := .NetworkSettings.Networks}}{{$net}}: {{$v.IPAddress}} {{end}}'
+
+            echo ""
+            echo "Containers in web network:"
+            docker network inspect web --format='{{range .Containers}}{{.Name}} {{end}}' | grep -o codespartan[^ ]* || echo "No codespartan containers in web network!"
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔄 RESTARTING TRAEFIK"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/platform/traefik
+            docker compose restart traefik
+
+            echo "Waiting 15 seconds for Traefik..."
+            sleep 15
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "🧪 TESTING"
+            echo "════════════════════════════════════════════════════════════"
+
+            curl -s -o /dev/null -w "www.codespartan.cloud: HTTP %{http_code}\n" https://www.codespartan.cloud -k
+            curl -s -o /dev/null -w "ui.codespartan.cloud: HTTP %{http_code}\n" https://ui.codespartan.cloud -k
+
+            echo ""
+            echo "✅ Fix complete!"
