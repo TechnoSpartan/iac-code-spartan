@@ -1,0 +1,162 @@
+name: Deploy CodeSpartan WWW
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/apps/codespartan-cloud/www/**'
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/technospartan/codespartan-www
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./codespartan/apps/codespartan-cloud/www
+          file: ./codespartan/apps/codespartan-cloud/www/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Copy docker-compose to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/apps/codespartan-cloud/www/docker-compose.yml"
+          target: "/opt/codespartan/apps/codespartan-cloud/www/"
+          strip_components: 4
+          overwrite: true
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_PAT }}
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_TOKEN
+          script: |
+            set -euo pipefail
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚀 DEPLOYING CODESPARTAN WWW"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/apps/codespartan-cloud/www
+            DEPLOY_START=$(date +%s)
+
+            # Ensure network exists
+            docker network create web 2>/dev/null || echo "Network 'web' already exists"
+
+            # Login to GHCR
+            echo "🔐 Logging in to GitHub Container Registry..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            # Pull latest image
+            echo "📦 Pulling latest Docker image..."
+            docker compose pull
+
+            # Deploy
+            echo "🚀 Starting container..."
+            docker compose up -d
+
+            # Health check
+            echo "🔍 Running health checks..."
+            sleep 5
+
+            if docker ps | grep -q codespartan-www; then
+              echo "✅ Container is running"
+
+              # Wait for health check
+              echo "⏳ Waiting for health check..."
+              ATTEMPTS=0
+              MAX_ATTEMPTS=20
+
+              while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' codespartan-www 2>/dev/null || echo "unknown")
+
+                if [ "$HEALTH" = "healthy" ]; then
+                  DEPLOY_END=$(date +%s)
+                  DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+                  echo "✅ Health check passed!"
+                  echo "🧹 Cleaning up old images..."
+                  docker image prune -f
+
+                  echo ""
+                  echo "════════════════════════════════════════════════════════════"
+                  echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
+                  echo "════════════════════════════════════════════════════════════"
+                  echo ""
+                  echo "📊 Container Status:"
+                  docker ps --filter "name=codespartan-www" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+                  echo ""
+                  echo "🌐 URL: https://www.codespartan.cloud"
+                  echo ""
+                  exit 0
+                fi
+
+                echo "⏳ Health: $HEALTH - waiting... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+                ATTEMPTS=$((ATTEMPTS + 1))
+                sleep 3
+              done
+
+              echo "❌ Health check timeout"
+              echo "📋 Container logs:"
+              docker logs --tail 50 codespartan-www
+              exit 1
+            else
+              echo "❌ Container failed to start"
+              docker logs codespartan-www 2>/dev/null || echo "No logs available"
+              exit 1
+            fi
+
+      - name: Verify production URL
+        if: success()
+        run: |
+          echo "🌐 Verifying production URL..."
+          sleep 10
+
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.codespartan.cloud || echo "000")
+
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Production site is live! (HTTP $HTTP_STATUS)"
+            echo "🔗 https://www.codespartan.cloud"
+          else
+            echo "⚠️  Site returned HTTP $HTTP_STATUS"
+            echo "Container is healthy but may need a few minutes for SSL cert generation"
+            echo "Check again in 2-3 minutes: https://www.codespartan.cloud"
+          fi
