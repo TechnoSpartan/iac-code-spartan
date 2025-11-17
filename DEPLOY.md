@@ -93,6 +93,20 @@ ssh_public_key_path = "~/.ssh/id_codespartan.pub"
 3. ⏳ Espera 1-2 minutos
 4. ✅ Verifica: https://www.mambo-cloud.com
 
+### 4.6 Desplegar CodeSpartan Cloud
+
+1. **Actions** → **Deploy CodeSpartan WWW**
+2. **Run workflow**
+3. ⏳ Espera 1-2 minutos
+4. ✅ Verifica: https://www.codespartan.cloud
+
+5. **Actions** → **Deploy CodeSpartan UI (Storybook)**
+6. **Run workflow**
+7. ⏳ Espera 1-2 minutos
+8. ✅ Verifica: https://ui.codespartan.cloud
+
+⚠️ **Nota**: Si los dominios devuelven 404 después del despliegue, consulta [TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md](codespartan/docs/TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md) para la solución.
+
 ## 🔍 Paso 5: Verificación Completa
 
 ### URLs a probar:
@@ -104,6 +118,8 @@ ssh_public_key_path = "~/.ssh/id_codespartan.pub"
 ✅ https://www.mambo-cloud.com         # App Principal
 ✅ https://staging.mambo-cloud.com     # Entorno Staging
 ✅ https://lab.mambo-cloud.com         # Entorno Lab
+✅ https://www.codespartan.cloud      # CodeSpartan Website
+✅ https://ui.codespartan.cloud       # CodeSpartan UI/Storybook
 ```
 
 ### Verificación por SSH:
@@ -239,5 +255,6 @@ Una vez que todo funcione:
    - [RUNBOOK.md](codespartan/docs/RUNBOOK.md) - Guía completa
    - [BEGINNER.md](codespartan/docs/BEGINNER.md) - Tutorial paso a paso
    - [GITHUB.md](codespartan/docs/GITHUB.md) - CI/CD detallado
+   - [TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md](codespartan/docs/TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md) - Solución problemas CodeSpartan Cloud
 
 **¡Disfruta de tu nueva infraestructura cloud profesional! 🚀**
