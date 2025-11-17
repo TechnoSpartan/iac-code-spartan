@@ -1,0 +1,44 @@
+name: Check CodeSpartan WWW Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar estado del contenedor
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔍 ESTADO CODESPARTAN WWW"
+            echo "═══════════════════════════════════════════════════════════"
+            
+            echo ""
+            echo "1️⃣ Estado del contenedor:"
+            docker ps -a --filter "name=codespartan-www" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            
+            echo ""
+            echo "2️⃣ Logs completos (últimos 100 líneas):"
+            docker logs codespartan-www --tail 100 2>&1 || echo "No hay logs disponibles"
+            
+            echo ""
+            echo "3️⃣ Verificar si el proceso está corriendo:"
+            docker exec codespartan-www ps aux 2>&1 | head -10 || echo "No se puede ejecutar ps (container puede estar detenido)"
+            
+            echo ""
+            echo "4️⃣ Verificar si server.js existe:"
+            docker exec codespartan-www ls -la /app/ 2>&1 | head -20 || echo "No se puede listar (container puede estar detenido)"
+            
+            echo ""
+            echo "5️⃣ Test de conectividad interna:"
+            docker exec codespartan-www wget -qO- --timeout=3 http://localhost:80/health 2>&1 || echo "No se puede conectar"
+            
+            echo ""
+            echo "6️⃣ Verificar imagen descargada:"
+            docker images | grep codespartan-www
+
