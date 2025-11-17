@@ -100,7 +100,7 @@ http:
     codespartan-www-service:
       loadBalancer:
         servers:
-          - url: "http://codespartan-www:80"
+          - url: "http://codespartan-www:3000"
 
     # CodeSpartan Cloud - ui service
     codespartan-ui-service:
