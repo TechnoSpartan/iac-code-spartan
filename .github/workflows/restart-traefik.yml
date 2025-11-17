@@ -7,22 +7,27 @@ jobs:
   restart:
     runs-on: ubuntu-latest
     steps:
-      - name: Restart Traefik
+      - name: Reiniciar Traefik y verificar configuración
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            echo "🔄 Restarting Traefik..."
+            echo "🔄 Reiniciando Traefik..."
             cd /opt/codespartan/platform/traefik
             docker compose restart traefik
-
-            echo "⏳ Waiting for Traefik..."
-            sleep 10
-
-            docker ps | grep traefik
-
+            
+            echo "⏳ Esperando 15 segundos para que Traefik se inicie..."
+            sleep 15
+            
             echo ""
-            echo "📝 Last 20 lines of Traefik logs:"
-            docker logs traefik --tail 20
+            echo "📋 Verificando logs de Traefik (File Provider):"
+            docker logs traefik --tail 50 2>&1 | grep -E "(file|provider|error|warn)" -i | tail -20
+            
+            echo ""
+            echo "🧪 Test de routing:"
+            echo "  - www.codespartan.cloud:"
+            curl -Ik https://www.codespartan.cloud 2>&1 | head -5
+            echo "  - ui.codespartan.cloud:"
+            curl -Ik https://ui.codespartan.cloud 2>&1 | head -5
