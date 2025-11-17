@@ -71,6 +71,43 @@ http:
       service: noop@internal
       priority: 1
 
+    # CodeSpartan Cloud - www.codespartan.cloud
+    codespartan-www:
+      rule: "Host(`www.codespartan.cloud`)"
+      entrypoints:
+        - websecure
+      service: codespartan-www-service
+      tls:
+        certResolver: le
+      middlewares:
+        - security-headers
+        - compression
+
+    # CodeSpartan Cloud - ui.codespartan.cloud
+    codespartan-ui:
+      rule: "Host(`ui.codespartan.cloud`)"
+      entrypoints:
+        - websecure
+      service: codespartan-ui-service
+      tls:
+        certResolver: le
+      middlewares:
+        - security-headers
+        - compression
+
+  services:
+    # CodeSpartan Cloud - www service
+    codespartan-www-service:
+      loadBalancer:
+        servers:
+          - url: "http://codespartan-www:80"
+
+    # CodeSpartan Cloud - ui service
+    codespartan-ui-service:
+      loadBalancer:
+        servers:
+          - url: "http://codespartan-ui:80"
+
 # TLS configuration (if needed)
 tls:
   options:
