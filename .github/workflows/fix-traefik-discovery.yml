@@ -14,7 +14,7 @@ jobs:
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            set -euo pipefail
+            set +e  # Permitir errores para manejo manual
             
             echo "═══════════════════════════════════════════════════════════"
             echo "🔍 DIAGNÓSTICO COMPLETO - TRAEFIK DISCOVERY"
@@ -56,14 +56,14 @@ jobs:
             # 2. Verificar red docker_api
             echo ""
             echo "2️⃣ Verificando red docker_api..."
-            if docker network ls | grep -q "docker_api"; then
+            if docker network inspect docker_api >/dev/null 2>&1; then
               echo "✅ Red docker_api existe"
               echo "Contenedores en docker_api:"
               docker network inspect docker_api --format='{{range .Containers}}{{.Name}}: {{.IPv4Address}}{{"\n"}}{{end}}' || echo "Ninguno"
             else
               echo "❌ Red docker_api NO existe"
               echo "🚀 Creando red docker_api..."
-              docker network create docker_api
+              docker network create docker_api || echo "⚠️ La red ya existe (ignorando error)"
             fi
             
             # 3. Verificar que Traefik está en docker_api
