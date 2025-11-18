@@ -516,6 +516,133 @@ curl -Ik https://www.codespartan.cloud
 
 ---
 
-**Última actualización**: 2025-11-17  
+## 🔧 Problema Adicional: Docker BuildKit y Directorio `.storybook` (Storybook)
+
+### Síntomas
+
+Durante el despliegue de `ui.codespartan.cloud` (Storybook), el build de Docker fallaba con el siguiente error:
+
+```bash
+SB_CORE-SERVER_0006 (MainFileMissingError): No configuration files have been found in your configDir: ./.storybook.
+Storybook needs a "main.js" file, please add it.
+
+You can pass a --config-dir flag to tell Storybook, where your main.js file is located at.
+```
+
+El contenedor `codespartan-ui` no se podía construir porque Storybook no encontraba su directorio de configuración.
+
+### Root Cause
+
+**Problema de optimización de Docker BuildKit**:
+
+1. **BuildKit optimiza nombres de archivos/directorios**:
+   - BuildKit puede "optimizar" nombres de directorios que empiezan con punto (`.storybook`)
+   - En algunos casos, copia `.storybook` como `storybook` (sin el punto inicial)
+   - Esto rompe la detección automática de Storybook que busca `.storybook` por defecto
+
+2. **Cache de Docker**:
+   - Aunque se deshabilitó el cache en el workflow (`no-cache: true`), BuildKit puede seguir usando optimizaciones
+   - Los logs mostraban `COPY .storybook ./storybook` en lugar de `COPY .storybook ./.storybook`
+
+3. **Storybook busca `main.js` en `.storybook`**:
+   - Storybook busca `main.js` (o `main.ts`) en el directorio `.storybook` por defecto
+   - Si el directorio se llama `storybook` (sin punto), Storybook no lo encuentra
+
+### Solución Implementada
+
+**Uso del flag `--config-dir` de Storybook**:
+
+En lugar de intentar forzar que BuildKit copie correctamente `.storybook`, se usa el flag `--config-dir` que Storybook proporciona explícitamente para este caso.
+
+#### Cambios en el Dockerfile
+
+```dockerfile
+# 2. Construir Storybook estático (genera storybook-static/)
+# Detectar dónde BuildKit copió .storybook y usar --config-dir apropiado
+RUN STORYBOOK_DIR="" && \
+    if [ -d .storybook ]; then \
+      STORYBOOK_DIR=".storybook"; \
+      echo "✅ .storybook existe (con punto)"; \
+    elif [ -d storybook ]; then \
+      STORYBOOK_DIR="storybook"; \
+      echo "✅ storybook existe (sin punto - BuildKit optimizó)"; \
+    else \
+      echo "❌ ERROR: No se encontró .storybook ni storybook" && \
+      ls -la | grep storybook && \
+      exit 1; \
+    fi && \
+    echo "📁 Directorio de Storybook: $STORYBOOK_DIR" && \
+    ls -la "$STORYBOOK_DIR/" | head -5 && \
+    echo "🔧 Construyendo Storybook con --config-dir=$STORYBOOK_DIR" && \
+    pnpm build-storybook --config-dir="$STORYBOOK_DIR"
+```
+
+**Características de la solución**:
+
+1. **Detección automática**: Detecta si BuildKit copió `.storybook` o `storybook`
+2. **Flag `--config-dir`**: Usa el flag que Storybook recomienda explícitamente
+3. **Combinado en un solo RUN**: La detección y el build están en el mismo `RUN` para que la variable persista
+4. **Debugging**: Incluye logs para ver qué directorio se detectó
+
+### Verificación
+
+```bash
+# Verificar que el build detecta correctamente el directorio
+docker build -t test-storybook .
+# Debe mostrar:
+# ✅ .storybook existe (con punto)
+# o
+# ✅ storybook existe (sin punto - BuildKit optimizó)
+# 📁 Directorio de Storybook: .storybook (o storybook)
+# 🔧 Construyendo Storybook con --config-dir=.storybook
+
+# Verificar que Storybook se construye correctamente
+docker run --rm test-storybook ls -la /usr/share/nginx/html
+# Debe mostrar los archivos estáticos de Storybook
+```
+
+### Lecciones Aprendidas
+
+1. **BuildKit optimiza nombres**: BuildKit puede "optimizar" nombres de directorios, especialmente los que empiezan con punto
+2. **Usar flags oficiales**: Cuando una herramienta proporciona un flag para resolver un problema, usarlo es la mejor solución
+3. **Detección vs. Forzar**: Es mejor detectar y adaptarse que intentar forzar un comportamiento específico
+4. **Variables en RUN**: Las variables de shell no persisten entre diferentes comandos `RUN`, por lo que la detección y el uso deben estar en el mismo `RUN`
+
+### Alternativas Consideradas
+
+1. **Copiar `.storybook` a un nombre temporal y renombrarlo**:
+   ```dockerfile
+   COPY .storybook ./_storybook_temp
+   RUN mv _storybook_temp .storybook
+   ```
+   - Pros: Podría funcionar
+   - Contras: BuildKit puede seguir optimizando, no es la solución recomendada por Storybook
+   - **Decisión**: No usado, Storybook recomienda `--config-dir`
+
+2. **Convertir TypeScript a JavaScript**:
+   ```dockerfile
+   RUN cd .storybook && tsc main.ts
+   ```
+   - Pros: Podría resolver el problema de `main.js` vs `main.ts`
+   - Contras: No resuelve el problema del directorio, Storybook 8 soporta TypeScript
+   - **Decisión**: No necesario, Storybook 8 soporta TypeScript nativamente
+
+3. **Deshabilitar BuildKit**:
+   ```bash
+   DOCKER_BUILDKIT=0 docker build
+   ```
+   - Pros: Evitaría las optimizaciones
+   - Contras: Pierde todas las ventajas de BuildKit (cache, paralelización, etc.)
+   - **Decisión**: ❌ No recomendado, BuildKit es esencial para builds eficientes
+
+### Referencias
+
+- [Storybook CLI Options](https://storybook.js.org/docs/api/cli-options#build-storybook)
+- [Docker BuildKit Documentation](https://docs.docker.com/build/buildkit/)
+- [Storybook Configuration Directory](https://storybook.js.org/docs/configure)
+
+---
+
+**Última actualización**: 2025-11-18  
 **Estado**: ✅ Resuelto y documentado
 
