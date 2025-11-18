@@ -55,9 +55,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          no-cache: false  # Mantener cache pero forzar rebuild si Dockerfile cambia
+          # Deshabilitar cache temporalmente para forzar rebuild completo
+          no-cache: true
 
       - name: Copy docker-compose to VPS
         uses: appleboy/scp-action@v0.1.7
