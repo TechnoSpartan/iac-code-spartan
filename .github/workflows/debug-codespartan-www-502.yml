@@ -1,0 +1,52 @@
+name: Debug CodeSpartan WWW 502
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diagnosticar Bad Gateway
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🔍 DIAGNÓSTICO BAD GATEWAY (502)"
+            echo "═══════════════════════════════════════════════════════════"
+            
+            echo ""
+            echo "1️⃣ Estado del contenedor:"
+            docker ps --filter "name=codespartan-www" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            
+            echo ""
+            echo "2️⃣ Test desde dentro del contenedor (puerto 3000):"
+            docker exec codespartan-www wget -qO- --timeout=3 http://localhost:3000/health 2>&1 || echo "❌ No responde en 3000"
+            
+            echo ""
+            echo "3️⃣ Test desde Traefik al contenedor (puerto 3000):"
+            docker exec traefik wget -qO- --timeout=3 http://codespartan-www:3000/health 2>&1 || echo "❌ Traefik no puede conectar"
+            
+            echo ""
+            echo "4️⃣ Verificar red 'web':"
+            docker network inspect web --format '{{range .Containers}}{{.Name}} {{end}}' | grep -E "(traefik|codespartan-www)" || echo "❌ Contenedores no en red web"
+            
+            echo ""
+            echo "5️⃣ Verificar configuración de Traefik (File Provider):"
+            docker exec traefik cat /etc/traefik/dynamic-config.yml | grep -A 5 "codespartan-www-service" || echo "❌ No encontrado en config"
+            
+            echo ""
+            echo "6️⃣ Logs de Traefik (últimas 20 líneas relacionadas con codespartan):"
+            docker logs traefik --tail 50 2>&1 | grep -i codespartan || echo "No hay logs relacionados"
+            
+            echo ""
+            echo "7️⃣ Test directo desde el host:"
+            curl -v http://localhost:3000/health 2>&1 | head -15 || echo "❌ No responde desde host"
+            
+            echo ""
+            echo "8️⃣ Verificar IP del contenedor en la red web:"
+            docker inspect codespartan-www --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}: {{$conf.IPAddress}}{{end}}' | grep web || echo "❌ No tiene IP en red web"
+
