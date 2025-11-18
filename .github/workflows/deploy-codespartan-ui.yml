@@ -55,8 +55,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Deshabilitar cache temporalmente para forzar rebuild completo
+          # Deshabilitar cache completamente para forzar rebuild
           no-cache: true
+          pull: true  # Forzar pull de imágenes base
 
       - name: Copy docker-compose to VPS
         uses: appleboy/scp-action@v0.1.7
