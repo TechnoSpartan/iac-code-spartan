@@ -35,8 +35,8 @@ jobs:
             docker exec codespartan-www ls -la /app/ 2>&1 | head -20 || echo "No se puede listar (container puede estar detenido)"
             
             echo ""
-            echo "5️⃣ Test de conectividad interna:"
-            docker exec codespartan-www wget -qO- --timeout=3 http://localhost:80/health 2>&1 || echo "No se puede conectar"
+            echo "5️⃣ Test de conectividad interna (puerto 3000):"
+            docker exec codespartan-www wget -qO- --timeout=3 http://localhost:3000/health 2>&1 || echo "No se puede conectar"
             
             echo ""
             echo "6️⃣ Verificar imagen descargada:"
