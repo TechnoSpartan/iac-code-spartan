@@ -106,55 +106,56 @@ jobs:
 
             # Health check
             echo "🔍 Running health checks..."
-            sleep 5
+            echo "⏳ Waiting for container to become healthy..."
+            ATTEMPTS=0
+            MAX_ATTEMPTS=30  # 30 × 3s = 90 segundos máximo
 
-            if docker ps | grep -q codespartan-ui; then
-              echo "✅ Container is running"
-
-              # Wait for health check
-              echo "⏳ Waiting for health check..."
-              ATTEMPTS=0
-              MAX_ATTEMPTS=20
-
-              while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' codespartan-ui 2>/dev/null || echo "unknown")
-
-                if [ "$HEALTH" = "healthy" ]; then
-                  DEPLOY_END=$(date +%s)
-                  DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
-
-                  echo "✅ Health check passed!"
-                  echo "🧹 Cleaning up old images..."
-                  docker image prune -f
-
-                  echo ""
-                  echo "════════════════════════════════════════════════════════════"
-                  echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
-                  echo "════════════════════════════════════════════════════════════"
-                  echo ""
-                  echo "📊 Container Status:"
-                  docker ps --filter "name=codespartan-ui" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-
-                  echo ""
-                  echo "🌐 URL: https://ui.codespartan.cloud"
-                  echo ""
-                  exit 0
-                fi
-
-                echo "⏳ Health: $HEALTH - waiting... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              # Verificar si el contenedor está corriendo
+              if ! docker ps -q --filter "name=codespartan-ui" | grep -q .; then
+                echo "⏳ Container not yet running... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
                 ATTEMPTS=$((ATTEMPTS + 1))
                 sleep 3
-              done
+                continue
+              fi
 
-              echo "❌ Health check timeout"
-              echo "📋 Container logs:"
-              docker logs --tail 50 codespartan-ui
-              exit 1
-            else
-              echo "❌ Container failed to start"
-              docker logs codespartan-ui 2>/dev/null || echo "No logs available"
-              exit 1
-            fi
+              # Verificar health status
+              HEALTH=$(docker inspect --format='{{.State.Health.Status}}' codespartan-ui 2>/dev/null || echo "unknown")
+
+              if [ "$HEALTH" = "healthy" ]; then
+                DEPLOY_END=$(date +%s)
+                DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+                echo "✅ Health check passed!"
+                echo "🧹 Cleaning up old images..."
+                docker image prune -f
+
+                echo ""
+                echo "════════════════════════════════════════════════════════════"
+                echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
+                echo "════════════════════════════════════════════════════════════"
+                echo ""
+                echo "📊 Container Status:"
+                docker ps --filter "name=codespartan-ui" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+                echo ""
+                echo "🌐 URL: https://ui.codespartan.cloud"
+                echo ""
+                exit 0
+              fi
+
+              echo "⏳ Health: $HEALTH - waiting... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 3
+            done
+
+            echo "❌ Health check timeout or container failed to start"
+            echo "📋 Container logs:"
+            docker logs --tail 50 codespartan-ui 2>&1 || echo "No logs available"
+            echo ""
+            echo "📊 Container status:"
+            docker ps -a --filter "name=codespartan-ui" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            exit 1
 
       - name: Verify production URL
         if: success()
