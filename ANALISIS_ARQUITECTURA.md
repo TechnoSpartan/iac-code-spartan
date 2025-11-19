@@ -23,6 +23,7 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 ### 1. 📚 Documentación Excepcional
 
 **Puntos fuertes**:
+
 - ✅ **75+ archivos Markdown** con documentación exhaustiva
 - ✅ **Múltiples niveles**: Beginner, Runbook, Architecture, Troubleshooting
 - ✅ **Ejemplos prácticos** y casos de uso reales
@@ -33,6 +34,7 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 **Impacto**: Facilita onboarding, reduce curva de aprendizaje, mejora mantenibilidad.
 
 **Ejemplos destacados**:
+
 - `BEGINNER.md` - Tutorial completo para nuevos usuarios
 - `RUNBOOK.md` - Guía operativa día a día
 - `ARCHITECTURE.md` - Arquitectura con diagramas técnicos
@@ -41,6 +43,7 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 ### 2. 🔄 CI/CD Robusto y Automatizado
 
 **Puntos fuertes**:
+
 - ✅ **70+ workflows de GitHub Actions** bien estructurados
 - ✅ **Despliegue automático** por paths (push triggers)
 - ✅ **Workflows de diagnóstico** para troubleshooting
@@ -51,6 +54,7 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 **Impacto**: Reduce errores humanos, acelera despliegues, mejora confiabilidad.
 
 **Ejemplos**:
+
 - `deploy-infrastructure.yml` - Terraform con plan/apply
 - `deploy-traefik.yml` - Despliegue con validación
 - `check-*-status.yml` - Workflows de diagnóstico
@@ -59,6 +63,7 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 ### 3. 📊 Observabilidad Completa
 
 **Puntos fuertes**:
+
 - ✅ **Stack completo**: VictoriaMetrics + Grafana + Loki + Promtail
 - ✅ **Dashboards pre-configurados** (infra, Traefik, Docker)
 - ✅ **Sistema de alertas** con Alertmanager
@@ -69,6 +74,7 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 **Impacto**: Visibilidad completa del sistema, detección temprana de problemas.
 
 **Componentes**:
+
 - VictoriaMetrics (métricas, 7 días retención)
 - Grafana (visualización, dashboards)
 - Loki (logs, 7 días retención)
@@ -78,6 +84,7 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 ### 4. 🏗️ Arquitectura Bien Diseñada
 
 **Puntos fuertes**:
+
 - ✅ **Separación de responsabilidades**: infra / platform / apps
 - ✅ **Terraform para infraestructura** (VPS + DNS)
 - ✅ **Docker Compose** para orquestación
@@ -88,7 +95,8 @@ Este repositorio representa una **plataforma IaC madura y bien estructurada** co
 **Impacto**: Escalable, mantenible, replicable.
 
 **Estructura**:
-```
+
+```bash
 codespartan/
 ├── infra/          # Terraform (IaC)
 ├── platform/       # Stack base (Traefik, Monitoring)
@@ -98,6 +106,7 @@ codespartan/
 ### 5. 🔒 Seguridad Base Implementada
 
 **Puntos fuertes**:
+
 - ✅ **SSL/TLS automático** con Let's Encrypt
 - ✅ **Security headers** en Traefik (HSTS, XSS, CSP)
 - ✅ **Rate limiting** configurado
@@ -111,6 +120,7 @@ codespartan/
 ### 6. 🛠️ Herramientas y Scripts Útiles
 
 **Puntos fuertes**:
+
 - ✅ **Scripts de backup/restore** automatizados
 - ✅ **Health check scripts** para diagnóstico
 - ✅ **Troubleshooting scripts** específicos
@@ -122,6 +132,7 @@ codespartan/
 ### 7. 📦 Gestión de Aplicaciones Multi-tenant
 
 **Puntos fuertes**:
+
 - ✅ **Estructura por cliente** (cyberdyne, dental-io, codespartan-cloud)
 - ✅ **Entornos separados** (staging, production)
 - ✅ **Template reutilizable** para nuevas apps
@@ -136,6 +147,7 @@ codespartan/
 ### 1. 🔴 CRÍTICO: Gestión de Secretos Insegura
 
 **Problemas identificados**:
+
 - ❌ **Contraseñas hardcodeadas** en archivos YAML:
   - `users.htpasswd` con hash visible en repo
   - `users_database.yml` con hash Argon2 visible
@@ -147,11 +159,13 @@ codespartan/
 **Riesgo**: 🔴 **ALTO** - Exposición de credenciales, acceso no autorizado
 
 **Impacto**:
+
 - Si el repo se hace público, todas las credenciales quedan expuestas
 - Sin rotación, credenciales comprometidas permanecen activas
 - No hay auditoría de acceso a secretos
 
 **Ejemplos encontrados**:
+
 ```yaml
 # codespartan/platform/traefik/users.htpasswd
 admin:$2y$05$E6t5TRn595ZGqgG3yZ2XXOHwh19zgbruSv1.YQFsGgufTePCwDq4O
@@ -163,6 +177,7 @@ password: "$argon2id$v=19$m=65536,t=3,p=4$..."  # Password: codespartan123
 ### 2. 🟡 MEDIO: Falta de Tests Automatizados
 
 **Problemas identificados**:
+
 - ❌ **No hay tests unitarios** de scripts
 - ❌ **No hay tests de integración** de workflows
 - ❌ **No hay validación** de configuraciones (YAML, Terraform)
@@ -171,11 +186,13 @@ password: "$argon2id$v=19$m=65536,t=3,p=4$..."  # Password: codespartan123
 **Riesgo**: 🟡 **MEDIO** - Bugs en producción, regresiones no detectadas
 
 **Impacto**:
+
 - Cambios pueden romper el sistema sin detección temprana
 - No hay validación de configuraciones antes de deploy
 - Difícil refactorizar con confianza
 
 **Recomendaciones**:
+
 - Tests de Terraform con `terratest`
 - Validación YAML con `yamllint` / `kubeval`
 - Tests de workflows con `act`
@@ -184,6 +201,7 @@ password: "$argon2id$v=19$m=65536,t=3,p=4$..."  # Password: codespartan123
 ### 3. 🟡 MEDIO: Aislamiento de Red Incompleto
 
 **Problemas identificados**:
+
 - ⚠️ **Red compartida `web`** para todas las aplicaciones
 - ⚠️ **Comunicación cruzada** entre dominios posible
 - ⚠️ **No hay network policies** explícitas
@@ -192,11 +210,14 @@ password: "$argon2id$v=19$m=65536,t=3,p=4$..."  # Password: codespartan123
 **Riesgo**: 🟡 **MEDIO** - Brecha de seguridad entre aplicaciones
 
 **Impacto**:
+
 - Si una app se compromete, puede acceder a otras
 - No hay principio de menor privilegio en red
-- Difícil cumplir compliance (ISO 27001, SOC 2)
+- Difícil cu
+mplir compliance (ISO 27001, SOC 2)
 
 **Estado actual**:
+
 ```yaml
 # Todas las apps usan la misma red
 networks:
@@ -205,6 +226,7 @@ networks:
 ```
 
 **Objetivo** (según roadmap):
+
 - Red aislada por dominio/cliente
 - Network policies explícitas
 - Comunicación solo a través de Traefik
