@@ -331,7 +331,114 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 
 ---
 
-## 🎁 Fase 7: Nice-to-Have (OPCIONAL)
+## 🔐 Fase 7: Mejoras de Seguridad y Secret Management (PENDIENTE)
+
+**Objetivo:** Implementar gestión segura de secretos y completar configuración de seguridad.
+
+### 📚 Documentación Creada
+
+- ✅ `docs/SECRET_MANAGEMENT.md` - Guía completa GitHub Secrets vs HashiCorp Vault
+- ✅ `docs/CONFIGURAR_AUTHELIA_SMTP.md` - Configurar SMTP de Authelia de forma segura
+- ✅ `docs/VERIFICAR_FAIL2BAN.md` - Verificar e implementar Fail2ban
+- ✅ `ANALISIS_ARQUITECTURA.md` - Análisis completo del repositorio
+
+### 🔴 Prioridad Alta: Secret Management
+
+- [ ] **Migrar secretos a GitHub Secrets** - 2-3 días
+  - [ ] Crear GitHub Secrets:
+    - [ ] `AUTHELIA_SMTP_HOST` - Servidor SMTP
+    - [ ] `AUTHELIA_SMTP_PORT` - Puerto SMTP
+    - [ ] `AUTHELIA_SMTP_USERNAME` - Usuario SMTP
+    - [ ] `AUTHELIA_SMTP_PASSWORD` - Contraseña SMTP (eliminar hardcodeada)
+    - [ ] `AUTHELIA_SMTP_SENDER` - Email remitente
+    - [ ] `AUTHELIA_SESSION_SECRET` - Secret de sesión
+    - [ ] `AUTHELIA_ENCRYPTION_KEY` - Encryption key
+    - [ ] `TRAEFIK_BASIC_AUTH` - Hash de basic auth (si se usa)
+  - [ ] Crear `configuration.yml.template` para Authelia
+  - [ ] Actualizar workflow `deploy-authelia.yml` para usar secrets
+  - [ ] Eliminar contraseñas hardcodeadas de workflows
+  - [ ] Crear `.env.example` files con placeholders
+  - [ ] Agregar archivos sensibles a `.gitignore`
+  - [ ] Documentar proceso de rotación de secretos
+
+**Referencia**: Ver `docs/SECRET_MANAGEMENT.md` para comparación GitHub Secrets vs Vault
+
+### 🔴 Prioridad Alta: Configurar Authelia SMTP
+
+- [ ] **Habilitar SMTP en Authelia** - 1-2 horas
+  - [ ] Verificar que GitHub Secrets están creados
+  - [ ] Crear `configuration.yml.template` con variables de entorno
+  - [ ] Actualizar workflow para usar `envsubst` o similar
+  - [ ] Probar deploy con nuevos secrets
+  - [ ] Verificar que Authelia inicia correctamente
+  - [ ] Test de envío de email (password reset)
+  - [ ] Verificar que emails llegan correctamente
+  - [ ] Eliminar configuración SMTP hardcodeada del workflow `configure-smtp.yml`
+
+**Referencia**: Ver `docs/CONFIGURAR_AUTHELIA_SMTP.md` para guía completa
+
+### 🟡 Prioridad Media: Verificar Fail2ban
+
+- [ ] **Verificar e implementar Fail2ban** - 1 hora
+  - [ ] Verificar si Fail2ban está instalado en VPS
+  - [ ] Verificar si el servicio está corriendo
+  - [ ] Verificar configuración `/etc/fail2ban/jail.local`
+  - [ ] Si no está instalado:
+    - [ ] Ejecutar script `install-fail2ban.sh` o
+    - [ ] Crear workflow `install-fail2ban.yml` para instalación automática
+  - [ ] Verificar que SSH jail está activo
+  - [ ] Test de funcionamiento (simular 5 intentos fallidos)
+  - [ ] Documentar en README
+
+**Referencia**: Ver `docs/VERIFICAR_FAIL2BAN.md` para guía completa
+
+### 🟡 Prioridad Media: Tests Automatizados
+
+- [ ] **Implementar tests básicos** - 3-5 días
+  - [ ] Validación de Terraform (`terraform validate`, `tflint`)
+  - [ ] Validación de YAML (`yamllint`, `kubeval`)
+  - [ ] Validación de docker-compose (`docker-compose config`)
+  - [ ] Security scanning (`trivy`, `snyk`)
+  - [ ] Linting de scripts (`shellcheck`)
+  - [ ] Agregar a CI/CD pipeline
+
+**Referencia**: Ver `ANALISIS_ARQUITECTURA.md` sección "Tests Automatizados"
+
+### 🟡 Prioridad Media: Aislamiento de Red
+
+- [ ] **Redes aisladas por aplicación** - 2-3 días
+  - [ ] Crear redes aisladas por cliente/aplicación
+  - [ ] Actualizar docker-compose de cada app
+  - [ ] Configurar Traefik para routing correcto
+  - [ ] Documentar arquitectura de red
+  - [ ] Tests de conectividad entre redes
+
+**Referencia**: Ver `ANALISIS_ARQUITECTURA.md` sección "Aislamiento de Red"
+
+### 🟢 Prioridad Baja: HashiCorp Vault (Futuro - Opcional)
+
+- [ ] **Evaluar HashiCorp Vault** - 5-7 días
+  - [ ] Decidir si es necesario (vs GitHub Secrets)
+  - [ ] Si se implementa:
+    - [ ] Desplegar Vault en VPS o usar Vault Cloud
+    - [ ] Migrar secretos críticos a Vault
+    - [ ] Integrar aplicaciones con Vault SDK
+    - [ ] Configurar rotación automática de credenciales
+
+**Referencia**: Ver `docs/SECRET_MANAGEMENT.md` para comparación detallada
+
+**Entregables:**
+- ✅ Documentación completa de secret management
+- ✅ Authelia SMTP configurado de forma segura
+- ✅ Fail2ban verificado e implementado
+- ✅ Secretos migrados a GitHub Secrets
+- ✅ Tests básicos en CI/CD
+
+**Estado**: 📚 Documentación completa | ⏳ Pendiente de implementación
+
+---
+
+## 🎁 Fase 8: Nice-to-Have (OPCIONAL)
 
 **Objetivo:** Features avanzadas no críticas.
 
@@ -402,8 +509,16 @@ El sistema está **completamente implementado y documentado**:
 - ✅ DevOps tooling (Scripts + Templates + CI/CD)
 - ✅ Documentación exhaustiva (5500+ líneas, 11 docs)
 
+**🔴 Próximos pasos prioritarios (Mejoras de Seguridad):**
+- 🔐 **Fase 7**: Secret Management y mejoras de seguridad
+  - [ ] Migrar secretos a GitHub Secrets (2-3 días)
+  - [ ] Configurar Authelia SMTP de forma segura (1-2 horas)
+  - [ ] Verificar/implementar Fail2ban (1 hora)
+  - [ ] Implementar tests automatizados (3-5 días)
+  - [ ] Aislamiento de red por aplicación (2-3 días)
+
 **Próximos pasos opcionales:**
-- 🎁 Fase 7: Nice-to-have (Multi-environment, Blue/Green, Watchtower, Portainer, etc.)
+- 🎁 Fase 8: Nice-to-have (Multi-environment, Blue/Green, Watchtower, Portainer, etc.)
 - 🚀 Desplegar tus aplicaciones usando el template
 - 📊 Crear dashboards custom en Grafana
 - 🔔 Afinar reglas de alertas según tus necesidades
@@ -425,5 +540,5 @@ docker ps
 
 ---
 
-**Última actualización:** 2025-10-08
-**Estado:** ✅ **PROYECTO COMPLETADO** | Fases 1-6 100% | Sistema Production-Ready
+**Última actualización:** 2025-11-18
+**Estado:** ✅ **Fases 1-6 COMPLETADAS** | 🔐 **Fase 7 PENDIENTE** (Mejoras de Seguridad) | Sistema Production-Ready con mejoras pendientes
