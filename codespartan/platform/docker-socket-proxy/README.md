@@ -217,7 +217,7 @@ docker logs traefik | grep -i error
 
 ✅ **FASE 1 completada**
 
-Siguiente: **FASE 2 - Authelia SSO** (ver `docs/IMPLEMENTATION_PLAN.md`)
+Siguiente: **FASE 2 - Authelia SSO** (ver `docs/06-implementation/IMPLEMENTATION_PLAN.md`)
 - Autenticación centralizada con MFA
 - SSO para todos los dashboards (Traefik, Grafana, Portainer)
 - Protección adicional para servicios de gestión

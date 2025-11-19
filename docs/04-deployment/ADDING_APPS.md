@@ -733,11 +733,11 @@ git push
 
 ## 📚 Additional Resources
 
-- [Template Documentation](../apps/_TEMPLATE/README.md)
+- [Template Documentation](../../codespartan/apps/_TEMPLATE/README.md)
 - [Docker Compose Reference](https://docs.docker.com/compose/)
 - [Traefik Documentation](https://doc.traefik.io/traefik/)
-- [Platform Runbook](./RUNBOOK.md)
-- [Deployment Guide](../../DEPLOY.md)
+- [Runbook Operativo](../03-operations/RUNBOOK.md)
+- [Guía de Despliegue](DEPLOYMENT.md)
 
 ---
 

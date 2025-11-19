@@ -309,8 +309,8 @@ gh workflow run deploy-mambo-cloud.yml
 
 | Archivo | Descripción |
 |---------|-------------|
-| `VPS_NETWORK_TROUBLESHOOTING.md` | Guía completa de diagnóstico de red |
-| `VPS_MIGRATION_PLAN.md` | Plan de migración original |
+| [VPS Network Troubleshooting](VPS_NETWORK.md) | Guía completa de diagnóstico de red |
+| [VPS Migration Plan](VPS_MIGRATION.md) | Plan de migración original |
 | `.github/workflows/bootstrap-vps.yml` | Workflow de bootstrap |
 | `.github/workflows/install-docker-workaround.yml` | Workflow para instalar Docker (nuevo) |
 | `.github/workflows/vps-diagnostics.yml` | Workflow de diagnósticos |

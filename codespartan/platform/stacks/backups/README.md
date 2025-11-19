@@ -410,7 +410,7 @@ cd /opt/backups && ls -t backup_*.tar.gz | tail -n +4 | xargs rm -f
 
 - **Logs**: `/var/log/codespartan-backup.log`
 - **Documentación**: `codespartan/platform/stacks/backups/README.md`
-- **Runbook**: `codespartan/docs/RUNBOOK.md`
+- **Runbook**: `docs/03-operations/RUNBOOK.md`
 
 ---
 

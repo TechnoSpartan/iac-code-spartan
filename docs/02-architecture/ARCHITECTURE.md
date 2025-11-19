@@ -18,41 +18,41 @@ Este documento describe la arquitectura de la plataforma, su estado actual, y el
 
 ```mermaid
 graph TB
-    Internet[🌍 Internet]
+    Internet[Internet]
 
-    subgraph VPS["🖥️ Hetzner VPS (ARM64)"]
-        subgraph EdgeLayer["⚡ Edge Layer (Punto de Entrada Único)"]
-            Traefik[🚪 Traefik Edge<br/>- SSL/TLS<br/>- Rate Limiting Global<br/>- Security Headers]
-            DSP[🔒 docker-socket-proxy<br/>GET only API]
+    subgraph VPS["Hetzner VPS (ARM64)"]
+        subgraph EdgeLayer["Edge Layer (Punto de Entrada Único)"]
+            Traefik[Traefik Edge<br/>- SSL/TLS<br/>- Rate Limiting Global<br/>- Security Headers]
+            DSP[docker-socket-proxy<br/>GET only API]
         end
 
-        subgraph AuthLayer["🔐 Authentication Layer"]
-            Authelia[🛡️ Authelia<br/>SSO + MFA]
+        subgraph AuthLayer["Authentication Layer"]
+            Authelia[Authelia<br/>SSO + MFA]
         end
 
-        subgraph ObservabilityLayer["📊 Observability Layer"]
-            Portainer[👁️ Portainer<br/>Read-Only Dashboard]
-            Grafana[📈 Grafana<br/>Metrics + Logs]
+        subgraph ObservabilityLayer["Observability Layer"]
+            Portainer[Portainer<br/>Read-Only Dashboard]
+            Grafana[Grafana<br/>Metrics + Logs]
         end
 
-        subgraph DomainCyberdyne["🤖 Domain: Cyberdyne Systems"]
-            KongCyber[🦍 Kong API Gateway<br/>- Auth JWT<br/>- Rate Limit 50req/s<br/>- Logging]
-            CyberFront[⚛️ Frontend React]
-            CyberAPI[🔧 API Node.js]
-            CyberDB[(🗄️ MongoDB)]
+        subgraph DomainCyberdyne["Domain: Cyberdyne Systems"]
+            KongCyber[Kong API Gateway<br/>- Auth JWT<br/>- Rate Limit 50req/s<br/>- Logging]
+            CyberFront[Frontend React]
+            CyberAPI[API Node.js]
+            CyberDB[(MongoDB)]
         end
 
-        subgraph DomainDental["🦷 Domain: Dental-IO"]
-            KongDental[🦍 Kong API Gateway<br/>- Auth JWT<br/>- Rate Limit 50req/s<br/>- Logging]
-            DentalFront[⚛️ Frontend React]
-            DentalAPI[🔧 API Node.js]
-            DentalDB[(🗄️ MongoDB)]
+        subgraph DomainDental["Domain: Dental-IO"]
+            KongDental[Kong API Gateway<br/>- Auth JWT<br/>- Rate Limit 50req/s<br/>- Logging]
+            DentalFront[Frontend React]
+            DentalAPI[API Node.js]
+            DentalDB[(MongoDB)]
         end
 
-        subgraph DomainTrack["📦 Domain: TrackWorks"]
-            KongTrack[🦍 Kong API Gateway<br/>- Auth JWT<br/>- Rate Limit 50req/s<br/>- Logging]
-            TrackAPI[🔧 API Node.js]
-            TrackDB[(🗄️ MongoDB)]
+        subgraph DomainTrack["Domain: TrackWorks"]
+            KongTrack[Kong API Gateway<br/>- Auth JWT<br/>- Rate Limit 50req/s<br/>- Logging]
+            TrackAPI[API Node.js]
+            TrackDB[(MongoDB)]
         end
     end
 
@@ -128,7 +128,7 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph NetworkWeb["🌐 Docker Network: web (external)"]
+    subgraph NetworkWeb["Docker Network: web (external)"]
         Traefik[Traefik Edge<br/>container_name: traefik]
         DSP[docker-socket-proxy<br/>container_name: docker-socket-proxy]
         Authelia[Authelia<br/>container_name: authelia]
@@ -136,7 +136,7 @@ graph TB
         Grafana[Grafana<br/>container_name: grafana]
     end
 
-    subgraph NetworkCyber["🤖 Docker Network: cyberdyne_internal (isolated)"]
+    subgraph NetworkCyber["Docker Network: cyberdyne_internal (isolated)"]
         KongCyber[Kong Cyberdyne<br/>container_name: kong-cyberdyne]
         CyberFront[Frontend<br/>container_name: cyberdyne-frontend]
         CyberAPI[API<br/>container_name: cyberdyne-api]
@@ -147,7 +147,7 @@ graph TB
         CyberAPI --> CyberDB
     end
 
-    subgraph NetworkDental["🦷 Docker Network: dental_internal (isolated)"]
+    subgraph NetworkDental["Docker Network: dental_internal (isolated)"]
         KongDental[Kong Dental<br/>container_name: kong-dental]
         DentalFront[Frontend<br/>container_name: dental-frontend]
         DentalAPI[API<br/>container_name: dental-api]
@@ -158,7 +158,7 @@ graph TB
         DentalAPI --> DentalDB
     end
 
-    subgraph NetworkTrack["📦 Docker Network: trackworks_internal (isolated)"]
+    subgraph NetworkTrack["Docker Network: trackworks_internal (isolated)"]
         KongTrack[Kong TrackWorks<br/>container_name: kong-trackworks]
         TrackAPI[API<br/>container_name: trackworks-api]
         TrackDB[MongoDB<br/>container_name: trackworks-mongodb]
@@ -167,7 +167,7 @@ graph TB
         TrackAPI --> TrackDB
     end
 
-    subgraph HostResources["🖥️ Host Resources"]
+    subgraph HostResources["Host Resources"]
         DockerSocket["/var/run/docker.sock<br/>(Docker Engine)"]
         VolTraefik["/opt/codespartan/platform/traefik/letsencrypt"]
         VolCyberDB["/opt/codespartan/data/cyberdyne/mongodb"]

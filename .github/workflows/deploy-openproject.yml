@@ -1,0 +1,170 @@
+name: Deploy OpenProject
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/apps/codespartan-cloud/project/**'
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare files
+        run: |
+          mkdir -p artifacts/openproject
+          cp -r codespartan/apps/codespartan-cloud/project/* artifacts/openproject/
+
+      - name: Prepare remote directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mkdir -p /opt/codespartan/apps/codespartan-cloud/project
+
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "artifacts/openproject/*"
+          target: "/opt/codespartan/apps/codespartan-cloud/project"
+          strip_components: 2
+
+      - name: Deploy OpenProject
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euxo pipefail
+
+            DEPLOY_START=$(date +%s)
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚀 DEPLOYING OPENPROJECT"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/apps/codespartan-cloud/project
+
+            # Ensure networks exist
+            docker network create web || echo "Network 'web' already exists"
+            docker network create openproject_internal || echo "Network 'openproject_internal' already exists"
+
+            # Check if .env exists, if not copy from .env.example
+            if [ ! -f .env ]; then
+              echo "⚠️  .env file not found, copying from .env.example"
+              cp .env.example .env
+              echo "⚠️  WARNING: Update .env with production values!"
+            fi
+
+            # Pull latest images
+            echo "📦 Pulling latest Docker images..."
+            docker compose pull
+
+            # Deploy
+            echo "🚀 Starting OpenProject containers..."
+            docker compose up -d
+
+            # Wait for initial setup
+            echo "⏳ Waiting for containers to start..."
+            sleep 5
+
+            # Health checks
+            echo "🔍 Running health checks..."
+            ATTEMPTS=0
+            MAX_ATTEMPTS=30
+
+            # Check database health
+            echo "  → Checking database..."
+            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              if docker exec openproject-db pg_isready -U openproject &>/dev/null; then
+                echo "  ✅ Database is ready"
+                break
+              fi
+              echo "  ⏳ Waiting for database... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 3
+            done
+
+            if [ $ATTEMPTS -eq $MAX_ATTEMPTS ]; then
+              echo "  ❌ Database failed to start"
+              docker logs openproject-db | tail -20
+              exit 1
+            fi
+
+            # Check app health
+            ATTEMPTS=0
+            echo "  → Checking app..."
+            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              if docker exec openproject-app curl -sf http://localhost:8080/health_checks/default &>/dev/null; then
+                DEPLOY_END=$(date +%s)
+                DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+                echo "  ✅ App is healthy"
+
+                # Cleanup old images
+                echo "🧹 Cleaning up old images..."
+                docker image prune -f
+
+                echo ""
+                echo "════════════════════════════════════════════════════════════"
+                echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
+                echo "════════════════════════════════════════════════════════════"
+                echo ""
+                echo "📊 Container Status:"
+                docker ps --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+                echo ""
+                echo "🌐 URL: https://project.codespartan.cloud"
+                echo "👤 Default login: admin / admin"
+                echo "⚠️  IMPORTANT: Change admin password immediately!"
+                echo ""
+                echo "📖 First login help: Check README.md in the deployment directory"
+                echo ""
+                exit 0
+              fi
+              echo "  ⏳ Waiting for app... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 3
+            done
+
+            echo "  ❌ App health check timeout"
+            echo "📋 App container logs:"
+            docker logs --tail 50 openproject-app
+            exit 1
+
+      - name: Verify production URL
+        if: success()
+        run: |
+          echo "🌐 Verifying production URL..."
+          sleep 10
+
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://project.codespartan.cloud || echo "000")
+
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ OpenProject is live! (HTTP $HTTP_STATUS)"
+            echo "🔗 https://project.codespartan.cloud"
+            echo ""
+            echo "📝 Next steps:"
+            echo "1. Login at https://project.codespartan.cloud"
+            echo "2. Username: admin"
+            echo "3. Password: admin"
+            echo "4. Change admin password immediately!"
+            echo "5. Configure email settings in Administration"
+          else
+            echo "⚠️  Site returned HTTP $HTTP_STATUS"
+            if [ "$HTTP_STATUS" -eq "000" ]; then
+              echo "DNS may not be resolved yet or SSL certificate is being generated"
+            fi
+            echo "Container is healthy. Check again in 2-3 minutes: https://project.codespartan.cloud"
+          fi

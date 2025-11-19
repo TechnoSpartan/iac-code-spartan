@@ -105,7 +105,7 @@ ssh_public_key_path = "~/.ssh/id_codespartan.pub"
 7. ⏳ Espera 1-2 minutos
 8. ✅ Verifica: https://ui.codespartan.cloud
 
-⚠️ **Nota**: Si los dominios devuelven 404 después del despliegue, consulta [TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md](codespartan/docs/TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md) para la solución.
+⚠️ **Nota**: Si los dominios devuelven 404 después del despliegue, consulta [Troubleshooting Traefik](../07-troubleshooting/TRAEFIK.md) para la solución.
 
 ## 🔍 Paso 5: Verificación Completa
 
@@ -252,9 +252,9 @@ Una vez que todo funcione:
 1. **Revisa los logs** detallados en GitHub Actions
 2. **SSH al VPS** y verifica contenedores: `docker ps`
 3. **Consulta documentación**:
-   - [RUNBOOK.md](codespartan/docs/RUNBOOK.md) - Guía completa
-   - [BEGINNER.md](codespartan/docs/BEGINNER.md) - Tutorial paso a paso
-   - [GITHUB.md](codespartan/docs/GITHUB.md) - CI/CD detallado
-   - [TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md](codespartan/docs/TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md) - Solución problemas CodeSpartan Cloud
+   - [Runbook Operativo](../03-operations/RUNBOOK.md) - Guía completa
+   - [Guía para Principiantes](../01-getting-started/BEGINNER.md) - Tutorial paso a paso
+   - [CI/CD con GitHub Actions](GITHUB.md) - CI/CD detallado
+   - [Troubleshooting Traefik](../07-troubleshooting/TRAEFIK.md) - Solución problemas CodeSpartan Cloud
 
 **¡Disfruta de tu nueva infraestructura cloud profesional! 🚀**

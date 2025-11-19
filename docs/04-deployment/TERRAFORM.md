@@ -119,7 +119,7 @@ terraform plan  # Verify state is clean
 1. **Created:**
    - `codespartan/infra/hetzner/import-existing-resources.sh` - Comprehensive import script
    - `.github/workflows/diagnostic-check.yml` - Diagnostic workflow (for troubleshooting)
-   - `codespartan/docs/TERRAFORM_FIX.md` - This documentation
+   - Este documento - `docs/04-deployment/TERRAFORM.md`
 
 2. **Modified:**
    - `.github/workflows/deploy-infrastructure.yml` - Use import script instead of inline logic

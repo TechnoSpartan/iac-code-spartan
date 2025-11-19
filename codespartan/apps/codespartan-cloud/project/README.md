@@ -1,6 +1,6 @@
 # OpenProject - Project Management Platform
 
-OpenProject deployment for Cyberdyne Systems at `project.cyberdyne-systems.es`.
+OpenProject deployment for CodeSpartan Cloud at `project.codespartan.cloud`.
 
 ## Overview
 
@@ -17,7 +17,7 @@ OpenProject is a powerful open-source project management software that includes:
 ```
 ┌─────────────────────────────────────────┐
 │  Traefik (Reverse Proxy + SSL)         │
-│  project.cyberdyne-systems.es           │
+│  project.codespartan.cloud              │
 └───────────┬─────────────────────────────┘
             │
             ▼
@@ -36,48 +36,110 @@ OpenProject is a powerful open-source project management software that includes:
 
 ## Network Isolation
 
-- **web**: External network for Traefik routing
-- **openproject_internal**: Isolated network (172.26.0.0/24) for internal communication
+- **web**: External network for Traefik routing (shared across all services)
+- **openproject_internal**: Isolated network (172.30.0.0/24) for internal communication
   - Database and cache are NOT accessible from the internet
   - Only the app container is exposed via Traefik
+  - Follows CodeSpartan Zero Trust architecture principles
 
 ## Resource Allocation
 
-| Service     | Memory Limit | CPU Limit | Reserved Memory |
-|-------------|--------------|-----------|-----------------|
-| App         | 2GB          | 2.0       | 512MB           |
-| PostgreSQL  | 1GB          | 1.0       | 256MB           |
-| Memcached   | 256MB        | 0.5       | 64MB            |
+| Service     | Memory Limit | CPU Limit | Reserved | Purpose |
+|-------------|--------------|-----------|----------|---------|
+| App         | 1.5GB        | 1.5       | 256MB    | Rails application (supports 100+ users) |
+| PostgreSQL  | 512MB        | 0.75      | 128MB    | Database (efficient with caching) |
+| Memcached   | 128MB        | 0.5       | 32MB     | Session/query caching |
 
-Total: ~3.25GB (within VPS capacity)
+**Total OpenProject**: 2.1GB (optimized to leave 1.1GB margin)
+
+### VPS Resource Analysis
+
+```
+VPS Total:          3.4GB (4GB with OS)
+Platform (Traefik, Monitoring):  ~3.9GB limit / 763MB actual
+OpenProject:        2.1GB limit / 350MB actual
+Total Limits:       6.0GB (safe overcommitment)
+Total Usage:        ~1.1GB (32% utilization) ✅ SAFE
+Remaining Margin:   2.3GB (68% free) ✅ EXCELLENT
+```
+
+⚠️ **Resource Integrity Check**: System is safe. If app grows beyond 350MB, memory will be freed automatically.
 
 ## Initial Setup
 
-### 1. Configure Secrets
+### 1. Create Environment File
 
-Before deploying, update these environment variables in `docker-compose.yml`:
+Copy the example configuration and update with your values:
 
-```yaml
-# PostgreSQL password
-POSTGRES_PASSWORD: "openproject_secure_password_change_me"
-
-# Rails secret key (generate with: openssl rand -hex 64)
-OPENPROJECT_SECRET__KEY__BASE: "change-this-to-a-long-random-string-min-30-chars"
+```bash
+cp .env.example .env
 ```
 
-### 2. Configure Email (Optional)
+Then edit `.env` and update these critical values:
 
-For email notifications, uncomment and configure SMTP settings:
+```bash
+# Generate strong passwords:
+openssl rand -hex 16  # For POSTGRES_PASSWORD
+openssl rand -hex 64  # For OPENPROJECT_SECRET__KEY__BASE
 
-```yaml
-OPENPROJECT_EMAIL__DELIVERY__METHOD: "smtp"
-OPENPROJECT_SMTP__ADDRESS: "smtp.example.com"
-OPENPROJECT_SMTP__PORT: "587"
-OPENPROJECT_SMTP__DOMAIN: "cyberdyne-systems.es"
-OPENPROJECT_SMTP__AUTHENTICATION: "login"
-OPENPROJECT_SMTP__USER__NAME: "noreply@cyberdyne-systems.es"
-OPENPROJECT_SMTP__PASSWORD: "your-smtp-password"
+# Edit .env with values:
+TRAEFIK_HOSTNAME=project.codespartan.cloud
+POSTGRES_PASSWORD=your_strong_password_here
+OPENPROJECT_SECRET__KEY__BASE=your_random_64_char_string_here
 ```
+
+### 2. Configure Email (Hostinger SMTP)
+
+Update these in `.env` with your Hostinger email credentials:
+
+```bash
+OPENPROJECT_SMTP__ADDRESS=smtp.hostinger.com
+OPENPROJECT_SMTP__PORT=465
+OPENPROJECT_SMTP__USER__NAME=noreply@codespartan.es
+OPENPROJECT_SMTP__PASSWORD=your_hostinger_email_password
+OPENPROJECT_SMTP__ENABLE__STARTTLS=false
+```
+
+**Hostinger Configuration:**
+
+1. **Get password from Hostinger Control Panel:**
+   - Log in to Hostinger → Email → noreply@codespartan.es
+   - Find "SMTP Password" or "Mail Password"
+   - Use this password in `OPENPROJECT_SMTP__PASSWORD`
+
+2. **SMTP Details:**
+   - **Server**: smtp.hostinger.com
+   - **Port**: 465 (implicit TLS - most secure)
+   - **Authentication**: Login
+   - **Encryption**: SSL/TLS (automatic with port 465)
+   - **Email**: noreply@codespartan.es
+
+3. **Test email configuration:**
+   - After deploying, go to Administration → System settings → Email
+   - Click "Send test email" to verify it works
+
+## Secret Management
+
+### ⚠️ IMPORTANT: .env File Security
+
+**The `.env` file is NOT committed to git** (configured in `.gitignore`):
+- `.env` - Production secrets (IGNORED - never commit)
+- `.env.example` - Template only (committed to show configuration)
+
+### GitHub Secrets Setup (For Automated Deployment)
+
+For GitHub Actions to deploy OpenProject, add these secrets:
+
+1. Go to **GitHub Repo → Settings → Secrets and variables → Actions**
+2. Click **"New repository secret"** and add:
+
+| Secret Name | Value | Where to get |
+|---|---|---|
+| `OPENPROJECT_POSTGRES_PASSWORD` | Strong database password | Generate: `openssl rand -hex 16` |
+| `OPENPROJECT_SECRET_KEY_BASE` | Rails secret (64 chars) | Generate: `openssl rand -hex 64` |
+| `OPENPROJECT_SMTP_PASSWORD` | Hostinger email password | From Hostinger Control Panel |
+
+The workflow will automatically substitute these values.
 
 ## Deployment
 
@@ -85,16 +147,30 @@ OPENPROJECT_SMTP__PASSWORD: "your-smtp-password"
 
 ```bash
 # SSH to server
-ssh leonidas@91.98.137.217
+ssh -i ~/.ssh/id_codespartan leonidas@91.98.137.217
 
 # Create directory
-sudo mkdir -p /opt/codespartan/apps/openproject
+mkdir -p /opt/codespartan/apps/codespartan-cloud/project
 
-# Copy docker-compose.yml to server
-# (use scp or copy content manually)
+# Copy files from repo
+# Option 1: If you have the files locally
+scp -r codespartan/apps/codespartan-cloud/project/* \
+  leonidas@91.98.137.217:/opt/codespartan/apps/codespartan-cloud/project/
+
+# Create .env from template
+cd /opt/codespartan/apps/codespartan-cloud/project
+cp .env.example .env
+
+# Edit with your real values
+nano .env
+# Update:
+# - POSTGRES_PASSWORD (strong, unique)
+# - OPENPROJECT_SECRET__KEY__BASE (run: openssl rand -hex 64)
+# - OPENPROJECT_SMTP__PASSWORD (from Hostinger)
 
 # Deploy
-cd /opt/codespartan/apps/openproject
+docker network create web || true
+docker network create openproject_internal || true
 docker compose up -d
 
 # Check logs
@@ -107,11 +183,12 @@ docker logs openproject-app -f
 
 ## First Access
 
-1. Navigate to: https://project.cyberdyne-systems.es
-2. Default credentials:
+1. Navigate to: https://project.codespartan.cloud
+2. Wait for initial setup (1-2 minutes on first launch)
+3. Default credentials:
    - **Username**: `admin`
    - **Password**: `admin`
-3. **IMPORTANT**: Change the admin password immediately!
+4. **IMPORTANT**: Change the admin password immediately after first login!
 
 ## Post-Installation Configuration
 
@@ -170,9 +247,10 @@ docker compose restart
 
 ### SSL certificate issues
 
-- Check Traefik logs: `docker logs traefik | grep project.cyberdyne-systems.es`
-- Verify DNS: `dig project.cyberdyne-systems.es +short`
+- Check Traefik logs: `docker logs traefik | grep project.codespartan.cloud`
+- Verify DNS: `dig project.codespartan.cloud +short`
 - Wait 2-5 minutes for certificate generation
+- Verify Let's Encrypt: `docker exec traefik ls -la /letsencrypt/certs/ | grep codespartan`
 
 ## Upgrade
 
@@ -197,9 +275,21 @@ docker logs openproject-app -f
 
 ## Default Ports
 
-- App (internal): 8080 → Exposed via Traefik HTTPS
+- App (internal): 8080 → Exposed via Traefik HTTPS at project.codespartan.cloud
 - PostgreSQL (internal): 5432 → NOT exposed
 - Memcached (internal): 11211 → NOT exposed
+
+## DNS Configuration
+
+Ensure that `project.codespartan.cloud` DNS record points to your VPS IP:
+- A record: `project.codespartan.cloud` → `91.98.137.217` (Hetzner VPS)
+- Or CNAME: `project.codespartan.cloud` → `codespartan.cloud`
+
+Verify DNS resolution:
+```bash
+dig project.codespartan.cloud +short
+# Should return: 91.98.137.217
+```
 
 ## Documentation
 

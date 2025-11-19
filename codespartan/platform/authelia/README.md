@@ -141,7 +141,7 @@ docker logs traefik | grep -i authelia
 
 ## 📚 Documentación Completa
 
-Ver `codespartan/docs/FASE2_AUTHELIA_SSO.md` para:
+Ver `docs/05-security/AUTHELIA.md` para:
 - Arquitectura detallada
 - Problemas encontrados y soluciones
 - Lecciones aprendidas

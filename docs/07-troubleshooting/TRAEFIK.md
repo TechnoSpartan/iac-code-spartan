@@ -390,7 +390,7 @@ Si en el futuro el Docker Provider empieza a descubrir los contenedores automát
 
 - [Traefik File Provider Documentation](https://doc.traefik.io/traefik/v3.6/providers/file/)
 - [Traefik Docker Provider Documentation](https://doc.traefik.io/traefik/v3.6/providers/docker/)
-- [Troubleshooting Cyberdyne - Similar Case](./cyberdyne-systems-es/TROUBLESHOOTING_TRAEFIK_DOCKER_PROVIDER.md)
+- Este documento describe un caso similar al problema encontrado en Cyberdyne Systems
 
 ---
 

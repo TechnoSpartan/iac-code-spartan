@@ -329,10 +329,10 @@ template-react-vps/
 - [ ] Architecture Decision Records (ADRs)
 
 ### Documentos Generales
-- [ ] `ARCHITECTURE.md` - Diagrama y explicación
-- [ ] `OPERATIONS.md` - Guía operacional
-- [ ] `CONTRIBUTING.md` - Guía contribución
-- [ ] `CHANGELOG.md` - Histórico cambios
+- [ ] [Arquitectura Completa](../02-architecture/ARCHITECTURE.md) - Diagrama y explicación
+- [ ] [Runbook Operativo](../03-operations/RUNBOOK.md) - Guía operacional
+- [ ] Contributing guide (pendiente de crear)
+- [ ] [Changelog](../../CHANGELOG.md) - Histórico cambios
 
 ---
 

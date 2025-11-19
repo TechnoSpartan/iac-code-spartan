@@ -57,7 +57,7 @@ graph TB
 - 🔄 Aislamiento completo por red
 
 **📖 Para ver la arquitectura completa, diagramas técnicos y roadmap detallado:**
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Arquitectura completa con diagramas de alto y bajo nivel
+- **[Arquitectura Completa](docs/02-architecture/ARCHITECTURE.md)** - Arquitectura completa con diagramas de alto y bajo nivel
 
 ## 🚀 Quick Start
 
@@ -286,19 +286,29 @@ dig traefik.mambo-cloud.com
 
 ## 📚 Documentación
 
-### Arquitectura y Diseño
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - 🏗️ Arquitectura completa, diagramas de alto/bajo nivel, roadmap de seguridad
+Toda la documentación está organizada en [docs/](docs/). Ver el [índice completo](docs/README.md) para navegar toda la documentación.
+
+### Quick Start
+- **[Guía para Principiantes](docs/01-getting-started/BEGINNER.md)** - Tutorial paso a paso
+- **[Quick Start](docs/01-getting-started/QUICK_START.md)** - Despliegue rápido en 5 pasos
+
+### Arquitectura
+- **[Arquitectura Completa](docs/02-architecture/ARCHITECTURE.md)** - Arquitectura Zero Trust con diagramas
+- **[System Overview](docs/02-architecture/OVERVIEW.md)** - Visión general del sistema
 
 ### Operaciones
-- **[RUNBOOK.md](codespartan/docs/RUNBOOK.md)** - 📚 Guía operativa completa
-- **[BEGINNER.md](codespartan/docs/BEGINNER.md)** - 👶 Tutorial para principiantes
+- **[Runbook Operativo](docs/03-operations/RUNBOOK.md)** - Guía operativa completa
+- **[Gestión de Aplicaciones](docs/03-operations/APPLICATIONS.md)** - Cómo gestionar aplicaciones
+- **[Monitoreo y Alertas](docs/03-operations/MONITORING.md)** - Sistema de alertas
 
-### CI/CD y Deployment
-- **[GITHUB.md](codespartan/docs/GITHUB.md)** - 🐙 Configuración GitHub Actions
-- **[DEPLOY.md](DEPLOY.md)** - 🚀 Guía de despliegue paso a paso
+### Despliegue
+- **[Guía de Despliegue](docs/04-deployment/DEPLOYMENT.md)** - Despliegue paso a paso
+- **[CI/CD con GitHub Actions](docs/04-deployment/GITHUB.md)** - Configuración GitHub Actions
 
-### Seguridad y Alertas
-- **[ALERTS.md](codespartan/docs/ALERTS.md)** - 🚨 Sistema de alertas y notificaciones
+### Seguridad
+- **[Authelia SSO](docs/05-security/AUTHELIA.md)** - Single Sign-On con MFA
+- **[Fail2ban](docs/05-security/FAIL2BAN.md)** - Protección SSH
+- **[Gestión de Secretos](docs/05-security/SECRET_MANAGEMENT.md)** - Gestión segura de secretos
 
 ## 🔒 Seguridad
 
@@ -317,7 +327,7 @@ dig traefik.mambo-cloud.com
 - 🔄 **Authelia**: SSO con MFA para todos los dashboards
 - 🔄 **Portainer**: Dashboard read-only protegido por Authelia
 
-**📖 Ver arquitectura de seguridad completa:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+**Ver arquitectura de seguridad completa:** [docs/02-architecture/ARCHITECTURE.md](docs/02-architecture/ARCHITECTURE.md)
 
 ## 🎯 Roadmap
 
@@ -340,13 +350,13 @@ dig traefik.mambo-cloud.com
 - [ ] **Template generator** - CLI para generar nueva instancia del stack
 - [ ] **Multi-VPS management** - Gestionar múltiples despliegues desde un único repo
 
-**📖 Ver roadmap detallado con fases:** [docs/ARCHITECTURE.md#estado-actual-vs-objetivo](docs/ARCHITECTURE.md#estado-actual-vs-objetivo)
+**Ver roadmap detallado con fases:** [docs/02-architecture/ARCHITECTURE.md#estado-actual-vs-objetivo](docs/02-architecture/ARCHITECTURE.md#estado-actual-vs-objetivo)
 
 ## 📞 Soporte
 
 - **Email**: infra@mambo-cloud.com
 - **Repositorio**: https://github.com/CodeSpartan/iac-core-hetzner
-- **Documentación**: [docs/](codespartan/docs/)
+- **Documentación**: [docs/](docs/)
 
 ---
 

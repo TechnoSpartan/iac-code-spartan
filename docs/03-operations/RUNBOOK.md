@@ -300,7 +300,7 @@ curl http://localhost:9093/api/v2/silences | jq '.[] | select(.status.state=="ac
 - **warning**: Agrupa por 30s, repite cada 12 horas, prioridad 4
 - **info**: Agrupa por 30s, repite cada 24 horas, prioridad 3
 
-**Documentación completa**: Ver `codespartan/docs/ALERTS.md`
+**Documentación completa**: Ver [Monitoreo y Alertas](MONITORING.md)
 
 ## 🔄 Operaciones Rutinarias
 
