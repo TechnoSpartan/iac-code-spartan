@@ -287,10 +287,262 @@ sudo journalctl -u fail2ban -f
 
 ### Integrar con Grafana (Opcional)
 
+Para monitorear Fail2ban en Grafana y recibir alertas cuando se banean IPs, necesitamos exponer las métricas de Fail2ban en formato Prometheus.
+
+#### Opción 1: Fail2ban Prometheus Exporter (Recomendado)
+
+**Paso 1: Desplegar el Exporter**
+
+Crear un servicio en el stack de monitoreo:
+
 ```yaml
-# Agregar métricas de Fail2ban a Prometheus
-# Requiere exporter: https://github.com/fail2ban/fail2ban-prometheus-exporter
+# codespartan/platform/stacks/monitoring/docker-compose.yml
+# Agregar al final de la sección services:
+
+  fail2ban-exporter:
+    image: devops-workshop/fail2ban-prometheus-exporter:latest
+    container_name: fail2ban-exporter
+    command:
+      - --fail2ban.socket=/var/run/fail2ban/fail2ban.sock
+      - --web.listen-address=:9191
+    volumes:
+      - /var/run/fail2ban:/var/run/fail2ban:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9191/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 ```
+
+**Paso 2: Configurar Scrape en Prometheus**
+
+Agregar el job de scrape en `victoriametrics/prometheus.yml`:
+
+```yaml
+# codespartan/platform/stacks/monitoring/victoriametrics/prometheus.yml
+# Agregar después de node-exporter:
+
+  - job_name: 'fail2ban'
+    static_configs:
+      - targets: ['fail2ban-exporter:9191']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+```
+
+**Paso 3: Reiniciar Servicios**
+
+```bash
+cd /opt/codespartan/platform/stacks/monitoring
+docker compose up -d fail2ban-exporter
+docker compose restart vmagent
+```
+
+**Paso 4: Verificar Métricas**
+
+```bash
+# Verificar que el exporter está funcionando
+docker exec fail2ban-exporter wget -qO- http://localhost:9191/metrics | head -20
+
+# Verificar que vmagent está scrapeando
+docker logs vmagent | grep fail2ban
+
+# Verificar métricas en VictoriaMetrics
+curl http://localhost:8428/api/v1/query?query=fail2ban_banned_total
+```
+
+**Métricas Disponibles**:
+
+- `fail2ban_banned_total` - Total de IPs baneadas por jail
+- `fail2ban_failed_total` - Total de intentos fallidos por jail
+- `fail2ban_jail_banned_total` - IPs baneadas por jail específico
+- `fail2ban_jail_failed_total` - Intentos fallidos por jail específico
+- `fail2ban_up` - Estado del exporter (1 = up, 0 = down)
+
+#### Opción 2: Dashboard en Grafana
+
+**Crear Dashboard Manualmente**:
+
+1. Ir a Grafana: https://grafana.mambo-cloud.com
+2. Dashboards → New Dashboard → Add visualization
+3. Datasource: VictoriaMetrics
+4. Queries sugeridas:
+
+```promql
+# Total de IPs baneadas (últimas 24h)
+sum(increase(fail2ban_banned_total[24h])) by (jail)
+
+# Intentos fallidos por hora
+sum(rate(fail2ban_failed_total[5m])) by (jail)
+
+# IPs actualmente baneadas
+fail2ban_jail_banned_total
+
+# Estado del exporter
+fail2ban_up
+```
+
+**Importar Dashboard Pre-configurado**:
+
+1. Dashboard ID: `13639` (Fail2ban Prometheus Exporter)
+2. O crear dashboard JSON personalizado (ver ejemplo abajo)
+
+**Ejemplo de Dashboard JSON**:
+
+```json
+{
+  "dashboard": {
+    "title": "Fail2ban Monitoring",
+    "panels": [
+      {
+        "title": "IPs Baneadas (Últimas 24h)",
+        "targets": [
+          {
+            "expr": "sum(increase(fail2ban_banned_total[24h])) by (jail)",
+            "legendFormat": "{{jail}}"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "Intentos Fallidos por Minuto",
+        "targets": [
+          {
+            "expr": "sum(rate(fail2ban_failed_total[5m])) by (jail)",
+            "legendFormat": "{{jail}}"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "IPs Actualmente Baneadas",
+        "targets": [
+          {
+            "expr": "fail2ban_jail_banned_total",
+            "legendFormat": "{{jail}}"
+          }
+        ],
+        "type": "stat"
+      }
+    ]
+  }
+}
+```
+
+#### Opción 3: Alertas de Fail2ban
+
+Agregar reglas de alerta en `alerts/rules.yml`:
+
+```yaml
+# codespartan/platform/stacks/monitoring/alerts/rules.yml
+# Agregar nuevo grupo:
+
+groups:
+  - name: fail2ban
+    interval: 30s
+    rules:
+      # Alerta si Fail2ban exporter está down
+      - alert: Fail2banExporterDown
+        expr: fail2ban_up == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: fail2ban
+        annotations:
+          summary: "Fail2ban exporter está down"
+          description: "El exporter de Fail2ban no está respondiendo desde hace {{ $for }}"
+
+      # Alerta si hay muchas IPs baneadas en poco tiempo (posible ataque)
+      - alert: Fail2banHighBanRate
+        expr: rate(fail2ban_banned_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: fail2ban
+        annotations:
+          summary: "Alta tasa de baneos en Fail2ban"
+          description: "Se están baneando {{ $value }} IPs por minuto en el jail {{ $labels.jail }}"
+
+      # Alerta si hay muchos intentos fallidos (posible ataque)
+      - alert: Fail2banHighFailureRate
+        expr: rate(fail2ban_failed_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          component: fail2ban
+        annotations:
+          summary: "Alta tasa de intentos fallidos"
+          description: "{{ $value }} intentos fallidos por minuto en el jail {{ $labels.jail }}"
+```
+
+Reiniciar vmalert para cargar nuevas reglas:
+
+```bash
+docker compose restart vmalert
+```
+
+#### Verificación Completa
+
+```bash
+# 1. Verificar exporter está corriendo
+docker ps | grep fail2ban-exporter
+
+# 2. Verificar métricas disponibles
+curl http://localhost:9191/metrics | grep fail2ban
+
+# 3. Verificar scrape en vmagent
+docker logs vmagent | grep -i fail2ban
+
+# 4. Verificar métricas en VictoriaMetrics
+curl 'http://localhost:8428/api/v1/query?query=fail2ban_up'
+
+# 5. Verificar dashboard en Grafana
+# Ir a: https://grafana.mambo-cloud.com → Dashboards → Fail2ban Monitoring
+```
+
+#### Troubleshooting
+
+**Exporter no puede conectar a Fail2ban socket**:
+
+```bash
+# Verificar que el socket existe
+ls -la /var/run/fail2ban/fail2ban.sock
+
+# Verificar permisos
+sudo chmod 666 /var/run/fail2ban/fail2ban.sock  # Temporal para testing
+
+# Verificar que Fail2ban está corriendo
+systemctl status fail2ban
+```
+
+**Métricas no aparecen en Grafana**:
+
+1. Verificar que vmagent está scrapeando:
+   ```bash
+   docker logs vmagent | grep fail2ban
+   ```
+
+2. Verificar que las métricas existen en VictoriaMetrics:
+   ```bash
+   curl 'http://localhost:8428/api/v1/label/__name__/values' | grep fail2ban
+   ```
+
+3. Verificar que el datasource en Grafana es correcto (VictoriaMetrics)
+
+**Referencias**:
+- [Fail2ban Prometheus Exporter](https://github.com/devops-workshop/fail2ban-prometheus-exporter)
+- [Grafana Dashboard ID 13639](https://grafana.com/grafana/dashboards/13639)
 
 ---
 
