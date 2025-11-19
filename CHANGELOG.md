@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2025-11-20
+
+### Changed
+- **Documentación Reorganizada Completamente**:
+  - Reorganizada toda la documentación en estructura categorizada bajo `docs/`
+  - Creada estructura de carpetas: `01-getting-started/`, `02-architecture/`, `03-operations/`, `04-deployment/`, `05-security/`, `06-implementation/`, `07-troubleshooting/`, `08-reference/`
+  - Movidos 9 archivos desde la raíz del proyecto a sus ubicaciones apropiadas en `docs/`
+  - Creada carpeta `docs/blog-posts/` para gestión de contenido de blog
+
+### Added
+- **Nueva Estructura de Documentación**:
+  - `docs/README.md` - Índice principal completo de toda la documentación
+  - `docs/blog-posts/` - Sistema de gestión de posts de blog con carpetas `ideas/`, `drafts/`, `published/`
+  - 5 outlines completos de posts de blog identificados en `docs/blog-posts/ideas/`
+  - Template para nuevos posts de blog en `docs/blog-posts/drafts/TEMPLATE.md`
+
+- **Archivos Movidos y Organizados**:
+  - `ANALISIS_ARQUITECTURA.md` → `docs/02-architecture/ANALISIS_ARQUITECTURA.md`
+  - `FIREWALL_FIX_SUMMARY.md` → `docs/07-troubleshooting/FIREWALL_FIX.md`
+  - `OPENPROJECT_DEPLOYMENT_SUMMARY.md` → `docs/04-deployment/OPENPROJECT_DEPLOYMENT.md`
+  - `ROADMAP.md` → `docs/06-implementation/ROADMAP.md`
+  - `ROADMAP_CYBERDYNE.md` → `docs/04-deployment/ROADMAP_CYBERDYNE.md`
+  - `VPS_MIGRATION_PLAN.md` → `docs/07-troubleshooting/VPS_MIGRATION.md`
+  - `VPS_NETWORK_TROUBLESHOOTING.md` → `docs/07-troubleshooting/VPS_NETWORK.md`
+  - `VPS_RECOVERY_STATUS.md` → `docs/07-troubleshooting/VPS_RECOVERY.md`
+  - `mermaid.md` → `docs/02-architecture/mermaid.md`
+  - `BLOG_POST_CICD.md` → `docs/blog-posts/published/ci-cd-profesional-24-horas.md`
+
+### Fixed
+- **Enlaces Internos Corregidos**:
+  - Corregidos todos los enlaces internos en la documentación (269 enlaces verificados, 0 rotos)
+  - Actualizadas referencias cruzadas entre documentos
+  - Rutas relativas corregidas según nueva estructura de carpetas
+  - Referencias a archivos de la raíz (README.md, CHANGELOG.md, CLAUDE.md) actualizadas
+
+### Technical Details
+
+**Estructura de Documentación**:
+- 53 archivos Markdown organizados en 8 categorías principales
+- Índice completo en `docs/README.md` con navegación clara
+- Todos los enlaces internos funcionando correctamente
+- Documentación lista para uso y mantenimiento
+
+**Blog Posts**:
+- Sistema de gestión de contenido de blog implementado
+- 5 ideas de posts con outlines completos creados
+- Template reutilizable para nuevos posts
+- Workflow definido: Idea → Draft → Published
+
+**Archivos Mantenidos en Raíz**:
+- `README.md` - README principal del proyecto (estándar GitHub)
+- `CHANGELOG.md` - Changelog del proyecto (estándar)
+- `CLAUDE.md` - Guía para Claude AI assistant
+
 ## [1.13.0] - 2025-11-12
 
 ### Fixed

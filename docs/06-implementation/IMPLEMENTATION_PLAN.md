@@ -479,7 +479,7 @@ Implementar Single Sign-On con MFA para todos los dashboards (Traefik, Grafana, 
 
 ### 📝 Implementación
 
-Ver `docs/ARCHITECTURE.md` para configuración detallada de Authelia.
+Ver [Arquitectura](../02-architecture/ARCHITECTURE.md) para configuración detallada de Authelia.
 
 **Archivos principales:**
 - `codespartan/platform/authelia/docker-compose.yml`
@@ -750,8 +750,8 @@ En caso de problemas durante la implementación:
    ```
 
 2. **Consultar documentación**:
-   - `docs/ARCHITECTURE.md`
-   - `codespartan/docs/RUNBOOK.md`
+   - [Arquitectura](../02-architecture/ARCHITECTURE.md)
+   - [Runbook Operativo](../03-operations/RUNBOOK.md)
 
 3. **Rollback si es necesario**
    - Seguir procedimientos de rollback por fase

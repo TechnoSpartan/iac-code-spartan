@@ -346,7 +346,7 @@ Menos recomendado porque:
 
 ### Documentación Requerida
 
-Agregar a `CLAUDE.md` o `docs/ARCHITECTURE.md`:
+Agregar a `CLAUDE.md` o `docs/02-architecture/ARCHITECTURE.md`:
 
 ```markdown
 ## Traefik Routing Strategy
@@ -578,7 +578,7 @@ find codespartan -name "docker-compose.yml" -exec grep -h ":latest" {} \; | wc -
 ## Documentos Relacionados
 
 - `codespartan/apps/MIGRATION.md` - Migración de estructura (COMPLETADO)
-- `codespartan/docs/TROUBLESHOOTING_TRAEFIK_CODESPARTAN.md` - Contexto Traefik
+- [Troubleshooting Traefik](../07-troubleshooting/TRAEFIK.md) - Contexto Traefik
 - `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` - Guía network isolation
 - `.github/workflows/configure-smtp.yml` - Workflow SMTP
 

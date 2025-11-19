@@ -149,7 +149,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 
 - [x] **Restore testing** - 1h
   - [x] Crear `/opt/codespartan/scripts/restore.sh`
-  - [x] Documentar procedimiento de restore en docs/DISASTER_RECOVERY.md
+  - [x] Documentar procedimiento de restore en [Disaster Recovery Plan](../03-operations/DISASTER_RECOVERY.md)
   - [x] Modos de restore: full, volumes-only, configs-only
   - [x] Backup verificado: 6.6MB comprimido con 3 volúmenes + configs + SSL
 
@@ -167,7 +167,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 - ✅ `/opt/codespartan/scripts/enable-hetzner-backups.sh` - Activar backups Hetzner
 
 **Documentación:**
-- ✅ `docs/DISASTER_RECOVERY.md` - 7 escenarios de desastre cubiertos
+- ✅ [Disaster Recovery Plan](../03-operations/DISASTER_RECOVERY.md) - 7 escenarios de desastre cubiertos
 - ✅ RTO: 15 min a 4 horas (según escenario)
 - ✅ RPO: Máximo 24 horas (backups diarios)
 
@@ -180,11 +180,11 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 - [x] **Template de aplicación** - 1-2h
   - [x] Crear `codespartan/apps/_TEMPLATE/`:
     - [x] `docker-compose.yml` con Traefik labels
-    - [x] `README.md` con instrucciones
+    - [x] [README Principal](../../README.md) con instrucciones
     - [x] `.env.example` con variables típicas
     - [x] `healthcheck.sh` script
   - [x] Crear `.github/workflows/_template-deploy.yml`
-  - [x] Documentar en docs/ADDING_APPS.md:
+  - [x] Documentar en [Añadir Aplicaciones](../04-deployment/ADDING_APPS.md):
     - [x] Cómo crear una nueva app desde template
     - [x] Cómo añadir subdominio en Terraform
     - [x] Cómo configurar CI/CD
@@ -214,7 +214,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 **Archivos creados:**
 - ✅ `codespartan/apps/_TEMPLATE/` - Template completo con 4 archivos
 - ✅ `.github/workflows/_template-deploy.yml` - Workflow template con instrucciones
-- ✅ `codespartan/docs/ADDING_APPS.md` - Guía completa de 500+ líneas
+- ✅ [Añadir Aplicaciones](../04-deployment/ADDING_APPS.md) - Guía completa de 500+ líneas
 - ✅ `codespartan/scripts/cleanup.sh` - Script de limpieza sistema (400+ líneas)
 - ✅ `codespartan/scripts/health-check.sh` - Script verificación salud (600+ líneas)
 - ✅ `codespartan/scripts/update-containers.sh` - Script actualización contenedores (500+ líneas)
@@ -289,7 +289,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 **Objetivo:** Conocimiento transferible y mantenible.
 
 - [x] **Runbook de aplicaciones** - 1h
-  - [x] Crear docs/APPLICATIONS.md:
+  - [x] Crear [Gestión de Aplicaciones](../03-operations/APPLICATIONS.md):
     - [x] Cómo añadir nueva aplicación
     - [x] Cómo actualizar aplicación existente
     - [x] Cómo borrar aplicación
@@ -298,7 +298,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
     - [x] Scaling, monitoring, best practices
 
 - [x] **System Overview** - 2h
-  - [x] Crear docs/OVERVIEW.md:
+  - [x] Crear [System Overview](../02-architecture/OVERVIEW.md):
     - [x] Arquitectura completa de 3 capas
     - [x] Todos los componentes explicados
     - [x] Data flows completos
@@ -317,16 +317,16 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 **Entregable:** ✅ Sistema completamente documentado.
 
 **Archivos documentación creados (5500+ líneas totales):**
-- ✅ `docs/OVERVIEW.md` (1300 líneas) - Arquitectura completa
-- ✅ `docs/APPLICATIONS.md` (1100 líneas) - Runbook operacional
-- ✅ `docs/RUNBOOK.md` - Operaciones diarias
-- ✅ `docs/ADDING_APPS.md` (500 líneas) - Deployment guide
-- ✅ `docs/ALERTS.md` - Sistema alertas
+- ✅ [System Overview](../02-architecture/OVERVIEW.md) (1300 líneas) - Arquitectura completa
+- ✅ [Gestión de Aplicaciones](../03-operations/APPLICATIONS.md) (1100 líneas) - Runbook operacional
+- ✅ [Runbook Operativo](../03-operations/RUNBOOK.md) - Operaciones diarias
+- ✅ [Añadir Aplicaciones](../04-deployment/ADDING_APPS.md) (500 líneas) - Deployment guide
+- ✅ [Sistema de Alertas](../08-reference/ALERTS.md) - Sistema alertas
 - ✅ `docs/DASHBOARDS.md` - Grafana dashboards
-- ✅ `docs/DISASTER_RECOVERY.md` (600 líneas) - Plan DR
-- ✅ `README.md` - Quick start
+- ✅ [Disaster Recovery Plan](../03-operations/DISASTER_RECOVERY.md) (600 líneas) - Plan DR
+- ✅ [README Principal](../../README.md) - Quick start
 - ✅ `DEPLOY.md` - Initial deployment
-- ✅ `ROADMAP.md` - Este documento
+- ✅ Este documento - `docs/06-implementation/ROADMAP.md`
 - ✅ `CLAUDE.md` - AI context
 
 ---
@@ -340,7 +340,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
 - ✅ `docs/SECRET_MANAGEMENT.md` - Guía completa GitHub Secrets vs HashiCorp Vault
 - ✅ `docs/CONFIGURAR_AUTHELIA_SMTP.md` - Configurar SMTP de Authelia de forma segura
 - ✅ `docs/VERIFICAR_FAIL2BAN.md` - Verificar e implementar Fail2ban
-- ✅ `ANALISIS_ARQUITECTURA.md` - Análisis completo del repositorio
+- ✅ [Análisis Arquitectónico](../02-architecture/ANALISIS_ARQUITECTURA.md) - Análisis completo del repositorio
 
 ### 🔴 Prioridad Alta: Secret Management
 
@@ -402,7 +402,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
   - [ ] Linting de scripts (`shellcheck`)
   - [ ] Agregar a CI/CD pipeline
 
-**Referencia**: Ver `ANALISIS_ARQUITECTURA.md` sección "Tests Automatizados"
+**Referencia**: Ver [Análisis Arquitectónico](../02-architecture/ANALISIS_ARQUITECTURA.md) sección "Tests Automatizados"
 
 ### 🟡 Prioridad Media: Aislamiento de Red
 
@@ -413,7 +413,7 @@ Plan de trabajo para completar la infraestructura production-ready antes de desp
   - [ ] Documentar arquitectura de red
   - [ ] Tests de conectividad entre redes
 
-**Referencia**: Ver `ANALISIS_ARQUITECTURA.md` sección "Aislamiento de Red"
+**Referencia**: Ver [Análisis Arquitectónico](../02-architecture/ANALISIS_ARQUITECTURA.md) sección "Aislamiento de Red"
 
 ### 🟢 Prioridad Baja: HashiCorp Vault (Futuro - Opcional)
 
@@ -535,7 +535,7 @@ docker ps
 /opt/codespartan/scripts/health-check.sh
 
 # Desplegar tu primera app
-# Ver docs/ADDING_APPS.md
+# Ver [Añadir Aplicaciones](../04-deployment/ADDING_APPS.md)
 ```
 
 ---

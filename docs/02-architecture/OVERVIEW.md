@@ -190,10 +190,10 @@ iac-code-spartan/
 │   └── docs/                # Documentation
 │       ├── OVERVIEW.md      # This file
 │       ├── RUNBOOK.md       # Operations guide
-│       ├── ADDING_APPS.md   # App deployment guide
+│       ├── [ADDING_APPS.md](../04-deployment/ADDING_APPS.md)   # App deployment guide
 │       ├── ALERTS.md        # Alert documentation
 │       ├── DASHBOARDS.md    # Grafana dashboards
-│       ├── DISASTER_RECOVERY.md  # DR procedures
+│       ├── [DISASTER_RECOVERY.md](../03-operations/DISASTER_RECOVERY.md)  # DR procedures
 │       ├── APPLICATIONS.md  # App management runbook
 │       ├── TROUBLESHOOTING.md    # Problem solving
 │       ├── SECURITY.md      # Security guide
@@ -210,8 +210,8 @@ iac-code-spartan/
 │
 ├── README.md                # Quick start
 ├── DEPLOY.md                # Deployment guide
-├── ROADMAP.md               # Development roadmap
-└── CLAUDE.md                # AI assistant context
+├── ROADMAP.md               # Development roadmap (ver docs/06-implementation/ROADMAP.md)
+└── [CLAUDE.md](../../CLAUDE.md)                # AI assistant context
 ```
 
 ---
@@ -642,7 +642,7 @@ networks:
 
 **Files:**
 - `docker-compose.yml` - Traefik-integrated configuration
-- `README.md` - Deployment instructions
+- `../README.md` - Deployment instructions
 - `.env.example` - Environment variables template
 - `healthcheck.sh` - Container health check script
 
@@ -1159,7 +1159,7 @@ Total Backup Size: ~7-8 MB compressed
    - RTO: 1 hour
    - RPO: Last local clone
 
-**For full DR guide:** See `docs/DISASTER_RECOVERY.md`
+**For full DR guide:** See [Disaster Recovery Plan](../03-operations/DISASTER_RECOVERY.md)
 
 ---
 
@@ -1354,9 +1354,9 @@ iptables -L -n
 After understanding this overview:
 
 1. **Read operational guides:**
-   - `RUNBOOK.md` - Day-to-day operations
-   - `ADDING_APPS.md` - Deploy your first app
-   - `DISASTER_RECOVERY.md` - Recovery procedures
+   - [Runbook Operativo](../03-operations/RUNBOOK.md) - Day-to-day operations
+   - `../04-deployment/ADDING_APPS.md` - Deploy your first app
+   - `../03-operations/DISASTER_RECOVERY.md` - Recovery procedures
 
 2. **Explore monitoring:**
    - Open Grafana
@@ -1387,8 +1387,8 @@ After understanding this overview:
 
 **Documentation:**
 - `docs/` - All platform documentation
-- `CLAUDE.md` - AI assistant context
-- `README.md` - Quick start guide
+- `../../CLAUDE.md` - AI assistant context
+- `../README.md` - Quick start guide
 
 **External Links:**
 - [Traefik Docs](https://doc.traefik.io/traefik/)

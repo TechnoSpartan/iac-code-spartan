@@ -407,21 +407,28 @@ This project is designed as a **replicable template**:
 ## Documentation
 
 ### Architecture and Design
-- **`docs/ARCHITECTURE.md`** - 🏗️ Complete architecture with high/low-level diagrams, security roadmap, and glossary of concepts (docker-socket-proxy, Kong, Authelia, Zero Trust)
+- **`docs/02-architecture/ARCHITECTURE.md`** - Complete architecture with high/low-level diagrams, security roadmap, and glossary of concepts (docker-socket-proxy, Kong, Authelia, Zero Trust)
 
 ### Quick Start and Overview
 - `README.md` - Quick start guide and project overview
-- `DEPLOY.md` - Detailed deployment checklist with troubleshooting
+- `docs/04-deployment/DEPLOYMENT.md` - Detailed deployment checklist with troubleshooting
+- `docs/01-getting-started/BEGINNER.md` - Step-by-step beginner tutorial
+- `docs/01-getting-started/QUICK_START.md` - Quick deployment guide
 
 ### Operations
-- `codespartan/docs/RUNBOOK.md` - Complete operational guide
-- `codespartan/docs/BEGINNER.md` - Step-by-step beginner tutorial
-- `codespartan/docs/RESOURCES.md` - Resource limits and management guide
+- `docs/03-operations/RUNBOOK.md` - Complete operational guide
+- `docs/02-architecture/RESOURCES.md` - Resource limits and management guide
+- `docs/03-operations/MONITORING.md` - Complete alerting system documentation
 
 ### CI/CD and Deployment
-- `codespartan/docs/GITHUB.md` - GitHub Actions CI/CD documentation
+- `docs/04-deployment/GITHUB.md` - GitHub Actions CI/CD documentation
+- `docs/04-deployment/ADDING_APPS.md` - How to add new applications
 
 ### Security and Monitoring
-- `codespartan/docs/ALERTS.md` - Complete alerting system documentation
-- `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` - Network isolation patterns
+- `docs/05-security/AUTHELIA.md` - Authelia SSO documentation
+- `docs/05-security/FAIL2BAN.md` - Fail2ban protection
+- `docs/apps/_TEMPLATE/NETWORK_ISOLATION.md` - Network isolation patterns
 - `codespartan/platform/traefik/README.md` - Traefik configuration and SSL troubleshooting
+
+### Complete Documentation Index
+- `docs/README.md` - Complete documentation index

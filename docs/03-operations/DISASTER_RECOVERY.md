@@ -563,7 +563,7 @@ top
 - [Restore Script](/codespartan/platform/scripts/restore.sh)
 - [Infrastructure Terraform](/codespartan/infra/hetzner/)
 - [Platform Configurations](/codespartan/platform/)
-- [Monitoring Documentation](/codespartan/platform/stacks/monitoring/ALERTS.md)
+- [Monitoreo y Alertas](MONITORING.md)
 
 ---
 
