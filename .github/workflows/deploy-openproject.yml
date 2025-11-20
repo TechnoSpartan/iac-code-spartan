@@ -67,7 +67,7 @@ jobs:
 
             # Generate .env with secrets from GitHub
             echo "🔐 Generating .env with production secrets..."
-            cat > .env << EOF
+            cat > .env <<EOF
 TRAEFIK_HOSTNAME=project.codespartan.cloud
 POSTGRES_DB=openproject
 POSTGRES_USER=openproject
