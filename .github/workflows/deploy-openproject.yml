@@ -67,24 +67,27 @@ jobs:
 
             # Generate .env with secrets from GitHub
             echo "🔐 Generating .env with production secrets..."
-            cat > .env <<EOF
+            cat > .env << 'EOF'
 TRAEFIK_HOSTNAME=project.codespartan.cloud
 POSTGRES_DB=openproject
 POSTGRES_USER=openproject
-POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 OPENPROJECT_HOST__NAME=project.codespartan.cloud
 OPENPROJECT_DEFAULT__LANGUAGE=en
-OPENPROJECT_SECRET__KEY__BASE=$SECRET_KEY_BASE
+OPENPROJECT_SECRET__KEY__BASE=${SECRET_KEY_BASE}
 OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp
 OPENPROJECT_SMTP__ADDRESS=smtp.hostinger.com
 OPENPROJECT_SMTP__PORT=465
 OPENPROJECT_SMTP__DOMAIN=codespartan.es
 OPENPROJECT_SMTP__AUTHENTICATION=login
 OPENPROJECT_SMTP__USER__NAME=noreply@codespartan.es
-OPENPROJECT_SMTP__PASSWORD=$SMTP_PASSWORD
+OPENPROJECT_SMTP__PASSWORD=${SMTP_PASSWORD}
 OPENPROJECT_SMTP__ENABLE__STARTTLS=false
-DATABASE_URL=postgres://openproject:$POSTGRES_PASSWORD@db:5432/openproject
+DATABASE_URL=postgres://openproject:${POSTGRES_PASSWORD}@db:5432/openproject
 EOF
+            eval "sed -i \"s/\\\${POSTGRES_PASSWORD}/$POSTGRES_PASSWORD/g\" .env"
+            eval "sed -i \"s/\\\${SECRET_KEY_BASE}/$SECRET_KEY_BASE/g\" .env"
+            eval "sed -i \"s/\\\${SMTP_PASSWORD}/$SMTP_PASSWORD/g\" .env"
             echo "✅ .env created successfully with production secrets"
 
             # Pull latest images
