@@ -61,35 +61,53 @@ jobs:
 
             cd /opt/codespartan/apps/codespartan-cloud/project
 
-            # Ensure networks exist
+            # Ensure web network exists (external network for Traefik)
             docker network create web 2>/dev/null || true
-            docker network create openproject_internal 2>/dev/null || true
+            
+            # Remove openproject_internal if it exists with incorrect labels
+            # Docker Compose will create it with correct labels
+            if docker network inspect openproject_internal &>/dev/null; then
+              echo "⚠️  Found existing openproject_internal network"
+              # Check if network has correct compose label
+              NETWORK_LABEL=$(docker network inspect openproject_internal --format '{{index .Labels "com.docker.compose.network"}}' 2>/dev/null || echo "")
+              if [ "$NETWORK_LABEL" != "openproject_internal" ]; then
+                echo "⚠️  Network has incorrect labels, removing it..."
+                # Stop containers using this network first
+                CONTAINERS=$(docker network inspect openproject_internal --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || echo "")
+                if [ -n "$CONTAINERS" ]; then
+                  echo "  → Stopping containers using this network: $CONTAINERS"
+                  for container in $CONTAINERS; do
+                    docker stop "$container" 2>/dev/null || true
+                  done
+                fi
+                docker network rm openproject_internal 2>/dev/null || true
+                echo "✅ Network removed, docker-compose will create it with correct labels"
+              else
+                echo "✅ Network has correct labels, keeping it"
+              fi
+            fi
 
             # Generate .env with secrets from GitHub
             echo "🔐 Generating .env with production secrets..."
-            cat > .env << 'ENVEOF'
-TRAEFIK_HOSTNAME=project.codespartan.cloud
-POSTGRES_DB=openproject
-POSTGRES_USER=openproject
-POSTGRES_PASSWORD=PLACEHOLDER_POSTGRES_PASSWORD
-OPENPROJECT_HOST__NAME=project.codespartan.cloud
-OPENPROJECT_DEFAULT__LANGUAGE=en
-OPENPROJECT_SECRET__KEY__BASE=PLACEHOLDER_SECRET_KEY_BASE
-OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp
-OPENPROJECT_SMTP__ADDRESS=smtp.hostinger.com
-OPENPROJECT_SMTP__PORT=465
-OPENPROJECT_SMTP__DOMAIN=codespartan.es
-OPENPROJECT_SMTP__AUTHENTICATION=login
-OPENPROJECT_SMTP__USER__NAME=noreply@codespartan.es
-OPENPROJECT_SMTP__PASSWORD=PLACEHOLDER_SMTP_PASSWORD
-OPENPROJECT_SMTP__ENABLE__STARTTLS=false
-DATABASE_URL=postgres://openproject:PLACEHOLDER_POSTGRES_PASSWORD@db:5432/openproject
-ENVEOF
-
-            sed -i "s/PLACEHOLDER_POSTGRES_PASSWORD/${POSTGRES_PASSWORD}/g" .env
-            sed -i "s/PLACEHOLDER_SECRET_KEY_BASE/${SECRET_KEY_BASE}/g" .env
-            sed -i "s/PLACEHOLDER_SMTP_PASSWORD/${SMTP_PASSWORD}/g" .env
-
+            
+            # Create .env file using printf to avoid YAML parsing issues
+            printf 'TRAEFIK_HOSTNAME=project.codespartan.cloud\n' > .env
+            printf 'POSTGRES_DB=openproject\n' >> .env
+            printf 'POSTGRES_USER=openproject\n' >> .env
+            printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD" >> .env
+            printf 'OPENPROJECT_HOST__NAME=project.codespartan.cloud\n' >> .env
+            printf 'OPENPROJECT_DEFAULT__LANGUAGE=en\n' >> .env
+            printf 'OPENPROJECT_SECRET__KEY__BASE=%s\n' "$SECRET_KEY_BASE" >> .env
+            printf 'OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp\n' >> .env
+            printf 'OPENPROJECT_SMTP__ADDRESS=smtp.hostinger.com\n' >> .env
+            printf 'OPENPROJECT_SMTP__PORT=465\n' >> .env
+            printf 'OPENPROJECT_SMTP__DOMAIN=codespartan.es\n' >> .env
+            printf 'OPENPROJECT_SMTP__AUTHENTICATION=login\n' >> .env
+            printf 'OPENPROJECT_SMTP__USER__NAME=noreply@codespartan.es\n' >> .env
+            printf 'OPENPROJECT_SMTP__PASSWORD=%s\n' "$SMTP_PASSWORD" >> .env
+            printf 'OPENPROJECT_SMTP__ENABLE__STARTTLS=false\n' >> .env
+            printf 'DATABASE_URL=postgres://openproject:%s@db:5432/openproject\n' "$POSTGRES_PASSWORD" >> .env
+            
             echo "✅ .env created successfully with production secrets"
 
             # Pull latest images
@@ -106,36 +124,57 @@ ENVEOF
 
             # Health checks
             echo "🔍 Running health checks..."
-            ATTEMPTS=0
-            MAX_ATTEMPTS=30
-
+            
             # Check database health
             echo "  → Checking database..."
-            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+            DB_ATTEMPTS=0
+            MAX_DB_ATTEMPTS=20
+            while [ $DB_ATTEMPTS -lt $MAX_DB_ATTEMPTS ]; do
               if docker exec openproject-db pg_isready -U openproject &>/dev/null; then
                 echo "  ✅ Database is ready"
                 break
               fi
-              echo "  ⏳ Waiting for database... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
-              ATTEMPTS=$((ATTEMPTS + 1))
+              echo "  ⏳ Waiting for database... ($((DB_ATTEMPTS + 1))/$MAX_DB_ATTEMPTS)"
+              DB_ATTEMPTS=$((DB_ATTEMPTS + 1))
               sleep 3
             done
 
-            if [ $ATTEMPTS -eq $MAX_ATTEMPTS ]; then
+            if [ $DB_ATTEMPTS -eq $MAX_DB_ATTEMPTS ]; then
               echo "  ❌ Database failed to start"
               docker logs openproject-db | tail -20
               exit 1
             fi
 
-            # Check app health
-            ATTEMPTS=0
+            # Check app health using Docker health status
             echo "  → Checking app..."
-            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-              if docker exec openproject-app curl -sf http://localhost:8080/health_checks/default &>/dev/null; then
+            echo "  ℹ️  OpenProject can take 5-10 minutes to start (especially first time)"
+            echo "  ℹ️  Docker health check has 120s start_period + 60s interval"
+            
+            APP_ATTEMPTS=0
+            MAX_APP_ATTEMPTS=60  # 60 attempts * 10s = 10 minutes total
+            
+            while [ $APP_ATTEMPTS -lt $MAX_APP_ATTEMPTS ]; do
+              # Check if container is running
+              if ! docker ps --format '{{.Names}}' | grep -q '^openproject-app$'; then
+                echo "  ❌ Container not running!"
+                docker ps -a | grep openproject-app
+                echo "📋 Container logs:"
+                docker logs --tail 50 openproject-app
+                exit 1
+              fi
+              
+              # Get Docker health status (most reliable method)
+              CONTAINER_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' openproject-app 2>/dev/null || echo "starting")
+              
+              # Also check if container is in starting period (health check not running yet)
+              CONTAINER_STARTED=$(docker inspect --format='{{.State.StartedAt}}' openproject-app 2>/dev/null)
+              CONTAINER_UPTIME=$(($(date +%s) - $(date -d "$CONTAINER_STARTED" +%s 2>/dev/null || echo 0) 2>/dev/null || echo 0))
+              
+              if [ "$CONTAINER_HEALTH" = "healthy" ]; then
                 DEPLOY_END=$(date +%s)
                 DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
 
-                echo "  ✅ App is healthy"
+                echo "  ✅ App is healthy (Docker health check passed)"
 
                 # Cleanup old images
                 echo "🧹 Cleaning up old images..."
@@ -154,16 +193,45 @@ ENVEOF
                 echo "👤 Default login: admin / admin"
                 echo "⚠️  IMPORTANT: Change admin password immediately!"
                 echo ""
+                echo "📖 First login help: Check README.md in the deployment directory"
+                echo ""
                 exit 0
               fi
-              echo "  ⏳ Waiting for app... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
-              ATTEMPTS=$((ATTEMPTS + 1))
-              sleep 3
+              
+              # Show detailed info every 10 attempts
+              if [ $((APP_ATTEMPTS % 10)) -eq 0 ]; then
+                echo ""
+                echo "  📊 Status update:"
+                echo "    - Health Status: $CONTAINER_HEALTH"
+                echo "    - Container Uptime: ${CONTAINER_UPTIME}s"
+                echo "    - Recent logs (last 5 lines):"
+                docker logs --tail 5 openproject-app 2>&1 | sed 's/^/      /'
+                echo ""
+              fi
+              
+              # Show progress
+              if [ $CONTAINER_UPTIME -lt 120 ]; then
+                echo "  ⏳ Container starting... ($((APP_ATTEMPTS + 1))/$MAX_APP_ATTEMPTS) - Health checks start after 120s (${CONTAINER_UPTIME}s elapsed)"
+              else
+                echo "  ⏳ Waiting for health check... ($((APP_ATTEMPTS + 1))/$MAX_APP_ATTEMPTS) - Status: $CONTAINER_HEALTH"
+              fi
+              
+              APP_ATTEMPTS=$((APP_ATTEMPTS + 1))
+              sleep 10  # Check every 10 seconds (more reasonable for long startup)
             done
 
-            echo "  ❌ App health check timeout"
-            echo "📋 App container logs:"
-            docker logs --tail 50 openproject-app
+            echo ""
+            echo "  ❌ App health check timeout after $((MAX_APP_ATTEMPTS * 10)) seconds"
+            echo ""
+            echo "📋 Container Status:"
+            docker ps -a --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}\t{{.Health}}"
+            echo ""
+            echo "📋 App container logs (last 100 lines):"
+            docker logs --tail 100 openproject-app
+            echo ""
+            echo "💡 Tip: OpenProject can take 10+ minutes on first startup for database migrations."
+            echo "💡 If logs show migrations running, wait longer or check manually:"
+            echo "   docker logs openproject-app -f"
             exit 1
 
       - name: Verify production URL
@@ -177,7 +245,17 @@ ENVEOF
           if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "✅ OpenProject is live! (HTTP $HTTP_STATUS)"
             echo "🔗 https://project.codespartan.cloud"
+            echo ""
+            echo "📝 Next steps:"
+            echo "1. Login at https://project.codespartan.cloud"
+            echo "2. Username: admin"
+            echo "3. Password: admin"
+            echo "4. Change admin password immediately!"
+            echo "5. Configure email settings in Administration"
           else
             echo "⚠️  Site returned HTTP $HTTP_STATUS"
+            if [ "$HTTP_STATUS" -eq "000" ]; then
+              echo "DNS may not be resolved yet or SSL certificate is being generated"
+            fi
             echo "Container is healthy. Check again in 2-3 minutes: https://project.codespartan.cloud"
           fi
