@@ -1,4 +1,4 @@
-name: VPS Diagnostics
+name: VPS Diagnostics - System Health
 
 on:
   workflow_dispatch:

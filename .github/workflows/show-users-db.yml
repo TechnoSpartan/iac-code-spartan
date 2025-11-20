@@ -1,4 +1,4 @@
-name: Show Users Database
+name: Show Authelia Users Database
 
 on:
   workflow_dispatch:

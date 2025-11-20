@@ -1,4 +1,4 @@
-name: Emergency - Full Status Check
+name: Emergency Status Check - Complete System
 
 on:
   workflow_dispatch:

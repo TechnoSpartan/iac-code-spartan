@@ -1,4 +1,4 @@
-name: Verify Traefik Labels
+name: Verify Traefik Docker Labels
 
 on:
   workflow_dispatch:

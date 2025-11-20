@@ -1,4 +1,4 @@
-name: Apply SMTP Configuration
+name: Apply SMTP Configuration to Authelia
 
 on:
   workflow_dispatch:

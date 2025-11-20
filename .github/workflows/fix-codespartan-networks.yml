@@ -1,4 +1,4 @@
-name: Fix CodeSpartan Networks
+name: Fix CodeSpartan Docker Networks
 
 on:
   workflow_dispatch:
