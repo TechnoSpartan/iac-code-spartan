@@ -153,8 +153,39 @@ jobs:
             # Check app health
             ATTEMPTS=0
             echo "  → Checking app..."
+            echo "  ℹ️  OpenProject can take 2-5 minutes to start (especially first time)"
+            
             while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-              if docker exec openproject-app curl -sf http://localhost:8080/health_checks/default &>/dev/null; then
+              # First check if container is running
+              if ! docker ps --format '{{.Names}}' | grep -q '^openproject-app$'; then
+                echo "  ⚠️  Container not running, checking status..."
+                docker ps -a | grep openproject-app
+                ATTEMPTS=$((ATTEMPTS + 1))
+                sleep 3
+                continue
+              fi
+              
+              # Check container health status
+              CONTAINER_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' openproject-app 2>/dev/null || echo "none")
+              
+              # Try health check endpoint (curl may not be available, try wget as fallback)
+              HEALTH_CHECK_PASSED=false
+              
+              # Method 1: Try curl
+              if docker exec openproject-app curl -sf http://localhost:8080/health_checks/default &>/dev/null 2>&1; then
+                HEALTH_CHECK_PASSED=true
+              # Method 2: Try wget
+              elif docker exec openproject-app wget -q --spider http://localhost:8080/health_checks/default &>/dev/null 2>&1; then
+                HEALTH_CHECK_PASSED=true
+              # Method 3: Check if port is listening
+              elif docker exec openproject-app sh -c "nc -z localhost 8080" &>/dev/null 2>&1; then
+                # Port is open, app might be starting
+                if [ "$CONTAINER_HEALTH" = "healthy" ]; then
+                  HEALTH_CHECK_PASSED=true
+                fi
+              fi
+              
+              if [ "$HEALTH_CHECK_PASSED" = "true" ] || [ "$CONTAINER_HEALTH" = "healthy" ]; then
                 DEPLOY_END=$(date +%s)
                 DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
 
@@ -181,14 +212,28 @@ jobs:
                 echo ""
                 exit 0
               fi
-              echo "  ⏳ Waiting for app... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+              
+              # Show progress with more info every 5 attempts
+              if [ $((ATTEMPTS % 5)) -eq 0 ]; then
+                echo "  📋 Container status: $CONTAINER_HEALTH"
+                echo "  📋 Recent logs (last 3 lines):"
+                docker logs --tail 3 openproject-app 2>&1 | sed 's/^/    /'
+              fi
+              
+              echo "  ⏳ Waiting for app... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS) (Health: $CONTAINER_HEALTH)"
               ATTEMPTS=$((ATTEMPTS + 1))
               sleep 3
             done
 
-            echo "  ❌ App health check timeout"
-            echo "📋 App container logs:"
+            echo "  ❌ App health check timeout after $((MAX_ATTEMPTS * 3)) seconds"
+            echo ""
+            echo "📋 Container Status:"
+            docker ps -a --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}\t{{.Health}}"
+            echo ""
+            echo "📋 App container logs (last 50 lines):"
             docker logs --tail 50 openproject-app
+            echo ""
+            echo "💡 Tip: OpenProject can take 5+ minutes on first startup. Check logs above for errors."
             exit 1
 
       - name: Verify production URL
