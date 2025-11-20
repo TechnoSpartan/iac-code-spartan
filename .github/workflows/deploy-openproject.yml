@@ -61,30 +61,30 @@ jobs:
 
             cd /opt/codespartan/apps/codespartan-cloud/project
 
-            # Ensure networks exist
-            docker network create web || echo "Network 'web' already exists"
-            docker network create openproject_internal || echo "Network 'openproject_internal' already exists"
+            # Ensure networks exist (suppress errors if already exist)
+            docker network create web 2>/dev/null || true
+            docker network create openproject_internal 2>/dev/null || true
 
             # Generate .env with secrets from GitHub
             echo "🔐 Generating .env with production secrets..."
             cat > .env <<EOF
-            TRAEFIK_HOSTNAME=project.codespartan.cloud
-            POSTGRES_DB=openproject
-            POSTGRES_USER=openproject
-            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-            OPENPROJECT_HOST__NAME=project.codespartan.cloud
-            OPENPROJECT_DEFAULT__LANGUAGE=en
-            OPENPROJECT_SECRET__KEY__BASE=$SECRET_KEY_BASE
-            OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp
-            OPENPROJECT_SMTP__ADDRESS=smtp.hostinger.com
-            OPENPROJECT_SMTP__PORT=465
-            OPENPROJECT_SMTP__DOMAIN=codespartan.es
-            OPENPROJECT_SMTP__AUTHENTICATION=login
-            OPENPROJECT_SMTP__USER__NAME=noreply@codespartan.es
-            OPENPROJECT_SMTP__PASSWORD=$SMTP_PASSWORD
-            OPENPROJECT_SMTP__ENABLE__STARTTLS=false
-            DATABASE_URL=postgres://openproject:$POSTGRES_PASSWORD@db:5432/openproject
-            EOF
+TRAEFIK_HOSTNAME=project.codespartan.cloud
+POSTGRES_DB=openproject
+POSTGRES_USER=openproject
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+OPENPROJECT_HOST__NAME=project.codespartan.cloud
+OPENPROJECT_DEFAULT__LANGUAGE=en
+OPENPROJECT_SECRET__KEY__BASE=$SECRET_KEY_BASE
+OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp
+OPENPROJECT_SMTP__ADDRESS=smtp.hostinger.com
+OPENPROJECT_SMTP__PORT=465
+OPENPROJECT_SMTP__DOMAIN=codespartan.es
+OPENPROJECT_SMTP__AUTHENTICATION=login
+OPENPROJECT_SMTP__USER__NAME=noreply@codespartan.es
+OPENPROJECT_SMTP__PASSWORD=$SMTP_PASSWORD
+OPENPROJECT_SMTP__ENABLE__STARTTLS=false
+DATABASE_URL=postgres://openproject:$POSTGRES_PASSWORD@db:5432/openproject
+EOF
             echo "✅ .env created successfully with production secrets"
 
             # Pull latest images
