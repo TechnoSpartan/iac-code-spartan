@@ -1,4 +1,4 @@
-name: Test GitHub User SSH Connection
+name: Test GitHub Actions SSH Connection
 
 on:
   workflow_dispatch:

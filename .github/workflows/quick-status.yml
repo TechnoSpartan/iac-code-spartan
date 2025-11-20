@@ -1,4 +1,4 @@
-name: Quick Status
+name: Quick Status Check - All Services
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: Restart Traefik and Authelia
+name: Restart Traefik and Authelia Services
 
 on:
   workflow_dispatch:

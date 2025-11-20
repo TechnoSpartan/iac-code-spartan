@@ -1,4 +1,4 @@
-name: Test Authelia Direct Access
+name: Test Authelia Direct Access (Bypass Traefik)
 
 on:
   workflow_dispatch:

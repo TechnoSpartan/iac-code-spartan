@@ -1,4 +1,4 @@
-name: Patch Authelia Identity Validation
+name: Patch Authelia Identity Validation Configuration
 
 on:
   workflow_dispatch:

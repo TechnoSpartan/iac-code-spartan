@@ -1,4 +1,4 @@
-name: Check Docker Proxy
+name: Check Docker Socket Proxy Connection
 
 on:
   workflow_dispatch:

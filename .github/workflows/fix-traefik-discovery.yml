@@ -1,4 +1,4 @@
-name: Fix Traefik Container Discovery
+name: Fix Traefik Docker Container Discovery
 
 on:
   workflow_dispatch:

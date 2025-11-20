@@ -1,4 +1,4 @@
-name: Update Authelia Configuration
+name: Update Authelia Configuration File
 
 on:
   workflow_dispatch:

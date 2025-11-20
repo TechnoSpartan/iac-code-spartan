@@ -1,4 +1,4 @@
-name: Get OTP Registration Link
+name: Get Authelia OTP Registration Link
 
 on:
   workflow_dispatch:

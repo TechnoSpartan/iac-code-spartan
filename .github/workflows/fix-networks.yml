@@ -1,4 +1,4 @@
-name: FIX - Recreate Networks and Services
+name: Fix - Recreate Docker Networks and Services
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: Diagnostic Check - Server and DNS
+name: Diagnostic Check - Server Status and DNS Resolution
 
 on:
   workflow_dispatch:

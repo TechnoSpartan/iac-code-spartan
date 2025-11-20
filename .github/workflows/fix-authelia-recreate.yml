@@ -1,4 +1,4 @@
-name: FIX - Recreate Authelia Container
+name: Fix - Recreate Authelia Container
 
 on:
   workflow_dispatch:
