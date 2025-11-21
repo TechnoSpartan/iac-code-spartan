@@ -4,7 +4,7 @@ C[Users] -->|HTTPS| T[Traefik]
 subgraph VPS
 T
 
-    subgraph Supabase (stack)
+    subgraph Supabase stack
       PG[(Postgres 15/16)]
       AUTH[GoTrue/Auth]
       REST[PostgREST]
@@ -33,9 +33,9 @@ T -->|studio.*| STD
 
 %% Apps
 T -->|www/staging/lab.cyberdyne| CYB_WEB
-T -->|/api (cyberdyne)| CYB_API
+T -->|/api cyberdyne | CYB_API
 T -->|www/staging/lab.dental-io| DIO_WEB
-T -->|/api (dental-io)| DIO_API
+T -->|/api dental-io| DIO_API
 
 %% Acceso interno
 CYB_API --- PG

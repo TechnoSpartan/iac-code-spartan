@@ -291,7 +291,7 @@ Para monitorear Fail2ban en Grafana y recibir alertas cuando se banean IPs, nece
 
 #### Opción 1: Fail2ban Prometheus Exporter (Recomendado)
 
-**Paso 1: Desplegar el Exporter**
+##### Paso 1: Desplegar el Exporter
 
 Crear un servicio en el stack de monitoreo:
 
@@ -326,7 +326,7 @@ Crear un servicio en el stack de monitoreo:
       start_period: 10s
 ```
 
-**Paso 2: Configurar Scrape en Prometheus**
+##### Paso 2: Configurar Scrape en Prometheus
 
 Agregar el job de scrape en `victoriametrics/prometheus.yml`:
 
@@ -341,7 +341,7 @@ Agregar el job de scrape en `victoriametrics/prometheus.yml`:
     scrape_timeout: 10s
 ```
 
-**Paso 3: Reiniciar Servicios**
+##### Paso 3: Reiniciar Servicios
 
 ```bash
 cd /opt/codespartan/platform/stacks/monitoring
@@ -349,7 +349,7 @@ docker compose up -d fail2ban-exporter
 docker compose restart vmagent
 ```
 
-**Paso 4: Verificar Métricas**
+##### Paso 4: Verificar Métricas
 
 ```bash
 # Verificar que el exporter está funcionando
@@ -362,7 +362,7 @@ docker logs vmagent | grep fail2ban
 curl http://localhost:8428/api/v1/query?query=fail2ban_banned_total
 ```
 
-**Métricas Disponibles**:
+##### Métricas Disponibles:
 
 - `fail2ban_banned_total` - Total de IPs baneadas por jail
 - `fail2ban_failed_total` - Total de intentos fallidos por jail
@@ -372,7 +372,7 @@ curl http://localhost:8428/api/v1/query?query=fail2ban_banned_total
 
 #### Opción 2: Dashboard en Grafana
 
-**Crear Dashboard Manualmente**:
+##### Crear Dashboard Manualmente:
 
 1. Ir a Grafana: https://grafana.mambo-cloud.com
 2. Dashboards → New Dashboard → Add visualization
@@ -393,12 +393,12 @@ fail2ban_jail_banned_total
 fail2ban_up
 ```
 
-**Importar Dashboard Pre-configurado**:
+##### Importar Dashboard Pre-configurado
 
 1. Dashboard ID: `13639` (Fail2ban Prometheus Exporter)
 2. O crear dashboard JSON personalizado (ver ejemplo abajo)
 
-**Ejemplo de Dashboard JSON**:
+##### Ejemplo de Dashboard JSON
 
 ```json
 {
