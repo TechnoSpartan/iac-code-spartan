@@ -156,7 +156,9 @@ jobs:
               
               # Also check if container is in starting period (health check not running yet)
               CONTAINER_STARTED=$(docker inspect --format='{{.State.StartedAt}}' openproject-app 2>/dev/null)
-              CONTAINER_UPTIME=$(($(date +%s) - $(date -d "$CONTAINER_STARTED" +%s 2>/dev/null || echo 0) 2>/dev/null || echo 0))
+              CURRENT_TIME=$(date +%s)
+              STARTED_TIME=$(date -d "$CONTAINER_STARTED" +%s 2>/dev/null || echo 0)
+              CONTAINER_UPTIME=$((CURRENT_TIME - STARTED_TIME))
               
               if [ "$CONTAINER_HEALTH" = "healthy" ]; then
                 DEPLOY_END=$(date +%s)
