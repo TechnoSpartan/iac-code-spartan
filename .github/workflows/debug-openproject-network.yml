@@ -1,0 +1,115 @@
+name: Debug OpenProject Network
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug network issue
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -eu pipefail
+            
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 DEBUGGING OPENPROJECT NETWORK"
+            echo "════════════════════════════════════════════════════════════"
+            
+            echo ""
+            echo "1️⃣ Checking if network exists:"
+            if docker network inspect openproject_internal &>/dev/null 2>&1; then
+              echo "  ✅ Network exists"
+              
+              echo ""
+              echo "2️⃣ Network details (raw JSON):"
+              docker network inspect openproject_internal 2>&1 || echo "  ⚠️  Failed to inspect network"
+              
+              echo ""
+              echo "3️⃣ Network labels:"
+              docker network inspect openproject_internal --format '{{range $k, $v := .Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>&1 || echo "  ⚠️  Failed to get labels"
+              
+              echo ""
+              echo "4️⃣ Checking compose label specifically:"
+              NETWORK_LABEL=""
+              if NETWORK_LABEL_OUTPUT=$(docker network inspect openproject_internal --format '{{index .Labels "com.docker.compose.network"}}' 2>/dev/null); then
+                NETWORK_LABEL="$NETWORK_LABEL_OUTPUT"
+              fi
+              echo "  Label value: '${NETWORK_LABEL}'"
+              echo "  Expected: 'openproject_internal'"
+              echo "  Is empty: $([ -z "$NETWORK_LABEL" ] && echo "YES" || echo "NO")"
+              
+              echo ""
+              echo "5️⃣ Testing comparison:"
+              if [ -z "$NETWORK_LABEL" ] || [ "$NETWORK_LABEL" != "openproject_internal" ]; then
+                echo "  ❌ Labels don't match or are missing (will remove)"
+              else
+                echo "  ✅ Labels match (will keep)"
+              fi
+              
+              echo ""
+              echo "6️⃣ Containers using this network:"
+              CONTAINERS=""
+              if CONTAINERS_OUTPUT=$(docker network inspect openproject_internal --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null); then
+                CONTAINERS="$CONTAINERS_OUTPUT"
+              fi
+              if [ -n "$CONTAINERS" ] && [ "$CONTAINERS" != "" ]; then
+                echo "  Containers: $CONTAINERS"
+              else
+                echo "  No containers using this network"
+              fi
+              
+            else
+              echo "  ❌ Network does not exist"
+            fi
+            
+            echo ""
+            echo "7️⃣ All OpenProject containers:"
+            docker ps -a --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}"
+            
+            echo ""
+            echo "8️⃣ Checking project directory:"
+            if [ -d "/opt/codespartan/apps/codespartan-cloud/project" ]; then
+              echo "  ✅ Directory exists"
+              echo "  Files in directory:"
+              ls -la /opt/codespartan/apps/codespartan-cloud/project/ | head -15
+              
+              echo ""
+              echo "  Checking docker-compose.yml:"
+              if [ -f "/opt/codespartan/apps/codespartan-cloud/project/docker-compose.yml" ]; then
+                echo "  ✅ docker-compose.yml exists"
+                echo "  Network configuration in docker-compose.yml:"
+                grep -A 10 "networks:" /opt/codespartan/apps/codespartan-cloud/project/docker-compose.yml || echo "  ⚠️  No networks section found"
+              else
+                echo "  ❌ docker-compose.yml not found"
+              fi
+              
+              echo ""
+              echo "  Checking .env file:"
+              if [ -f "/opt/codespartan/apps/codespartan-cloud/project/.env" ]; then
+                echo "  ✅ .env exists"
+                echo "  .env file size: $(wc -l < /opt/codespartan/apps/codespartan-cloud/project/.env) lines"
+                echo "  (Not showing contents for security)"
+              else
+                echo "  ⚠️  .env file not found"
+              fi
+            else
+              echo "  ❌ Directory does not exist"
+            fi
+            
+            echo ""
+            echo "9️⃣ Testing docker compose command:"
+            cd /opt/codespartan/apps/codespartan-cloud/project 2>/dev/null || echo "  ❌ Cannot cd to project directory"
+            if [ -f "docker-compose.yml" ]; then
+              echo "  Running: docker compose config (validating YAML)"
+              docker compose config 2>&1 | head -20 || echo "  ⚠️  docker compose config failed"
+            fi
+            
+            echo ""
+            echo "🔟 All Docker networks:"
+            docker network ls
+
