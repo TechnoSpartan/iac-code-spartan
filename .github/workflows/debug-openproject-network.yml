@@ -103,10 +103,16 @@ jobs:
             
             echo ""
             echo "9️⃣ Testing docker compose command:"
-            cd /opt/codespartan/apps/codespartan-cloud/project 2>/dev/null || echo "  ❌ Cannot cd to project directory"
-            if [ -f "docker-compose.yml" ]; then
-              echo "  Running: docker compose config (validating YAML)"
-              docker compose config 2>&1 | head -20 || echo "  ⚠️  docker compose config failed"
+            PROJECT_DIR="/opt/codespartan/apps/codespartan-cloud/project"
+            if [ -d "$PROJECT_DIR" ]; then
+              if [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
+                echo "  Running: docker compose config (validating YAML)"
+                cd "$PROJECT_DIR" && docker compose config 2>&1 | head -20 || echo "  ⚠️  docker compose config failed"
+              else
+                echo "  ⚠️  docker-compose.yml not found in $PROJECT_DIR"
+              fi
+            else
+              echo "  ❌ Project directory does not exist: $PROJECT_DIR"
             fi
             
             echo ""
