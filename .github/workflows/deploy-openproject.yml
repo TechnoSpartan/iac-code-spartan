@@ -50,6 +50,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
           envs: POSTGRES_PASSWORD,SECRET_KEY_BASE,SMTP_PASSWORD
+          command_timeout: 30m
           script: |
             set -eu pipefail
 
