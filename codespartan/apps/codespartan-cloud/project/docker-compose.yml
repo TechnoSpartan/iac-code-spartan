@@ -83,9 +83,9 @@ services:
           cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8080/"]
+      test: ["CMD", "nc", "-z", "localhost", "8080"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 5
       start_period: 180s
     logging:
