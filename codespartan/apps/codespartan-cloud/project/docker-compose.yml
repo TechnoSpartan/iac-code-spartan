@@ -83,11 +83,11 @@ services:
           cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/health_checks/default"]
-      interval: 60s
+      test: ["CMD", "curl", "--fail", "--silent", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8080/"]
+      interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 120s
+      retries: 5
+      start_period: 180s
     logging:
       driver: "json-file"
       options:
