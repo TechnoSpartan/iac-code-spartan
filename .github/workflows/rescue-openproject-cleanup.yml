@@ -1,0 +1,82 @@
+name: "[RESCUE] OpenProject - Cleanup PostgreSQL 15 Volume"
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "CLEANUP" to confirm volume deletion'
+        required: true
+        default: ''
+
+jobs:
+  cleanup:
+    name: Clean PostgreSQL 15 Volume
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "CLEANUP" ]; then
+            echo "❌ Confirmation failed. You must type CLEANUP to proceed."
+            exit 1
+          fi
+          echo "✅ Confirmation validated"
+
+      - name: Cleanup OpenProject volumes via SSH
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Execute cleanup on VPS
+          ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} << 'ENDSSH'
+            set -e
+
+            echo "🧹 OPENPROJECT VOLUME CLEANUP"
+            echo "=============================="
+            echo ""
+
+            cd /opt/codespartan/apps/codespartan-cloud/project
+
+            echo "1️⃣ Stopping containers..."
+            docker compose down
+            echo "✅ Containers stopped"
+
+            echo ""
+            echo "2️⃣ Current volumes:"
+            docker volume ls | grep -E "(openproject|project_)" || echo "   No volumes found"
+
+            echo ""
+            echo "3️⃣ Removing ALL OpenProject volumes..."
+            docker compose down -v 2>/dev/null || true
+
+            # Try alternative volume names (Docker Compose prefixes)
+            docker volume rm project_openproject-db-data 2>/dev/null || echo "   Volume project_openproject-db-data not found"
+            docker volume rm project_openproject-data 2>/dev/null || echo "   Volume project_openproject-data not found"
+            docker volume rm project_openproject-attachments 2>/dev/null || echo "   Volume project_openproject-attachments not found"
+            docker volume rm openproject-db-data 2>/dev/null || echo "   Volume openproject-db-data not found"
+            docker volume rm openproject-data 2>/dev/null || echo "   Volume openproject-data not found"
+            docker volume rm openproject-attachments 2>/dev/null || echo "   Volume openproject-attachments not found"
+
+            echo ""
+            echo "4️⃣ Verification - Remaining volumes:"
+            docker volume ls | grep -E "(openproject|project_)" || echo "   ✅ All OpenProject volumes removed"
+
+            echo ""
+            echo "5️⃣ Removing network..."
+            docker network rm openproject_internal 2>/dev/null || echo "   Network already removed or doesn't exist"
+
+            echo ""
+            echo "✅ CLEANUP COMPLETE!"
+            echo ""
+            echo "🎯 Next steps:"
+            echo "   1. Fix healthcheck in docker-compose.yml"
+            echo "   2. Push changes to main branch"
+            echo "   3. Run deploy-openproject.yml workflow"
+            echo ""
+          ENDSSH
+
+          echo ""
+          echo "✅ Cleanup executed successfully on VPS"
