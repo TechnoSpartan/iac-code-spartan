@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: openproject-db
     restart: unless-stopped
     environment:
@@ -78,10 +78,10 @@ services:
       resources:
         limits:
           cpus: '1.5'
-          memory: 1.5G
+          memory: 2.0G
         reservations:
           cpus: '0.5'
-          memory: 256M
+          memory: 512M
     # Disabled healthcheck during startup - OpenProject needs time for migrations
     # Re-enable after initial startup completes successfully
     # healthcheck:
