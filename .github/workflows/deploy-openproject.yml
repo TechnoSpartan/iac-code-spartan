@@ -218,10 +218,15 @@ jobs:
             echo "  ❌ App health check timeout after $((MAX_APP_ATTEMPTS * 10)) seconds"
             echo ""
             echo "📋 Container Status:"
-            docker ps -a --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}\t{{.Health}}"
+            docker ps -a --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}"
             echo ""
             echo "📋 App container logs (last 100 lines):"
-            docker logs --tail 100 "$APP_CONTAINER"
+            if [ -n "$APP_CONTAINER" ]; then
+              docker logs --tail 100 "$APP_CONTAINER" 2>/dev/null || echo "Could not retrieve logs for: $APP_CONTAINER"
+            else
+              echo "No container found - checking all openproject containers:"
+              docker ps -a --filter "name=openproject"
+            fi
             echo ""
             echo "💡 Tip: OpenProject can take 10+ minutes on first startup for database migrations."
             echo "💡 If logs show migrations running, wait longer or check manually:"
