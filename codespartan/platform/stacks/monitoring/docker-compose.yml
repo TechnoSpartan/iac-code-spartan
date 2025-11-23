@@ -312,7 +312,7 @@ services:
       start_period: 20s
 
   fail2ban-exporter:
-    image: devops-workshop/fail2ban-prometheus-exporter:latest
+    image: pyoupyou/fail2ban-prometheus-exporter:latest
     container_name: fail2ban-exporter
     command:
       - --fail2ban.socket=/var/run/fail2ban/fail2ban.sock
