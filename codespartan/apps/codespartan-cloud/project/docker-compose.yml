@@ -82,12 +82,14 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "8080"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 180s
+    # Disabled healthcheck during startup - OpenProject needs time for migrations
+    # Re-enable after initial startup completes successfully
+    # healthcheck:
+    #   test: ["CMD", "nc", "-z", "localhost", "8080"]
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 180s
     logging:
       driver: "json-file"
       options:
