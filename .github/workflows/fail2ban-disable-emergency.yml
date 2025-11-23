@@ -1,0 +1,72 @@
+name: Fail2ban Emergency Disable (Last Resort)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "DISABLE" to confirm (this will disable Fail2ban temporarily)'
+        required: true
+        type: string
+
+jobs:
+  disable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Disable Fail2ban
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚨 FAIL2BAN EMERGENCY DISABLE (LAST RESORT)"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "⚠️  WARNING: This will temporarily disable Fail2ban protection"
+            echo "⚠️  Use this ONLY if all other recovery methods have failed"
+            echo ""
+
+            CONFIRM="${{ inputs.confirm }}"
+            
+            if [ "$CONFIRM" != "DISABLE" ]; then
+              echo "❌ Confirmation failed. You must type 'DISABLE' to proceed."
+              echo ""
+              echo "This is a safety measure to prevent accidental disabling."
+              exit 1
+            fi
+
+            echo "🔄 Stopping Fail2ban service..."
+            sudo systemctl stop fail2ban
+            
+            echo "⏳ Waiting 2 seconds..."
+            sleep 2
+            
+            echo "📊 Checking Fail2ban status..."
+            if systemctl is-active --quiet fail2ban; then
+              echo "❌ Fail2ban is still running. Trying force stop..."
+              sudo systemctl kill fail2ban || true
+              sleep 2
+            fi
+            
+            if ! systemctl is-active --quiet fail2ban; then
+              echo "✅ Fail2ban has been stopped"
+              echo ""
+              echo "⚠️  IMPORTANT: Fail2ban is now DISABLED"
+              echo "⚠️  Your server is temporarily unprotected"
+              echo ""
+              echo "📋 Next steps:"
+              echo "1. Connect via SSH and fix the issue"
+              echo "2. Re-enable Fail2ban: sudo systemctl start fail2ban"
+              echo "3. Add your IP to whitelist to prevent future bans"
+              echo ""
+            else
+              echo "❌ Failed to stop Fail2ban"
+              echo "You may need to use Hetzner Console to access the server"
+              exit 1
+            fi
+
+            echo "════════════════════════════════════════════════════════════"
+
