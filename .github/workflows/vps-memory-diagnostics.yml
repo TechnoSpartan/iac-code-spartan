@@ -1,0 +1,56 @@
+name: VPS Memory Diagnostics
+
+on:
+  workflow_dispatch:
+
+jobs:
+  memory-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check VPS memory and container usage
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "════════════════════════════════════════════════════════════"
+            echo "🔍 VPS MEMORY DIAGNOSTICS"
+            echo "════════════════════════════════════════════════════════════"
+            
+            echo ""
+            echo "=== System Memory (free -h) ==="
+            free -h
+            
+            echo ""
+            echo "=== Memory Usage by Process (top 10) ==="
+            ps aux --sort=-%mem | head -11
+            
+            echo ""
+            echo "=== Docker Container Memory Usage ==="
+            docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.NetIO}}\t{{.BlockIO}}"
+            
+            echo ""
+            echo "=== Docker Container Memory Limits ==="
+            docker ps --format "{{.Names}}" | while read container; do
+              echo "--- $container ---"
+              docker inspect $container --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' 2>/dev/null || echo "No limit set"
+              docker inspect $container --format 'Memory Reservation: {{.HostConfig.MemoryReservation}} bytes ({{div .HostConfig.MemoryReservation 1048576}}MB)' 2>/dev/null || echo "No reservation set"
+            done
+            
+            echo ""
+            echo "=== Total Memory Limits (sum) ==="
+            TOTAL_LIMIT=$(docker ps --format "{{.Names}}" | while read container; do
+              docker inspect $container --format '{{.HostConfig.Memory}}' 2>/dev/null | grep -v '^$' || echo "0"
+            done | awk '{sum+=$1} END {print sum}')
+            TOTAL_LIMIT_MB=$((TOTAL_LIMIT / 1048576))
+            echo "Total Memory Limits: ${TOTAL_LIMIT_MB}MB ($(awk "BEGIN {printf \"%.2f\", ${TOTAL_LIMIT_MB}/1024}")GB)"
+            
+            echo ""
+            echo "=== OpenProject Containers (detailed) ==="
+            docker stats --no-stream openproject-app openproject-db openproject-cache 2>/dev/null || echo "OpenProject containers not running"
+            
+            echo ""
+            echo "=== Monitoring Stack Containers (detailed) ==="
+            docker stats --no-stream victoriametrics vmagent grafana loki promtail cadvisor node-exporter 2>/dev/null | head -10 || echo "Some monitoring containers not running"
+

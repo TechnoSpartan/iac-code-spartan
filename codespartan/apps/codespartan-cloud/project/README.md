@@ -46,24 +46,24 @@ OpenProject is a powerful open-source project management software that includes:
 
 | Service     | Memory Limit | CPU Limit | Reserved | Purpose |
 |-------------|--------------|-----------|----------|---------|
-| App         | 1.5GB        | 1.5       | 256MB    | Rails application (supports 100+ users) |
-| PostgreSQL  | 512MB        | 0.75      | 128MB    | Database (efficient with caching) |
+| App         | 1.2GB        | 1.5       | 384MB    | Rails application (supports 100+ users) |
+| PostgreSQL  | 384MB        | 0.75      | 96MB     | Database (efficient with caching) |
 | Memcached   | 128MB        | 0.5       | 32MB     | Session/query caching |
 
-**Total OpenProject**: 2.1GB (optimized to leave 1.1GB margin)
+**Total OpenProject**: 1.7GB (optimized to leave 1.5GB margin for other services)
 
 ### VPS Resource Analysis
 
 ```
 VPS Total:          3.4GB (4GB with OS)
-Platform (Traefik, Monitoring):  ~3.9GB limit / 763MB actual
-OpenProject:        2.1GB limit / 350MB actual
-Total Limits:       6.0GB (safe overcommitment)
-Total Usage:        ~1.1GB (32% utilization) ✅ SAFE
-Remaining Margin:   2.3GB (68% free) ✅ EXCELLENT
+Platform (Traefik, Monitoring):  ~800MB limit / 763MB actual
+OpenProject:        1.7GB limit / 400MB actual (optimized)
+Total Limits:       ~2.5GB (safe allocation)
+Total Usage:        ~1.2GB (35% utilization) ✅ SAFE
+Remaining Margin:   2.2GB (65% free) ✅ EXCELLENT
 ```
 
-⚠️ **Resource Integrity Check**: System is safe. If app grows beyond 350MB, memory will be freed automatically.
+⚠️ **Resource Integrity Check**: System is optimized. OpenProject limits reduced from 2.1GB to 1.7GB to prevent memory exhaustion. If app grows beyond limits, Docker will enforce OOM killer.
 
 ## Initial Setup
 
