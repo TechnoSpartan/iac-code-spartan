@@ -77,12 +77,38 @@ jobs:
             fi
             echo ""
 
+            # Get current IP for whitelist
+            echo "🔍 Detectando IP para whitelist..."
+            CURRENT_IP=""
+            
+            # Try to get IP from SSH connection
+            if [ -n "$SSH_CLIENT" ]; then
+              CURRENT_IP=$(echo $SSH_CLIENT | awk '{print $1}')
+              echo "✅ IP detectada desde SSH_CLIENT: $CURRENT_IP"
+            else
+              # Try to get public IP
+              CURRENT_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null || echo "")
+              if [ -n "$CURRENT_IP" ]; then
+                echo "✅ IP pública detectada: $CURRENT_IP"
+              else
+                echo "⚠️  No se pudo detectar IP automáticamente"
+              fi
+            fi
+            
+            # Build ignoreip list
+            IGNOREIP="127.0.0.1/8 ::1"
+            if [ -n "$CURRENT_IP" ]; then
+              IGNOREIP="${IGNOREIP} ${CURRENT_IP}"
+              echo "📝 IP agregada a whitelist: $CURRENT_IP"
+            fi
+            echo ""
+
             # Verify/create configuration
             echo "📝 Verificando configuración..."
             if [ ! -f /etc/fail2ban/jail.local ]; then
               echo "📝 Creando configuración /etc/fail2ban/jail.local..."
               
-              sudo tee /etc/fail2ban/jail.local > /dev/null << 'EOF'
+              sudo tee /etc/fail2ban/jail.local > /dev/null << EOF
             [DEFAULT]
             # Ban hosts for 10 minutes
             bantime = 10m
@@ -92,6 +118,9 @@ jobs:
             
             # Number of failures before a host gets banned
             maxretry = 5
+            
+            # IPs to ignore (whitelist) - these will NEVER be banned
+            ignoreip = ${IGNOREIP}
             
             # Action to take when banning
             action = %(action_)s
@@ -104,6 +133,8 @@ jobs:
             maxretry = 5
             bantime = 10m
             findtime = 10m
+            # Whitelist applies to all jails
+            ignoreip = ${IGNOREIP}
             
             # Optional: Protect against SSH DDoS
             [sshd-ddos]
@@ -113,6 +144,7 @@ jobs:
             maxretry = 10
             findtime = 10m
             bantime = 10m
+            ignoreip = ${IGNOREIP}
             EOF
               
               echo "✅ Configuración creada"
@@ -171,5 +203,16 @@ jobs:
             echo "  - Ver IPs baneadas:  sudo fail2ban-client get sshd banned"
             echo "  - Desbanear IP:      sudo fail2ban-client set sshd unbanip <IP>"
             echo "  - Ver logs:          sudo tail -f /var/log/fail2ban.log"
+            echo ""
+            echo "🚨 EMERGENCIA - Si te baneas accidentalmente:"
+            echo "  1. Usa el workflow: 'Fail2ban Emergency Unban'"
+            echo "  2. O desde el VPS: sudo /opt/codespartan/scripts/unban-ip.sh <TU_IP>"
+            echo "  3. O desde el VPS: sudo /opt/codespartan/scripts/unban-ip.sh all"
+            echo ""
+            if [ -n "$CURRENT_IP" ]; then
+              echo "✅ Tu IP actual ($CURRENT_IP) está en la whitelist y NO será baneada"
+            else
+              echo "⚠️  No se pudo detectar tu IP. Agrégalo manualmente a /etc/fail2ban/jail.local"
+            fi
             echo ""
 

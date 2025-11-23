@@ -67,10 +67,36 @@ echo ""
 # Create local configuration
 echo -e "${YELLOW}Configuring Fail2ban...${NC}"
 
-# Create jail.local with SSH protection
-cat > /etc/fail2ban/jail.local << 'EOF'
+# Get current SSH client IP (if available)
+CURRENT_IP=""
+if [ -n "$SSH_CLIENT" ]; then
+    CURRENT_IP=$(echo $SSH_CLIENT | awk '{print $1}')
+    echo -e "${BLUE}Detected current SSH client IP: ${CURRENT_IP}${NC}"
+    echo -e "${YELLOW}This IP will be added to the whitelist${NC}"
+fi
+
+# Try to get public IP if SSH_CLIENT is not available
+if [ -z "$CURRENT_IP" ]; then
+    echo -e "${YELLOW}Trying to detect public IP...${NC}"
+    CURRENT_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null || echo "")
+    if [ -n "$CURRENT_IP" ]; then
+        echo -e "${BLUE}Detected public IP: ${CURRENT_IP}${NC}"
+    else
+        echo -e "${YELLOW}⚠ Could not detect IP automatically${NC}"
+        echo -e "${YELLOW}You can add your IP manually later to /etc/fail2ban/jail.local${NC}"
+    fi
+fi
+
+# Build ignoreip list
+IGNOREIP="127.0.0.1/8 ::1"
+if [ -n "$CURRENT_IP" ]; then
+    IGNOREIP="${IGNOREIP} ${CURRENT_IP}"
+fi
+
+# Create jail.local with SSH protection and whitelist
+cat > /etc/fail2ban/jail.local << EOF
 [DEFAULT]
-# Ban hosts for 10 minutes
+# Ban hosts for 10 minutes (increased from default for better protection)
 bantime = 10m
 
 # A host is banned if it has generated "maxretry" during the last "findtime"
@@ -78,6 +104,10 @@ findtime = 10m
 
 # Number of failures before a host gets banned
 maxretry = 5
+
+# IPs to ignore (whitelist) - these will NEVER be banned
+# Format: space-separated IPs or CIDR ranges
+ignoreip = ${IGNOREIP}
 
 # Destination email for notifications (optional)
 # destemail = admin@mambo-cloud.com
@@ -97,6 +127,8 @@ backend = %(sshd_backend)s
 maxretry = 5
 bantime = 10m
 findtime = 10m
+# Whitelist applies to all jails by default, but can be overridden per jail
+ignoreip = ${IGNOREIP}
 
 # Optional: Protect against SSH DDoS
 [sshd-ddos]
@@ -106,6 +138,7 @@ logpath = %(sshd_log)s
 maxretry = 10
 findtime = 10m
 bantime = 10m
+ignoreip = ${IGNOREIP}
 EOF
 
 # Adjust logpath for RHEL-based systems if needed
@@ -119,7 +152,6 @@ if [ "$DISTRO" = "rhel" ]; then
         echo -e "${YELLOW}⚠ SSH logs not found at /var/log/secure, using default${NC}"
     fi
 fi
-EOF
 
 echo -e "${GREEN}✓ Configuration created at /etc/fail2ban/jail.local${NC}"
 echo ""
@@ -171,4 +203,15 @@ echo "  - Check SSH jail:      sudo fail2ban-client status sshd"
 echo "  - Unban IP:            sudo fail2ban-client set sshd unbanip <IP>"
 echo "  - Show banned IPs:     sudo fail2ban-client get sshd banned"
 echo "  - View logs:           sudo tail -f /var/log/fail2ban.log"
+echo ""
+if [ -n "$CURRENT_IP" ]; then
+    echo -e "${GREEN}✓ Your current IP (${CURRENT_IP}) is in the whitelist and will NOT be banned${NC}"
+else
+    echo -e "${YELLOW}⚠ Could not detect your IP. Add it manually to /etc/fail2ban/jail.local${NC}"
+fi
+echo ""
+echo "🚨 EMERGENCY - If you get banned accidentally:"
+echo "  1. Use the emergency script: sudo /opt/codespartan/scripts/unban-ip.sh <YOUR_IP>"
+echo "  2. Or unban all: sudo /opt/codespartan/scripts/unban-ip.sh all"
+echo "  3. Or use GitHub Actions workflow: 'Fail2ban Emergency Unban'"
 echo ""

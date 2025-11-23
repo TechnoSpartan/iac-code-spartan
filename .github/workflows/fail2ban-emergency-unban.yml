@@ -1,0 +1,110 @@
+name: Fail2ban Emergency Unban
+
+on:
+  workflow_dispatch:
+    inputs:
+      ip_address:
+        description: 'IP address to unban (or "all" to unban all)'
+        required: true
+        type: string
+        default: ''
+
+jobs:
+  unban:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emergency Unban IP
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚨 FAIL2BAN EMERGENCY UNBAN"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+
+            IP_ADDRESS="${{ inputs.ip_address }}"
+
+            if [ -z "$IP_ADDRESS" ]; then
+              echo "❌ Error: IP address not provided"
+              echo ""
+              echo "Usage: Provide IP address in workflow input"
+              echo ""
+              echo "Current banned IPs:"
+              echo ""
+              for jail in $(sudo fail2ban-client status | grep "Jail list:" | sed 's/.*:\s*//' | tr ',' ' '); do
+                echo "Jail: $jail"
+                sudo fail2ban-client get $jail banned 2>/dev/null || echo "  (none)"
+                echo ""
+              done
+              exit 1
+            fi
+
+            # Check if Fail2ban is running
+            if ! systemctl is-active --quiet fail2ban; then
+              echo "⚠️  Fail2ban is not running"
+              echo "Starting Fail2ban..."
+              sudo systemctl start fail2ban
+              sleep 2
+            fi
+
+            # Unban all IPs
+            if [ "$IP_ADDRESS" = "all" ]; then
+              echo "🔄 Unbanning ALL IPs from all jails..."
+              echo ""
+              
+              for jail in $(sudo fail2ban-client status | grep "Jail list:" | sed 's/.*:\s*//' | tr ',' ' '); do
+                echo "Processing jail: $jail"
+                BANNED_IPS=$(sudo fail2ban-client get $jail banned 2>/dev/null | tail -n +2 | awk '{print $NF}' || echo "")
+                
+                if [ -n "$BANNED_IPS" ]; then
+                  for ip in $BANNED_IPS; do
+                    echo "  Unbanning: $ip"
+                    sudo fail2ban-client set $jail unbanip $ip 2>/dev/null || true
+                  done
+                  echo "✅ All IPs unbanned from $jail"
+                else
+                  echo "  (no banned IPs)"
+                fi
+                echo ""
+              done
+              
+              echo "✅ All IPs unbanned"
+              exit 0
+            fi
+
+            # Unban specific IP
+            echo "🔄 Unbanning IP: $IP_ADDRESS"
+            echo ""
+
+            UNBANNED=0
+            for jail in $(sudo fail2ban-client status | grep "Jail list:" | sed 's/.*:\s*//' | tr ',' ' '); do
+              # Check if IP is banned in this jail
+              if sudo fail2ban-client get $jail banned 2>/dev/null | grep -q "$IP_ADDRESS"; then
+                echo "Unbanning from jail: $jail"
+                if sudo fail2ban-client set $jail unbanip $IP_ADDRESS 2>/dev/null; then
+                  echo "✅ IP $IP_ADDRESS unbanned from $jail"
+                  UNBANNED=1
+                else
+                  echo "❌ Failed to unban from $jail"
+                fi
+              fi
+            done
+
+            if [ $UNBANNED -eq 0 ]; then
+              echo "⚠️  IP $IP_ADDRESS was not found in any jail"
+              echo "It may not be banned, or may have already been unbanned."
+            else
+              echo ""
+              echo "✅ IP $IP_ADDRESS has been unbanned"
+              echo ""
+              echo "You should now be able to connect via SSH."
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+
