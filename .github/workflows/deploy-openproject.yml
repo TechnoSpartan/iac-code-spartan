@@ -74,10 +74,26 @@ jobs:
 
             # Clean old database volume (PostgreSQL upgrade from 15 to 16)
             echo "🧹 Cleaning old database volume (PostgreSQL version upgrade)..."
-            docker compose down 2>/dev/null || true
-            sleep 2
-            docker volume rm openproject-db-data 2>/dev/null || echo "   No existing volume to clean"
-            echo "✅ Volume cleaned"
+
+            # Stop containers and remove volumes (--volumes flag is key)
+            echo "  → Stopping containers and removing volumes..."
+            docker compose down --volumes --remove-orphans 2>&1 || true
+            sleep 3
+
+            # Additional safety: explicitly remove volume if it still exists
+            echo "  → Force removing any remaining volumes..."
+            docker volume rm -f openproject-db-data 2>&1 || true
+            docker volume rm -f openproject-data 2>&1 || true
+            docker volume rm -f openproject-attachments 2>&1 || true
+
+            # Verify volumes are gone
+            echo "  → Verifying volumes removed..."
+            if docker volume ls 2>/dev/null | grep -q "openproject"; then
+              echo "  ⚠️  WARNING: Some OpenProject volumes still exist"
+              docker volume ls 2>/dev/null | grep "openproject" || true
+            else
+              echo "  ✅ All OpenProject volumes successfully removed"
+            fi
 
             # Ensure web network exists (external network for Traefik)
             docker network create web 2>/dev/null || true
