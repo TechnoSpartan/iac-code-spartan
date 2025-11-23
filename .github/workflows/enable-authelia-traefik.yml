@@ -137,14 +137,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add codespartan/platform/traefik/docker-compose.yml
-          git commit -m "feat: Enable Authelia SSO for Traefik dashboard
-
-Traefik dashboard now protected by Authelia with MFA.
-
-- Replaced Basic Auth with authelia@docker middleware
-- Removed users.htpasswd volume
-- Access requires login via https://auth.mambo-cloud.com
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)" || echo "No changes to commit"
-
+          git commit -m "feat: Enable Authelia SSO for Traefik dashboard" || echo "No changes to commit"
           git push || echo "Nothing to push"
