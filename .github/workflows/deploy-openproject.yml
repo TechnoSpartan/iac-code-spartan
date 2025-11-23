@@ -99,6 +99,10 @@ jobs:
             
             echo "✅ .env created successfully with production secrets"
 
+            # Clean old database volume if upgrading PostgreSQL version
+            echo "🧹 Cleaning old database volume (PostgreSQL version upgrade)..."
+            docker volume rm openproject-db-data 2>/dev/null || echo "No existing volume to clean"
+
             # Pull latest images
             echo "📦 Pulling latest Docker images..."
             docker compose pull
