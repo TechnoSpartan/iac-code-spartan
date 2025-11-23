@@ -37,6 +37,7 @@ jobs:
           source: "artifacts/openproject/*"
           target: "/opt/codespartan/apps/codespartan-cloud/project"
           strip_components: 2
+          overwrite: true  # CRITICAL: Overwrite existing files to apply updates
 
       - name: Deploy OpenProject
         uses: appleboy/ssh-action@v1.0.3
