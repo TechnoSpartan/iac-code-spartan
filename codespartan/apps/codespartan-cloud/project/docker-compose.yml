@@ -15,10 +15,10 @@ services:
       resources:
         limits:
           cpus: '0.75'
-          memory: 512M
+          memory: 384M
         reservations:
           cpus: '0.25'
-          memory: 128M
+          memory: 96M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U openproject"]
       interval: 30s
@@ -78,10 +78,10 @@ services:
       resources:
         limits:
           cpus: '1.5'
-          memory: 2.0G
+          memory: 1.2G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 384M
     healthcheck:
       test: ["CMD", "curl", "-I", "-H", "Host: ${OPENPROJECT_HOST__NAME}", "http://localhost:8080/"]
       interval: 60s
@@ -112,10 +112,10 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 256M
+          memory: 128M
         reservations:
           cpus: '0.1'
-          memory: 64M
+          memory: 32M
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "11211"]
       interval: 30s
