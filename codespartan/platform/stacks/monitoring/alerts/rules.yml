@@ -142,3 +142,39 @@ groups:
         annotations:
           summary: "CRITICAL: Very high 5xx error rate"
           description: "Service {{ $labels.service }} is returning more than 50 5xx errors per second (current: {{ $value | humanize }}/s)"
+
+  - name: fail2ban_alerts
+    interval: 30s
+    rules:
+      # Fail2ban Exporter Down
+      - alert: Fail2banExporterDown
+        expr: fail2ban_up == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: fail2ban
+        annotations:
+          summary: "Fail2ban exporter está down"
+          description: "El exporter de Fail2ban no está respondiendo desde hace {{ $for }}"
+
+      # High Ban Rate (posible ataque)
+      - alert: Fail2banHighBanRate
+        expr: rate(fail2ban_banned_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: fail2ban
+        annotations:
+          summary: "Alta tasa de baneos en Fail2ban"
+          description: "Se están baneando {{ $value | humanize }} IPs por minuto en el jail {{ $labels.jail }}"
+
+      # High Failure Rate (posible ataque)
+      - alert: Fail2banHighFailureRate
+        expr: rate(fail2ban_failed_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          component: fail2ban
+        annotations:
+          summary: "Alta tasa de intentos fallidos"
+          description: "{{ $value | humanize }} intentos fallidos por minuto en el jail {{ $labels.jail }}"

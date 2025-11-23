@@ -1,0 +1,175 @@
+name: Install/Verify Fail2ban
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_reinstall:
+        description: 'Force reinstall even if already installed'
+        type: boolean
+        default: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install/Verify Fail2ban
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🛡️  INSTALLING/VERIFYING FAIL2BAN"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+
+            # Detect distribution
+            if [ -f /etc/redhat-release ]; then
+              DISTRO="rhel"
+              echo "📦 Detected: RHEL-based (AlmaLinux/RHEL/CentOS)"
+              cat /etc/redhat-release
+            elif [ -f /etc/debian_version ]; then
+              DISTRO="debian"
+              echo "📦 Detected: Debian-based (Debian/Ubuntu)"
+              cat /etc/debian_version
+            else
+              echo "❌ Unsupported distribution"
+              exit 1
+            fi
+            echo ""
+
+            # Check if Fail2ban is already installed
+            if command -v fail2ban-client &> /dev/null; then
+              echo "✅ Fail2ban ya está instalado"
+              fail2ban-client --version
+              
+              if [ "${{ inputs.force_reinstall }}" = "true" ]; then
+                echo "🔄 Force reinstall activado, reinstalando..."
+              else
+                echo "ℹ️  Para reinstalar, activa 'force_reinstall' en el workflow"
+                echo ""
+              fi
+            fi
+
+            # Install Fail2ban if not installed or force_reinstall is true
+            if ! command -v fail2ban-client &> /dev/null || [ "${{ inputs.force_reinstall }}" = "true" ]; then
+              echo "📦 Instalando Fail2ban..."
+              
+              if [ "$DISTRO" = "rhel" ]; then
+                # Install EPEL if not present
+                if ! rpm -q epel-release >/dev/null 2>&1; then
+                  echo "📦 Instalando repositorio EPEL..."
+                  sudo dnf install -y epel-release
+                fi
+                sudo dnf install -y fail2ban fail2ban-systemd
+              elif [ "$DISTRO" = "debian" ]; then
+                sudo apt-get update -qq
+                sudo apt-get install -y fail2ban
+              fi
+              
+              echo "✅ Fail2ban instalado"
+            fi
+            echo ""
+
+            # Verify/create configuration
+            echo "📝 Verificando configuración..."
+            if [ ! -f /etc/fail2ban/jail.local ]; then
+              echo "📝 Creando configuración /etc/fail2ban/jail.local..."
+              
+              sudo tee /etc/fail2ban/jail.local > /dev/null << 'EOF'
+            [DEFAULT]
+            # Ban hosts for 10 minutes
+            bantime = 10m
+            
+            # A host is banned if it has generated "maxretry" during the last "findtime"
+            findtime = 10m
+            
+            # Number of failures before a host gets banned
+            maxretry = 5
+            
+            # Action to take when banning
+            action = %(action_)s
+            
+            [sshd]
+            enabled = true
+            port = ssh
+            logpath = %(sshd_log)s
+            backend = %(sshd_backend)s
+            maxretry = 5
+            bantime = 10m
+            findtime = 10m
+            
+            # Optional: Protect against SSH DDoS
+            [sshd-ddos]
+            enabled = true
+            port = ssh
+            logpath = %(sshd_log)s
+            maxretry = 10
+            findtime = 10m
+            bantime = 10m
+            EOF
+              
+              echo "✅ Configuración creada"
+            else
+              echo "✅ Configuración ya existe en /etc/fail2ban/jail.local"
+              echo "📄 Contenido actual:"
+              sudo cat /etc/fail2ban/jail.local | head -20
+            fi
+            echo ""
+
+            # Enable and start service
+            echo "🔄 Habilitando y reiniciando servicio..."
+            sudo systemctl enable fail2ban
+            sudo systemctl restart fail2ban
+            
+            # Wait for service to start
+            sleep 3
+            echo ""
+
+            # Verify status
+            echo "📊 Verificando estado de Fail2ban..."
+            if systemctl is-active --quiet fail2ban; then
+              echo "✅ Fail2ban está corriendo"
+              echo ""
+              
+              echo "📋 Estado general:"
+              sudo fail2ban-client status
+              echo ""
+              
+              echo "📋 SSH Jail:"
+              sudo fail2ban-client status sshd || echo "⚠️  SSH jail aún no activo (normal si no hay actividad)"
+              echo ""
+              
+              echo "📋 IPs baneadas actualmente:"
+              sudo fail2ban-client get sshd banned 2>/dev/null || echo "  (ninguna)"
+              echo ""
+              
+              # Show recent logs
+              echo "📋 Últimas líneas del log:"
+              sudo tail -n 5 /var/log/fail2ban.log 2>/dev/null || echo "  (log aún no generado)"
+              echo ""
+            else
+              echo "❌ Fail2ban no está corriendo"
+              echo "📋 Logs de error:"
+              sudo journalctl -u fail2ban -n 20 --no-pager
+              exit 1
+            fi
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "✅ FAIL2BAN INSTALACIÓN/VERIFICACIÓN COMPLETA"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "📚 Comandos útiles:"
+            echo "  - Ver estado:        sudo fail2ban-client status"
+            echo "  - Ver SSH jail:      sudo fail2ban-client status sshd"
+            echo "  - Ver IPs baneadas:  sudo fail2ban-client get sshd banned"
+            echo "  - Desbanear IP:      sudo fail2ban-client set sshd unbanip <IP>"
+            echo "  - Ver logs:          sudo tail -f /var/log/fail2ban.log"
+            echo ""
+
