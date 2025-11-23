@@ -72,6 +72,13 @@ jobs:
             }
             echo "✅ Changed to project directory: $PROJECT_DIR"
 
+            # Clean old database volume (PostgreSQL upgrade from 15 to 16)
+            echo "🧹 Cleaning old database volume (PostgreSQL version upgrade)..."
+            docker compose down 2>/dev/null || true
+            sleep 2
+            docker volume rm openproject-db-data 2>/dev/null || echo "   No existing volume to clean"
+            echo "✅ Volume cleaned"
+
             # Ensure web network exists (external network for Traefik)
             docker network create web 2>/dev/null || true
             echo "✅ Web network ready"
@@ -98,13 +105,6 @@ jobs:
             printf 'DATABASE_URL=postgres://openproject:%s@db:5432/openproject\n' "$POSTGRES_PASSWORD" >> .env
             
             echo "✅ .env created successfully with production secrets"
-
-            # Clean old database volume if upgrading PostgreSQL version
-            echo "🧹 Cleaning old database volume (PostgreSQL version upgrade)..."
-            docker compose down 2>/dev/null || true
-            sleep 2
-            docker volume rm openproject-db-data 2>/dev/null || echo "No existing volume to clean"
-            echo "✅ Volume cleaned"
 
             # Pull latest images
             echo "📦 Pulling latest Docker images..."
