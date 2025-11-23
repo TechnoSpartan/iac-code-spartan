@@ -33,10 +33,33 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Install Fail2ban
+# Detect distribution and install Fail2ban
+echo -e "${YELLOW}Detecting distribution...${NC}"
+if [ -f /etc/redhat-release ]; then
+    # AlmaLinux/RHEL/CentOS
+    DISTRO="rhel"
+    echo -e "${BLUE}Detected: RHEL-based (AlmaLinux/RHEL/CentOS)${NC}"
+elif [ -f /etc/debian_version ]; then
+    # Debian/Ubuntu
+    DISTRO="debian"
+    echo -e "${BLUE}Detected: Debian-based (Debian/Ubuntu)${NC}"
+else
+    echo -e "${RED}Error: Unsupported distribution${NC}"
+    exit 1
+fi
+
 echo -e "${YELLOW}Installing Fail2ban...${NC}"
-apt-get update -qq
-apt-get install -y fail2ban
+if [ "$DISTRO" = "rhel" ]; then
+    # Install EPEL repository if not present
+    if ! rpm -q epel-release >/dev/null 2>&1; then
+        echo -e "${YELLOW}Installing EPEL repository...${NC}"
+        dnf install -y epel-release
+    fi
+    dnf install -y fail2ban fail2ban-systemd
+elif [ "$DISTRO" = "debian" ]; then
+    apt-get update -qq
+    apt-get install -y fail2ban
+fi
 
 echo -e "${GREEN}✓ Fail2ban installed${NC}"
 echo ""
@@ -83,6 +106,19 @@ logpath = %(sshd_log)s
 maxretry = 10
 findtime = 10m
 bantime = 10m
+EOF
+
+# Adjust logpath for RHEL-based systems if needed
+if [ "$DISTRO" = "rhel" ]; then
+    # RHEL-based systems use /var/log/secure instead of /var/log/auth.log
+    # The %(sshd_log)s variable should handle this, but we verify
+    echo -e "${YELLOW}Verifying SSH log location...${NC}"
+    if [ -f /var/log/secure ]; then
+        echo -e "${GREEN}✓ SSH logs found at /var/log/secure${NC}"
+    else
+        echo -e "${YELLOW}⚠ SSH logs not found at /var/log/secure, using default${NC}"
+    fi
+fi
 EOF
 
 echo -e "${GREEN}✓ Configuration created at /etc/fail2ban/jail.local${NC}"
