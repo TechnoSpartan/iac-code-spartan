@@ -143,20 +143,23 @@ jobs:
             MAX_APP_ATTEMPTS=60  # 60 attempts * 10s = 10 minutes total
             
             while [ $APP_ATTEMPTS -lt $MAX_APP_ATTEMPTS ]; do
+              # Get container name dynamically (Docker Compose may add prefixes)
+              APP_CONTAINER=$(docker ps --filter "label=com.docker.compose.service=app" --format '{{.Names}}' | head -1)
+
               # Check if container is running
-              if ! docker ps --format '{{.Names}}' | grep -q '^openproject-app$'; then
+              if [ -z "$APP_CONTAINER" ]; then
                 echo "  ❌ Container not running!"
-                docker ps -a | grep openproject-app
+                docker ps -a | grep openproject
                 echo "📋 Container logs:"
-                docker logs --tail 50 openproject-app
+                docker logs --tail 50 $(docker ps -a --filter "label=com.docker.compose.service=app" --format '{{.Names}}' | head -1) 2>/dev/null || echo "No container found"
                 exit 1
               fi
-              
+
               # Get Docker health status (most reliable method)
-              CONTAINER_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' openproject-app 2>/dev/null || echo "starting")
-              
+              CONTAINER_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' "$APP_CONTAINER" 2>/dev/null || echo "starting")
+
               # Also check if container is in starting period (health check not running yet)
-              CONTAINER_STARTED=$(docker inspect --format='{{.State.StartedAt}}' openproject-app 2>/dev/null)
+              CONTAINER_STARTED=$(docker inspect --format='{{.State.StartedAt}}' "$APP_CONTAINER" 2>/dev/null)
               CURRENT_TIME=$(date +%s)
               STARTED_TIME=$(date -d "$CONTAINER_STARTED" +%s 2>/dev/null || echo 0)
               CONTAINER_UPTIME=$((CURRENT_TIME - STARTED_TIME))
@@ -196,7 +199,7 @@ jobs:
                 echo "    - Health Status: $CONTAINER_HEALTH"
                 echo "    - Container Uptime: ${CONTAINER_UPTIME}s"
                 echo "    - Recent logs (last 5 lines):"
-                docker logs --tail 5 openproject-app 2>&1 | sed 's/^/      /'
+                docker logs --tail 5 "$APP_CONTAINER" 2>&1 | sed 's/^/      /'
                 echo ""
               fi
               
@@ -218,7 +221,7 @@ jobs:
             docker ps -a --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}\t{{.Health}}"
             echo ""
             echo "📋 App container logs (last 100 lines):"
-            docker logs --tail 100 openproject-app
+            docker logs --tail 100 "$APP_CONTAINER"
             echo ""
             echo "💡 Tip: OpenProject can take 10+ minutes on first startup for database migrations."
             echo "💡 If logs show migrations running, wait longer or check manually:"
