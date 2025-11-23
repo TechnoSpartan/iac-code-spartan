@@ -101,7 +101,10 @@ jobs:
 
             # Clean old database volume if upgrading PostgreSQL version
             echo "🧹 Cleaning old database volume (PostgreSQL version upgrade)..."
+            docker compose down 2>/dev/null || true
+            sleep 2
             docker volume rm openproject-db-data 2>/dev/null || echo "No existing volume to clean"
+            echo "✅ Volume cleaned"
 
             # Pull latest images
             echo "📦 Pulling latest Docker images..."
