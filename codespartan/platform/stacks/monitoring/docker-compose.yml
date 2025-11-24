@@ -311,31 +311,32 @@ services:
       retries: 3
       start_period: 20s
 
-  fail2ban-exporter:
-    image: pyoupyou/fail2ban-prometheus-exporter:latest
-    container_name: fail2ban-exporter
-    command:
-      - --fail2ban.socket=/var/run/fail2ban/fail2ban.sock
-      - --web.listen-address=:9191
-    volumes:
-      - /var/run/fail2ban:/var/run/fail2ban:ro
-    networks:
-      - monitoring
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 64M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9191/metrics"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+  # TODO: Find working fail2ban exporter image or build custom one
+  # fail2ban-exporter:
+  #   image: pyoupyou/fail2ban-prometheus-exporter:latest  # Image doesn't exist
+  #   container_name: fail2ban-exporter
+  #   command:
+  #     - --fail2ban.socket=/var/run/fail2ban/fail2ban.sock
+  #     - --web.listen-address=:9191
+  #   volumes:
+  #     - /var/run/fail2ban:/var/run/fail2ban:ro
+  #   networks:
+  #     - monitoring
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.1'
+  #         memory: 64M
+  #       reservations:
+  #         cpus: '0.05'
+  #         memory: 32M
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9191/metrics"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
 
 volumes:
   victoria-data:

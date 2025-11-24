@@ -40,27 +40,27 @@ En la app, configurar "Email notifications" para recibir copia por email.
 
 Problemas graves que requieren atención inmediata.
 
-| Alerta | Condición | Duración | Descripción |
-|--------|-----------|----------|-------------|
-| **CriticalCPUUsage** | CPU > 95% | 2 min | CPU al límite |
-| **CriticalMemoryUsage** | RAM > 90% | 2 min | Memoria casi llena (ajustado para alerta proactiva) |
-| **CriticalDiskUsage** | Disk > 95% | 2 min | Disco casi lleno |
-| **ServiceDown** | Service down | 2 min | Servicio caído |
-| **ContainerDown** | Container down | 2 min | Contenedor caído |
-| **CriticalHTTP5xxRate** | >50 errors/s | 1 min | Muchos errores 5xx |
+| Alerta                  | Condición      | Duración | Descripción                                         |
+| ----------------------- | -------------- | -------- | --------------------------------------------------- |
+| **CriticalCPUUsage**    | CPU > 95%      | 2 min    | CPU al límite                                       |
+| **CriticalMemoryUsage** | RAM > 90%      | 2 min    | Memoria casi llena (ajustado para alerta proactiva) |
+| **CriticalDiskUsage**   | Disk > 95%     | 2 min    | Disco casi lleno                                    |
+| **ServiceDown**         | Service down   | 2 min    | Servicio caído                                      |
+| **ContainerDown**       | Container down | 2 min    | Contenedor caído                                    |
+| **CriticalHTTP5xxRate** | >50 errors/s   | 1 min    | Muchos errores 5xx                                  |
 
 ### **Nivel: WARNING** ⚠️
 
 Problemas que requieren atención pero no son urgentes.
 
-| Alerta | Condición | Duración | Descripción |
-|--------|-----------|----------|-------------|
-| **HighCPUUsage** | CPU > 80% | 5 min | CPU elevada |
-| **HighMemoryUsage** | RAM > 80% | 5 min | Memoria elevada (ajustado para alerta proactiva) |
-| **HighDiskUsage** | Disk > 85% | 5 min | Disco elevado |
-| **VictoriaMetricsHighMemory** | VM > 1.5GB | 5 min | VictoriaMetrics usando mucha RAM |
-| **VictoriaMetricsStorageIssue** | Free < 5GB | 5 min | VictoriaMetrics poco espacio |
-| **HighHTTP5xxRate** | >10 errors/s | 2 min | Errores 5xx elevados |
+| Alerta                          | Condición    | Duración | Descripción                                      |
+| ------------------------------- | ------------ | -------- | ------------------------------------------------ |
+| **HighCPUUsage**                | CPU > 80%    | 5 min    | CPU elevada                                      |
+| **HighMemoryUsage**             | RAM > 80%    | 5 min    | Memoria elevada (ajustado para alerta proactiva) |
+| **HighDiskUsage**               | Disk > 85%   | 5 min    | Disco elevado                                    |
+| **VictoriaMetricsHighMemory**   | VM > 1.5GB   | 5 min    | VictoriaMetrics usando mucha RAM                 |
+| **VictoriaMetricsStorageIssue** | Free < 5GB   | 5 min    | VictoriaMetrics poco espacio                     |
+| **HighHTTP5xxRate**             | >10 errors/s | 2 min    | Errores 5xx elevados                             |
 
 ---
 
