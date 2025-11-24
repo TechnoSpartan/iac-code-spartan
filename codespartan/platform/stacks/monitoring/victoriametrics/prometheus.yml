@@ -36,9 +36,8 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  # TODO: Re-enable when fail2ban exporter is available
-  # - job_name: 'fail2ban'
-  #   static_configs:
-  #     - targets: ['fail2ban-exporter:9191']
-  #   scrape_interval: 30s
-  #   scrape_timeout: 10s
+  - job_name: 'fail2ban'
+    static_configs:
+      - targets: ['fail2ban-exporter:9191']
+    scrape_interval: 30s
+    scrape_timeout: 10s
