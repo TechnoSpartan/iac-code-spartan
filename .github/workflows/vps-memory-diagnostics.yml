@@ -54,3 +54,4 @@ jobs:
             echo "=== Monitoring Stack Containers (detailed) ==="
             docker stats --no-stream victoriametrics vmagent grafana loki promtail cadvisor node-exporter 2>/dev/null | head -10 || echo "Some monitoring containers not running"
 
+
