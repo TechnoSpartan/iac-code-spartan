@@ -24,27 +24,27 @@ groups:
           summary: "CRITICAL: CPU usage extremely high"
           description: "CPU usage is above 95% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
 
-      # Memory Usage Alert
+      # Memory Usage Alert (adjusted for proactive monitoring)
       - alert: HighMemoryUsage
-        expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 90
-        for: 3m
+        expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 80
+        for: 5m
         labels:
           severity: warning
           component: infrastructure
         annotations:
           summary: "High memory usage detected"
-          description: "Memory usage is above 90% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+          description: "Memory usage is above 80% (current: {{ $value | humanize }}%) on {{ $labels.instance }}. Consider optimizing or scaling resources."
 
-      # Critical Memory Usage Alert
+      # Critical Memory Usage Alert (adjusted for proactive monitoring)
       - alert: CriticalMemoryUsage
-        expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 95
-        for: 1m
+        expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 90
+        for: 2m
         labels:
           severity: critical
           component: infrastructure
         annotations:
           summary: "CRITICAL: Memory almost full"
-          description: "Memory usage is above 95% (current: {{ $value | humanize }}%) on {{ $labels.instance }}"
+          description: "Memory usage is above 90% (current: {{ $value | humanize }}%) on {{ $labels.instance }}. Immediate action required to prevent OOM kills."
 
       # Disk Usage Alert
       - alert: HighDiskUsage

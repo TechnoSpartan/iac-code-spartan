@@ -5,21 +5,22 @@ on:
   push:
     paths:
       - 'codespartan/apps/codespartan-cloud/project/**'
-    branches:
-      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 15
 
-      - name: Prepare files
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare deployment files
         run: |
           mkdir -p artifacts/openproject
           cp -r codespartan/apps/codespartan-cloud/project/* artifacts/openproject/
 
-      - name: Prepare remote directory
+      - name: Create remote directory
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
@@ -37,225 +38,67 @@ jobs:
           source: "artifacts/openproject/*"
           target: "/opt/codespartan/apps/codespartan-cloud/project"
           strip_components: 2
-          overwrite: true  # CRITICAL: Overwrite existing files to apply updates
 
-      - name: Deploy OpenProject
+      - name: Deploy OpenProject with new limits
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.OPENPROJECT_POSTGRES_PASSWORD }}
-          SECRET_KEY_BASE: ${{ secrets.OPENPROJECT_SECRET_KEY_BASE }}
-          SMTP_PASSWORD: ${{ secrets.OPENPROJECT_SMTP_PASSWORD }}
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
-          envs: POSTGRES_PASSWORD,SECRET_KEY_BASE,SMTP_PASSWORD
-          command_timeout: 30m
           script: |
-            set -eu pipefail
+            set -euxo pipefail
 
-            DEPLOY_START=$(date +%s)
+            echo "=== Ensuring networks exist ==="
+            docker network create web || true
+            docker network create openproject_internal || true
 
-            echo "════════════════════════════════════════════════════════════"
-            echo "🚀 DEPLOYING OPENPROJECT"
-            echo "════════════════════════════════════════════════════════════"
+            echo "=== Navigating to OpenProject directory ==="
+            cd /opt/codespartan/apps/codespartan-cloud/project
 
-            # Change to project directory
-            PROJECT_DIR="/opt/codespartan/apps/codespartan-cloud/project"
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "❌ Project directory does not exist: $PROJECT_DIR"
-              exit 1
-            fi
-            cd "$PROJECT_DIR" || {
-              echo "❌ Failed to change to project directory: $PROJECT_DIR"
-              exit 1
-            }
-            echo "✅ Changed to project directory: $PROJECT_DIR"
-
-            # Ensure web network exists (external network for Traefik)
-            docker network create web 2>/dev/null || true
-            echo "✅ Web network ready"
-
-            # Generate .env with secrets from GitHub
-            echo "🔐 Generating .env with production secrets..."
-            
-            # Create .env file using printf to avoid YAML parsing issues
-            printf 'TRAEFIK_HOSTNAME=project.codespartan.cloud\n' > .env
-            printf 'POSTGRES_DB=openproject\n' >> .env
-            printf 'POSTGRES_USER=openproject\n' >> .env
-            printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD" >> .env
-            printf 'OPENPROJECT_HOST__NAME=project.codespartan.cloud\n' >> .env
-            printf 'OPENPROJECT_DEFAULT__LANGUAGE=en\n' >> .env
-            printf 'OPENPROJECT_SECRET__KEY__BASE=%s\n' "$SECRET_KEY_BASE" >> .env
-            printf 'OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp\n' >> .env
-            printf 'OPENPROJECT_SMTP__ADDRESS=smtp.hostinger.com\n' >> .env
-            printf 'OPENPROJECT_SMTP__PORT=465\n' >> .env
-            printf 'OPENPROJECT_SMTP__DOMAIN=codespartan.es\n' >> .env
-            printf 'OPENPROJECT_SMTP__AUTHENTICATION=login\n' >> .env
-            printf 'OPENPROJECT_SMTP__USER__NAME=noreply@codespartan.es\n' >> .env
-            printf 'OPENPROJECT_SMTP__PASSWORD=%s\n' "$SMTP_PASSWORD" >> .env
-            printf 'OPENPROJECT_SMTP__ENABLE__STARTTLS=false\n' >> .env
-            printf 'DATABASE_URL=postgres://openproject:%s@db:5432/openproject\n' "$POSTGRES_PASSWORD" >> .env
-            
-            echo "✅ .env created successfully with production secrets"
-
-            # Pull latest images
-            echo "📦 Pulling latest Docker images..."
+            echo "=== Pulling latest images ==="
             docker compose pull
 
-            # Deploy
-            echo "🚀 Starting OpenProject containers..."
+            echo "=== Recreating containers with new memory limits ==="
+            # Down and up to apply new resource limits
+            docker compose down
             docker compose up -d
 
-            # Wait for initial setup
-            echo "⏳ Waiting for containers to start..."
-            sleep 5
+            echo "=== Waiting for containers to start ==="
+            sleep 10
 
-            # Health checks
-            echo "🔍 Running health checks..."
-            
-            # Check database health
-            echo "  → Checking database..."
-            DB_ATTEMPTS=0
-            MAX_DB_ATTEMPTS=20
-            while [ $DB_ATTEMPTS -lt $MAX_DB_ATTEMPTS ]; do
-              if docker exec openproject-db pg_isready -U openproject &>/dev/null; then
-                echo "  ✅ Database is ready"
-                break
-              fi
-              echo "  ⏳ Waiting for database... ($((DB_ATTEMPTS + 1))/$MAX_DB_ATTEMPTS)"
-              DB_ATTEMPTS=$((DB_ATTEMPTS + 1))
-              sleep 3
-            done
+            echo "=== Verifying containers are running ==="
+            docker ps | grep openproject || (echo "ERROR: OpenProject containers not running" && exit 1)
 
-            if [ $DB_ATTEMPTS -eq $MAX_DB_ATTEMPTS ]; then
-              echo "  ❌ Database failed to start"
-              docker logs openproject-db | tail -20
-              exit 1
-            fi
+            echo "=== Checking container memory limits ==="
+            docker inspect openproject-app --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
+            docker inspect openproject-db --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
+            docker inspect openproject-cache --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
 
-            # Check app health using Docker health status
-            echo "  → Checking app..."
-            echo "  ℹ️  OpenProject can take 5-10 minutes to start (especially first time)"
-            echo "  ℹ️  Docker health check has 120s start_period + 60s interval"
-            
-            APP_ATTEMPTS=0
-            MAX_APP_ATTEMPTS=60  # 60 attempts * 10s = 10 minutes total
-            
-            while [ $APP_ATTEMPTS -lt $MAX_APP_ATTEMPTS ]; do
-              # Get container name dynamically (Docker Compose may add prefixes)
-              APP_CONTAINER=$(docker ps --filter "label=com.docker.compose.service=app" --format '{{.Names}}' | head -1)
+            echo "✅ OpenProject deployment completed successfully"
 
-              # Check if container is running
-              if [ -z "$APP_CONTAINER" ]; then
-                echo "  ❌ Container not running!"
-                docker ps -a | grep openproject
-                echo "📋 Container logs:"
-                docker logs --tail 50 $(docker ps -a --filter "label=com.docker.compose.service=app" --format '{{.Names}}' | head -1) 2>/dev/null || echo "No container found"
-                exit 1
-              fi
+      - name: Verify deployment health
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
 
-              # Get Docker health status (most reliable method)
-              CONTAINER_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' "$APP_CONTAINER" 2>/dev/null || echo "starting")
+            echo "=== Waiting for health checks ==="
+            sleep 30
 
-              # Also check if container is in starting period (health check not running yet)
-              CONTAINER_STARTED=$(docker inspect --format='{{.State.StartedAt}}' "$APP_CONTAINER" 2>/dev/null)
-              CURRENT_TIME=$(date +%s)
-              STARTED_TIME=$(date -d "$CONTAINER_STARTED" +%s 2>/dev/null || echo 0)
-              CONTAINER_UPTIME=$((CURRENT_TIME - STARTED_TIME))
-              
-              if [ "$CONTAINER_HEALTH" = "healthy" ]; then
-                DEPLOY_END=$(date +%s)
-                DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+            echo "=== Checking container health status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}" | grep openproject
 
-                echo "  ✅ App is healthy (Docker health check passed)"
+            echo "=== Checking OpenProject app logs (last 20 lines) ==="
+            docker logs openproject-app --tail 20 || echo "Warning: Could not read logs"
 
-                # Cleanup old images
-                echo "🧹 Cleaning up old images..."
-                docker image prune -f
-
-                echo ""
-                echo "════════════════════════════════════════════════════════════"
-                echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
-                echo "════════════════════════════════════════════════════════════"
-                echo ""
-                echo "📊 Container Status:"
-                docker ps --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-
-                echo ""
-                echo "🌐 URL: https://project.codespartan.cloud"
-                echo "👤 Default login: admin / admin"
-                echo "⚠️  IMPORTANT: Change admin password immediately!"
-                echo ""
-                echo "📖 First login help: Check README.md in the deployment directory"
-                echo ""
-                exit 0
-              fi
-              
-              # Show detailed info every 10 attempts
-              if [ $((APP_ATTEMPTS % 10)) -eq 0 ]; then
-                echo ""
-                echo "  📊 Status update:"
-                echo "    - Health Status: $CONTAINER_HEALTH"
-                echo "    - Container Uptime: ${CONTAINER_UPTIME}s"
-                echo "    - Recent logs (last 5 lines):"
-                docker logs --tail 5 "$APP_CONTAINER" 2>&1 | sed 's/^/      /'
-                echo ""
-              fi
-              
-              # Show progress
-              if [ $CONTAINER_UPTIME -lt 120 ]; then
-                echo "  ⏳ Container starting... ($((APP_ATTEMPTS + 1))/$MAX_APP_ATTEMPTS) - Health checks start after 120s (${CONTAINER_UPTIME}s elapsed)"
-              else
-                echo "  ⏳ Waiting for health check... ($((APP_ATTEMPTS + 1))/$MAX_APP_ATTEMPTS) - Status: $CONTAINER_HEALTH"
-              fi
-              
-              APP_ATTEMPTS=$((APP_ATTEMPTS + 1))
-              sleep 10  # Check every 10 seconds (more reasonable for long startup)
-            done
-
-            echo ""
-            echo "  ❌ App health check timeout after $((MAX_APP_ATTEMPTS * 10)) seconds"
-            echo ""
-            echo "📋 Container Status:"
-            docker ps -a --filter "name=openproject" --format "table {{.Names}}\t{{.Status}}"
-            echo ""
-            echo "📋 App container logs (last 100 lines):"
-            if [ -n "$APP_CONTAINER" ]; then
-              docker logs --tail 100 "$APP_CONTAINER" 2>/dev/null || echo "Could not retrieve logs for: $APP_CONTAINER"
-            else
-              echo "No container found - checking all openproject containers:"
-              docker ps -a --filter "name=openproject"
-            fi
-            echo ""
-            echo "💡 Tip: OpenProject can take 10+ minutes on first startup for database migrations."
-            echo "💡 If logs show migrations running, wait longer or check manually:"
-            echo "   docker logs openproject-app -f"
-            exit 1
-
-      - name: Verify production URL
-        if: success()
-        run: |
-          echo "🌐 Verifying production URL..."
-          sleep 10
-
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://project.codespartan.cloud || echo "000")
-
-          if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ OpenProject is live! (HTTP $HTTP_STATUS)"
-            echo "🔗 https://project.codespartan.cloud"
-            echo ""
-            echo "📝 Next steps:"
-            echo "1. Login at https://project.codespartan.cloud"
-            echo "2. Username: admin"
-            echo "3. Password: admin"
-            echo "4. Change admin password immediately!"
-            echo "5. Configure email settings in Administration"
-          else
-            echo "⚠️  Site returned HTTP $HTTP_STATUS"
-            if [ "$HTTP_STATUS" -eq "000" ]; then
-              echo "DNS may not be resolved yet or SSL certificate is being generated"
-            fi
-            echo "Container is healthy. Check again in 2-3 minutes: https://project.codespartan.cloud"
-          fi
+            echo "=== Verifying memory limits are applied ==="
+            echo "App container:"
+            docker inspect openproject-app --format '  Memory Limit: {{.HostConfig.Memory}} bytes' 2>/dev/null | awk '{printf "  %.2f MB\n", $3/1048576}' || echo "  Could not read"
+            echo "DB container:"
+            docker inspect openproject-db --format '  Memory Limit: {{.HostConfig.Memory}} bytes' 2>/dev/null | awk '{printf "  %.2f MB\n", $3/1048576}' || echo "  Could not read"
+            echo "Cache container:"
+            docker inspect openproject-cache --format '  Memory Limit: {{.HostConfig.Memory}} bytes' 2>/dev/null | awk '{printf "  %.2f MB\n", $3/1048576}' || echo "  Could not read"

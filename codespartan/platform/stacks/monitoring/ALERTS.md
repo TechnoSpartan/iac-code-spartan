@@ -43,7 +43,7 @@ Problemas graves que requieren atención inmediata.
 | Alerta | Condición | Duración | Descripción |
 |--------|-----------|----------|-------------|
 | **CriticalCPUUsage** | CPU > 95% | 2 min | CPU al límite |
-| **CriticalMemoryUsage** | RAM > 95% | 1 min | Memoria casi llena |
+| **CriticalMemoryUsage** | RAM > 90% | 2 min | Memoria casi llena (ajustado para alerta proactiva) |
 | **CriticalDiskUsage** | Disk > 95% | 2 min | Disco casi lleno |
 | **ServiceDown** | Service down | 2 min | Servicio caído |
 | **ContainerDown** | Container down | 2 min | Contenedor caído |
@@ -56,7 +56,7 @@ Problemas que requieren atención pero no son urgentes.
 | Alerta | Condición | Duración | Descripción |
 |--------|-----------|----------|-------------|
 | **HighCPUUsage** | CPU > 80% | 5 min | CPU elevada |
-| **HighMemoryUsage** | RAM > 90% | 3 min | Memoria elevada |
+| **HighMemoryUsage** | RAM > 80% | 5 min | Memoria elevada (ajustado para alerta proactiva) |
 | **HighDiskUsage** | Disk > 85% | 5 min | Disco elevado |
 | **VictoriaMetricsHighMemory** | VM > 1.5GB | 5 min | VictoriaMetrics usando mucha RAM |
 | **VictoriaMetricsStorageIssue** | Free < 5GB | 5 min | VictoriaMetrics poco espacio |
