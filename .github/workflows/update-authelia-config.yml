@@ -10,6 +10,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Copy configuration file to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/authelia/configuration.yml"
+          target: "/tmp/authelia-new-config.yml"
+          strip_components: 3
+          overwrite: true
+
       - name: Update Authelia configuration
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -24,224 +35,8 @@ jobs:
             # Create backup
             sudo cp /opt/codespartan/platform/authelia/configuration.yml /opt/codespartan/platform/authelia/configuration.yml.backup
 
-            # Update configuration with OAuth2/OIDC support
-            cat > /tmp/new_config.yml << 'EOF'
----
-###############################################################################
-#                           Authelia Configuration                           #
-###############################################################################
-
-# FASE 2: Single Sign-On with Multi-Factor Authentication
-# This configuration provides centralized authentication for all dashboards
-
-theme: dark
-
-server:
-  host: 0.0.0.0
-  port: 9091
-  path: ""
-  enable_pprof: false
-  enable_expvars: false
-
-  # Asset path for custom branding (optional - disabled, directory doesn't exist)
-  # asset_path: /config/assets/
-
-  # Headers sent to backend
-  headers:
-    csp_template: ""
-
-log:
-  level: info
-  format: text
-  file_path: /data/authelia.log
-
-# TOTP (Time-based One-Time Password) configuration
-totp:
-  disable: false
-  issuer: mambo-cloud.com
-  algorithm: sha1
-  digits: 6
-  period: 30
-  skew: 1
-  secret_size: 32
-
-# WebAuthn (hardware keys like YubiKey - optional)
-webauthn:
-  disable: true  # Set to false if you want to enable hardware keys
-  timeout: 60s
-  display_name: Mambo Cloud
-  attestation_conveyance_preference: indirect
-  user_verification: preferred
-
-# Duo Push (optional - requires Duo account)
-duo_api:
-  disable: true
-  hostname: api-XXXXXXXX.duosecurity.com
-  integration_key: YOUR_INTEGRATION_KEY
-  secret_key: YOUR_SECRET_KEY
-  enable_self_enrollment: false
-
-# Identity Validation
-identity_validation:
-  reset_password:
-    jwt_secret: insecure_jwt_secret_please_change_in_production
-
-# Authentication backend
-authentication_backend:
-  password_reset:
-    disable: false
-    custom_url: ""
-
-  refresh_interval: 5m
-
-  file:
-    path: /config/users_database.yml
-    password:
-      algorithm: argon2
-      argon2:
-        variant: argon2id
-        iterations: 3
-        memory: 65536
-        parallelism: 4
-        key_length: 32
-        salt_length: 16
-
-# Access Control Rules
-access_control:
-  default_policy: deny
-
-  rules:
-    # Allow Authelia portal itself
-    - domain: auth.mambo-cloud.com
-      policy: bypass
-
-    # Dashboards - require authentication + MFA
-    - domain:
-        - traefik.mambo-cloud.com
-        - grafana.mambo-cloud.com
-        - backoffice.mambo-cloud.com
-      policy: two_factor
-      subject:
-        - "group:admins"
-
-    # Public apps - no auth required
-    - domain:
-        - www.mambo-cloud.com
-        - staging.mambo-cloud.com
-        - www.cyberdyne-systems.es
-        - staging.cyberdyne-systems.es
-        - www.dental-io.com
-      policy: bypass
-
-# Session configuration
-session:
-  name: authelia_session
-  domain: mambo-cloud.com  # Root domain for SSO
-  same_site: lax
-  secret: insecure_session_secret  # CHANGE IN PRODUCTION
-  expiration: 1h
-  inactivity: 5m
-  remember_me_duration: 1M
-
-  redis:
-    host: authelia-redis
-    port: 6379
-    username: ""
-    password: ""
-    database_index: 0
-    maximum_active_connections: 8
-    minimum_idle_connections: 0
-
-# Session storage (Redis for performance)
-regulation:
-  max_retries: 3
-  find_time: 2m
-  ban_time: 5m
-
-# Storage backend (SQLite for simplicity)
-storage:
-  encryption_key: insecure_encryption_key  # CHANGE IN PRODUCTION (min 20 chars)
-
-  local:
-    path: /data/db.sqlite3
-
-# Notification Provider (file-based for now)
-notifier:
-  disable_startup_check: false
-
-  filesystem:
-    filename: /data/notifications.txt
-
-  # SMTP configuration (Hostinger) - DISABLED until we test file-based works
-  # smtp:
-  #   host: smtp.hostinger.com
-  #   port: 465
-  #   timeout: 5s
-  #   username: iam@codespartan.es
-  #   password: Codespartan$2
-  #   sender: "Mambo Cloud Auth <noreply@codespartan.es>"
-  #   identifier: mambo-cloud.com
-  #   subject: "[Mambo Cloud] {title}"
-  #   startup_check_address: iam@codespartan.es
-  #   disable_require_tls: false
-  #   disable_html_emails: false
-  #   tls:
-  #     server_name: smtp.hostinger.com
-  #     skip_verify: false
-
-# NTP configuration (for TOTP accuracy)
-ntp:
-  address: time.cloudflare.com:123
-  version: 4
-  max_desync: 3s
-  disable_startup_check: false
-  disable_failure: false
-
-# OpenID Connect / OAuth 2.0 Provider
-identity_providers:
-  oidc:
-    hmac_secret: RbLkGnkJy/aRM+B3VczDpN9M3wMIhYTdpccEFPCDJGIedRnS/m50ulrjcYWCmEd/tymmgN+Mm0FXcR5lG5xcTw==
-    issuer_private_key: |
-      -----BEGIN RSA PRIVATE KEY-----
-      # This will be generated automatically by Authelia on first start
-      # Or you can provide your own RSA private key here
-      -----END RSA PRIVATE KEY-----
-
-    access_token_lifespan: 1h
-    authorize_code_lifespan: 1m
-    id_token_lifespan: 1h
-    refresh_token_lifespan: 90m
-    enable_client_debug_messages: false
-    enforce_pkce: public_clients_only
-
-    cors:
-      endpoints:
-        - authorization
-        - token
-        - revocation
-        - introspection
-        - userinfo
-      allowed_origins_from_client_redirect_uris: true
-
-    clients:
-      - id: grafana
-        description: Grafana Dashboard
-        secret: 'tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs='
-        public: false
-        authorization_policy: two_factor
-        redirect_uris:
-          - https://grafana.mambo-cloud.com/login/generic_oauth
-        scopes:
-          - openid
-          - profile
-          - email
-          - groups
-        userinfo_signing_algorithm: none
-        token_endpoint_auth_method: client_secret_basic
-EOF
-
-            # Move to correct location with sudo
-            sudo mv /tmp/new_config.yml /opt/codespartan/platform/authelia/configuration.yml
+            # Replace configuration with new OAuth2/OIDC enabled version
+            sudo mv /tmp/authelia-new-config.yml/configuration.yml /opt/codespartan/platform/authelia/configuration.yml
             sudo chown root:root /opt/codespartan/platform/authelia/configuration.yml
 
             echo ""
