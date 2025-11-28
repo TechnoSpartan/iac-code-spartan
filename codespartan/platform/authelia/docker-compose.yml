@@ -29,6 +29,9 @@ services:
       # Security headers
       - traefik.http.routers.authelia.middlewares=security-headers@file
 
+      # Specify which Docker network Traefik should use
+      - traefik.docker.network=web
+
     environment:
       - TZ=Europe/Madrid
 
