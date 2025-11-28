@@ -168,3 +168,45 @@ ntp:
   max_desync: 3s
   disable_startup_check: false
   disable_failure: false
+
+# OpenID Connect / OAuth 2.0 Provider
+identity_providers:
+  oidc:
+    hmac_secret: RbLkGnkJy/aRM+B3VczDpN9M3wMIhYTdpccEFPCDJGIedRnS/m50ulrjcYWCmEd/tymmgN+Mm0FXcR5lG5xcTw==
+    issuer_private_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      # This will be generated automatically by Authelia on first start
+      # Or you can provide your own RSA private key here
+      -----END RSA PRIVATE KEY-----
+
+    access_token_lifespan: 1h
+    authorize_code_lifespan: 1m
+    id_token_lifespan: 1h
+    refresh_token_lifespan: 90m
+    enable_client_debug_messages: false
+    enforce_pkce: public_clients_only
+
+    cors:
+      endpoints:
+        - authorization
+        - token
+        - revocation
+        - introspection
+        - userinfo
+      allowed_origins_from_client_redirect_uris: true
+
+    clients:
+      - id: grafana
+        description: Grafana Dashboard
+        secret: 'tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs='
+        public: false
+        authorization_policy: two_factor
+        redirect_uris:
+          - https://grafana.mambo-cloud.com/login/generic_oauth
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        userinfo_signing_algorithm: none
+        token_endpoint_auth_method: client_secret_basic
