@@ -174,11 +174,63 @@ identity_providers:
   oidc:
     hmac_secret: [REDACTED-HMAC-SECRET]
 
-    # JWKS configuration - Authelia will generate keys automatically
+    # JWKS configuration with RSA key for signing
     jwks:
       - algorithm: RS256
         use: sig
-        key_id: main
+        key: |
+          -----BEGIN PRIVATE KEY-----
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          [REDACTED-RSA-KEY-LINE]
+          -----END PRIVATE KEY-----
 
     access_token_lifespan: 1h
     authorize_code_lifespan: 1m
