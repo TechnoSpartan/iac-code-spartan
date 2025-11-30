@@ -134,10 +134,10 @@ services:
       resources:
         limits:
           cpus: '0.1'
-          memory: 64M
+          memory: 128M
         reservations:
           cpus: '0.05'
-          memory: 32M
+          memory: 64M
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
       interval: 30s
@@ -226,6 +226,8 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_USERS_AUTO_ASSIGN_ORG=true
       - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Admin
+      - GF_AUTH_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN=true
+      - GF_AUTH_OAUTH_SKIP_ORG_ROLE_SYNC=false
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
