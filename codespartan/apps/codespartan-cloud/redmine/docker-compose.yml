@@ -1,0 +1,121 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: redmine-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - redmine-db-data:/var/lib/postgresql/data
+    networks:
+      - redmine_internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app:
+    image: redmine:6-alpine
+    container_name: redmine-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database configuration
+      REDMINE_DB_POSTGRES: "db"
+      REDMINE_DB_PORT: "5432"
+      REDMINE_DB_DATABASE: "${POSTGRES_DB}"
+      REDMINE_DB_USERNAME: "${POSTGRES_USER}"
+      REDMINE_DB_PASSWORD: "${POSTGRES_PASSWORD}"
+
+      # Redmine configuration
+      REDMINE_SECRET_KEY_BASE: "${REDMINE_SECRET_KEY_BASE}"
+
+      # Email configuration (SMTP)
+      REDMINE_EMAIL_DELIVERY_METHOD: "smtp"
+      REDMINE_SMTP_ADDRESS: "${SMTP_ADDRESS}"
+      REDMINE_SMTP_PORT: "${SMTP_PORT}"
+      REDMINE_SMTP_DOMAIN: "${SMTP_DOMAIN}"
+      REDMINE_SMTP_AUTHENTICATION: "${SMTP_AUTHENTICATION}"
+      REDMINE_SMTP_USERNAME: "${SMTP_USERNAME}"
+      REDMINE_SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      REDMINE_SMTP_TLS: "${SMTP_TLS}"
+
+      # Language
+      REDMINE_LANG: "${REDMINE_LANG}"
+
+      # Hostname for URL generation
+      REDMINE_HOSTNAME: "${REDMINE_HOSTNAME}"
+    volumes:
+      - redmine-data:/usr/src/redmine/files
+      - redmine-plugins:/usr/src/redmine/plugins
+      - redmine-themes:/usr/src/redmine/public/themes
+    networks:
+      - web
+      - redmine_internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 300s  # 5 minutes for initial setup and database migrations
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.redmine.rule=Host(`${TRAEFIK_HOSTNAME}`)
+      - traefik.http.routers.redmine.entrypoints=websecure
+      - traefik.http.routers.redmine.tls=true
+      - traefik.http.routers.redmine.tls.certresolver=le
+      - traefik.http.services.redmine.loadbalancer.server.port=3000
+      - traefik.docker.network=web
+
+volumes:
+  redmine-db-data:
+    driver: local
+  redmine-data:
+    driver: local
+  redmine-plugins:
+    driver: local
+  redmine-themes:
+    driver: local
+
+networks:
+  web:
+    external: true
+  redmine_internal:
+    name: redmine_internal
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
