@@ -75,9 +75,11 @@ jobs:
           script: |
             set -euxo pipefail
 
-            echo "=== Ensuring networks exist ==="
+            echo "=== Ensuring web network exists ==="
             docker network create web 2>/dev/null || true
-            docker network create redmine_internal 2>/dev/null || true
+
+            echo "=== Removing old redmine_internal network if exists ==="
+            docker network rm redmine_internal 2>/dev/null || true
 
             echo "=== Navigating to Redmine directory ==="
             cd /opt/codespartan/apps/codespartan-cloud/redmine
