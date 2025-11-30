@@ -1,0 +1,129 @@
+name: Deploy Redmine
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/apps/codespartan-cloud/redmine/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p artifacts/redmine
+          cp -r codespartan/apps/codespartan-cloud/redmine/* artifacts/redmine/
+
+      - name: Create .env file from secrets
+        run: |
+          cat > artifacts/redmine/.env << 'EOF'
+          # Traefik Configuration
+          TRAEFIK_HOSTNAME=${{ secrets.REDMINE_HOSTNAME || 'project.codespartan.cloud' }}
+
+          # PostgreSQL Configuration
+          POSTGRES_DB=redmine
+          POSTGRES_USER=redmine
+          POSTGRES_PASSWORD=${{ secrets.REDMINE_POSTGRES_PASSWORD }}
+
+          # Redmine Configuration
+          REDMINE_HOSTNAME=${{ secrets.REDMINE_HOSTNAME || 'project.codespartan.cloud' }}
+          REDMINE_LANG=en
+          REDMINE_SECRET_KEY_BASE=${{ secrets.REDMINE_SECRET_KEY_BASE }}
+
+          # SMTP Configuration
+          SMTP_ADDRESS=smtp.hostinger.com
+          SMTP_PORT=465
+          SMTP_DOMAIN=codespartan.es
+          SMTP_AUTHENTICATION=login
+          SMTP_USERNAME=noreply@codespartan.es
+          SMTP_PASSWORD=${{ secrets.REDMINE_SMTP_PASSWORD }}
+          SMTP_TLS=true
+          EOF
+
+      - name: Create remote directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mkdir -p /opt/codespartan/apps/codespartan-cloud/redmine
+
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "artifacts/redmine/*"
+          target: "/opt/codespartan/apps/codespartan-cloud/redmine"
+          strip_components: 2
+
+      - name: Deploy Redmine
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euxo pipefail
+
+            echo "=== Ensuring networks exist ==="
+            docker network create web 2>/dev/null || true
+            docker network create redmine_internal 2>/dev/null || true
+
+            echo "=== Navigating to Redmine directory ==="
+            cd /opt/codespartan/apps/codespartan-cloud/redmine
+
+            echo "=== Pulling latest images ==="
+            docker compose pull
+
+            echo "=== Deploying Redmine ==="
+            docker compose down
+            docker compose up -d
+
+            echo "=== Waiting for containers to start ==="
+            sleep 10
+
+            echo "=== Verifying containers are running ==="
+            docker ps | grep redmine || (echo "ERROR: Redmine containers not running" && exit 1)
+
+            echo "=== Checking container resource limits ==="
+            docker inspect redmine-app --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
+            docker inspect redmine-db --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
+
+            echo "✅ Redmine deployment completed successfully"
+
+      - name: Verify deployment health
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Waiting for health checks ==="
+            sleep 60
+
+            echo "=== Checking container health status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}" | grep redmine
+
+            echo "=== Checking Redmine app logs (last 30 lines) ==="
+            docker logs redmine-app --tail 30 || echo "Warning: Could not read logs"
+
+            echo "=== Verifying resource limits ==="
+            echo "App container:"
+            docker inspect redmine-app --format '  Memory Limit: {{.HostConfig.Memory}} bytes' 2>/dev/null | awk '{printf "  %.2f MB\n", $3/1048576}' || echo "  Could not read"
+            echo "DB container:"
+            docker inspect redmine-db --format '  Memory Limit: {{.HostConfig.Memory}} bytes' 2>/dev/null | awk '{printf "  %.2f MB\n", $3/1048576}' || echo "  Could not read"
+
+            echo "=== Testing HTTP endpoint ==="
+            curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:3000/ || echo "Warning: Could not test endpoint"
