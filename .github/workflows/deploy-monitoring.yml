@@ -21,6 +21,9 @@ jobs:
           # Nota: Grafana usa OAuth2 de Authelia, no hay usuario admin local
           echo "GRAFANA_HOST=grafana.mambo-cloud.com" > artifacts/monitoring/.env
 
+          echo "✓ Files prepared:"
+          ls -la artifacts/monitoring/
+
       - name: Prepare remote dir
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -49,7 +52,18 @@ jobs:
           script_stop: true
           script: |
             set -euxo pipefail
+            echo "=== System Information ==="
+            docker --version
+            docker compose version
+            df -h /
+            echo "=== Preparing deployment ==="
             docker network create web || true
             cd /opt/codespartan/platform/stacks/monitoring
+            echo "=== Files in monitoring directory ==="
+            ls -la
+            echo "=== Pulling images ==="
             docker compose pull
+            echo "=== Starting services ==="
             docker compose up -d
+            echo "=== Container status ==="
+            docker compose ps
