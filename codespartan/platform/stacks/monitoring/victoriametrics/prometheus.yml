@@ -36,10 +36,8 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  # DISABLED: fail2ban-exporter service disabled due to compatibility issues
-  # Re-enable this when fail2ban-exporter is fixed/replaced
-  # - job_name: 'fail2ban'
-  #   static_configs:
-  #     - targets: ['fail2ban-exporter:9191']
-  #   scrape_interval: 30s
-  #   scrape_timeout: 10s
+  - job_name: 'fail2ban'
+    static_configs:
+      - targets: ['fail2ban-exporter:5000']
+    scrape_interval: 30s
+    scrape_timeout: 10s
