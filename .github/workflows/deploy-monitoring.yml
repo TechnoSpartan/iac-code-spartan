@@ -13,17 +13,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Prepare files
-        env:
-          GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER }}
-          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
           mkdir -p artifacts/monitoring
           cp -r codespartan/platform/stacks/monitoring/* artifacts/monitoring/
 
-          # Crear archivo .env con credenciales de Grafana
-          echo "GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER}" > artifacts/monitoring/.env
-          echo "GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}" >> artifacts/monitoring/.env
-          echo "GRAFANA_HOST=grafana.mambo-cloud.com" >> artifacts/monitoring/.env
+          # Crear archivo .env con configuración de Grafana
+          # Nota: Grafana usa OAuth2 de Authelia, no hay usuario admin local
+          echo "GRAFANA_HOST=grafana.mambo-cloud.com" > artifacts/monitoring/.env
 
       - name: Prepare remote dir
         uses: appleboy/ssh-action@v1.0.3
