@@ -324,31 +324,40 @@ services:
       retries: 3
       start_period: 20s
 
-  fail2ban-exporter:
-    image: carlpett/fail2ban_exporter:latest
-    container_name: fail2ban-exporter
-    command:
-      - --fail2ban.socket=/var/run/fail2ban/fail2ban.sock
-      - --web.listen-address=:9191
-    volumes:
-      - /var/run/fail2ban:/var/run/fail2ban:ro
-    networks:
-      - monitoring
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 64M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9191/metrics"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+  # TEMPORARILY DISABLED: fail2ban-exporter causes service-down alerts
+  # Issue: Image may not be ARM64 compatible or fail2ban socket not accessible
+  # TODO: Resolve fail2ban monitoring setup
+  # Options:
+  # 1. Use ebrianne/fail2ban-exporter instead (better ARM64 support)
+  # 2. Use pyoupyou/fail2ban-prometheus-exporter (alternative)
+  # 3. Install fail2ban directly on host and expose via node-exporter
+  # 4. Disable fail2ban monitoring entirely if not needed
+  #
+  # fail2ban-exporter:
+  #   image: carlpett/fail2ban_exporter:latest
+  #   container_name: fail2ban-exporter
+  #   command:
+  #     - --fail2ban.socket=/var/run/fail2ban/fail2ban.sock
+  #     - --web.listen-address=:9191
+  #   volumes:
+  #     - /var/run/fail2ban:/var/run/fail2ban:ro
+  #   networks:
+  #     - monitoring
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.1'
+  #         memory: 64M
+  #       reservations:
+  #         cpus: '0.05'
+  #         memory: 32M
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9191/metrics"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
 
 volumes:
   victoria-data:
