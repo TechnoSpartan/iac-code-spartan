@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:15-alpine
     container_name: openproject-db
     restart: unless-stopped
     environment:
@@ -15,12 +15,12 @@ services:
       resources:
         limits:
           cpus: '0.75'
-          memory: 384M
+          memory: 512M
         reservations:
           cpus: '0.25'
-          memory: 96M
+          memory: 128M
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U openproject"]
+      test: [ "CMD-SHELL", "pg_isready -U openproject" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -78,16 +78,18 @@ services:
       resources:
         limits:
           cpus: '1.5'
-          memory: 1.2G
+          memory: 1.5G
         reservations:
           cpus: '0.5'
-          memory: 384M
-    healthcheck:
-      test: ["CMD", "curl", "-I", "-H", "Host: ${OPENPROJECT_HOST__NAME}", "http://localhost:8080/"]
-      interval: 60s
-      timeout: 10s
-      retries: 5
-      start_period: 600s  # 10 minutes for database migrations on first startup
+          memory: 256M
+    # Disabled healthcheck during startup - OpenProject needs time for migrations
+    # Re-enable after initial startup completes successfully
+    # healthcheck:
+    #   test: ["CMD", "nc", "-z", "localhost", "8080"]
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 180s
     logging:
       driver: "json-file"
       options:
@@ -112,12 +114,12 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 128M
+          memory: 256M
         reservations:
           cpus: '0.1'
-          memory: 32M
+          memory: 64M
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "11211"]
+      test: [ "CMD", "nc", "-z", "localhost", "11211" ]
       interval: 30s
       timeout: 5s
       retries: 3

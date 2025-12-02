@@ -5,7 +5,7 @@
 **Tiempo de lectura:** 10-12 minutos
 **Nivel:** Intermedio-Avanzado
 
----
+
 
 ## TL;DR (Para Los Que Tienen Prisa)
 
@@ -21,7 +21,7 @@ He construido un pipeline CI/CD profesional que incluye:
 **Resultado:** 100% tasa de éxito, de 30min manuales a 2min automatizados (y puedo hacer deploy un viernes a las 18h sin miedo)
 **Proyecto real:** [cyberdyne-systems.es](https://www.cyberdyne-systems.es) (sí, es un proyecto real, no un ejemplo de tutorial)
 
----
+
 
 ## El Problema: Deploy Manual en 2025
 
@@ -46,7 +46,6 @@ Yo lo viví en primera persona. Recuerdo perfectamente ese viernes a las 17:45 c
 
 He estado ahí. Más veces de las que me gustaría admitir. Y un día, después de perder otro viernes por la noche debuggeando un deploy roto, decidí que 2025 era el año de automatizar TODO. O morir en el intento.
 
----
 
 ## La Visión: Cómo Debería Ser (Y Cómo Es Ahora)
 
@@ -67,8 +66,6 @@ Y automáticamente (mientras sigues con tu café):
 **Todo en 2 minutos. Sin intervención manual. Sin estrés. Sin sudor frío.**
 
 Eso es exactamente lo que construí. Y te juro que la primera vez que funcionó, casi lloro de la emoción. No es broma.
-
----
 
 ## La Arquitectura: Componentes Clave
 
@@ -147,7 +144,7 @@ location = "nbg1"      # Nuremberg
 
 Si mañana necesito replicar esto en otro dominio, son 5 minutos. Literalmente. Lo he hecho. Y cada vez que lo hago, me siento como un mago. "Abracadabra, nueva infraestructura desplegada". Es adictivo.
 
----
+
 
 ## El Workflow: Paso a Paso
 
@@ -289,14 +286,14 @@ Si algo falla aquí, sabes inmediatamente qué endpoint tiene problemas. No más
 - ❌ Deployment Failed (rojo)
 - ⚠️ Rolled Back (naranja)
 
----
+
 
 ## Los Números: Métricas Reales (No Inventadas)
 
 Después de 15+ deploys en producción (y contando), estos son los números reales. No son promesas de marketing, son datos de verdad:
 
 | Métrica | Antes (Manual) | Ahora (Automatizado) | Mejora |
-|---------|----------------|----------------------|--------|
+||-|-|--|
 | **Tiempo de deploy** | 30-40 min | 2 min | **93% más rápido** |
 | **Tasa de éxito** | ~85% | 100% | **15% mejora** |
 | **Tiempo de rollback** | 15-20 min | < 30 seg | **97% más rápido** |
@@ -314,7 +311,7 @@ La inversión inicial: ~8 horas de setup = 400€ (y eso contando las horas que 
 
 **Payback:** < 1 mes. Y después, es todo ganancia. Literalmente, dinero gratis cada mes. O tiempo libre, que a veces vale más que el dinero.
 
----
+
 
 ## Lecciones Aprendidas (A Golpes, Como Siempre)
 
@@ -399,7 +396,7 @@ Terraform puede parecer overkill al inicio. "¿Para qué necesito esto si puedo 
 
 La primera vez que necesité replicar la infraestructura en otro proyecto, tardé 5 minutos. Literalmente. Cambié las variables de dominio, ejecuté Terraform, y listo. Eso me ahorró horas. Y me hizo sentir como un mago. De nuevo.
 
----
+
 
 ## Cómo Replicar Esto en Tu Proyecto (Guía Paso a Paso)
 
@@ -509,14 +506,14 @@ Las notificaciones son el toque final. Saber que tu deploy fue exitoso (o falló
 **Total:** 4-5 horas de setup inicial (si todo va bien, que nunca pasa, así que cuenta con 6-8 horas realistas).
 **Ahorro:** 10+ horas/mes para siempre. Y eso es tiempo que puedes usar para aprender, para descansar, o para hacer más proyectos. Tu elección.
 
----
+
 
 ## Stack Completo y Alternativas
 
 ### Lo Que Yo Usé
 
 | Componente | Tecnología | Por Qué |
-|------------|------------|---------|
+||||
 | CI/CD | GitHub Actions | Gratis, integrado con GitHub |
 | Containers | Docker | Estándar de facto |
 | Reverse Proxy | Traefik | SSL automático, easy config |
@@ -551,7 +548,7 @@ Las notificaciones son el toque final. Saber que tu deploy fue exitoso (o falló
 - AWS EC2 (potente, complejo)
 - Fly.io (serverless, muy rápido)
 
----
+
 
 ## Casos de Uso: ¿Cuándo Vale la Pena?
 
@@ -583,7 +580,7 @@ Las notificaciones son el toque final. Saber que tu deploy fue exitoso (o falló
 3. **Tienes < 10 usuarios**
    Pero te prepara para escalar
 
----
+
 
 ## El Factor Humano: Soft Skills (Porque No Todo Es Código)
 
@@ -611,7 +608,7 @@ La mayoría puede hacer una web React. Pocos pueden montar un pipeline CI/CD pro
 
 **Eso se cobra más caro.** Y no es porque sea más difícil técnicamente (aunque lo es). Es porque demuestra profesionalidad, experiencia, y que te tomas en serio tu trabajo. Y eso, en el mundo freelance, es lo que marca la diferencia entre cobrar 30€/hora y 80€/hora.
 
----
+
 
 ## Próximos Pasos: Llevándolo al Siguiente Nivel
 
@@ -671,7 +668,7 @@ deploy:
 
 **Meta:** < 100ms latency global
 
----
+
 
 ## Recursos y Referencias
 
@@ -694,7 +691,7 @@ deploy:
 - [VictoriaMetrics](https://victoriametrics.com/)
 - [Grafana](https://grafana.com/)
 
----
+
 
 ## Código Fuente
 
@@ -710,7 +707,7 @@ Si implementas algo similar, me encantaría saber:
 
 Déjame un comentario, escríbeme un email, o contáctame en redes. Me encanta hablar de estas cosas. Y si puedo ayudarte, mejor aún.
 
----
+
 
 ## Conclusión: Vale Cada Minuto Invertido (Y Más)
 
@@ -734,11 +731,11 @@ Si eres desarrollador freelance, tech lead, o simplemente alguien que quiere mej
 
 Y eso, amigos, no tiene precio. O sí, pero es muy barato comparado con lo que te ahorra.
 
----
+
 
 **PD:** Si implementas esto y funciona, escríbeme. Me encanta saber que he ayudado a alguien a dormir mejor. Literalmente.
 
----
+
 
 ## Sobre CodeSpartan
 
@@ -754,7 +751,7 @@ En [CodeSpartan](https://www.codespartan.es) ofrecemos soluciones cloud profesio
 
 [Hablemos →](https://www.codespartan.es/contacto)
 
----
+
 
 ## Call to Action
 
@@ -773,12 +770,12 @@ Ofrezco consultorías de 1-2 horas para:
 
 [Reserva una sesión →](https://www.codespartan.es/consultoria)
 
----
+
 
 **Tags:** #DevOps #CICD #Docker #GitHub Actions #Terraform #React #Automation #Cloud #FreelanceDev
 
 **Última actualización:** 10 Octubre 2025
 
----
+
 
 _¿Preguntas? ¿Feedback? Contáctame en [jorge@codespartan.es](mailto:jorge@codespartan.es)_
