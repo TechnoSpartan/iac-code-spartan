@@ -56,14 +56,43 @@ jobs:
             docker --version
             docker compose version
             df -h /
+
             echo "=== Preparing deployment ==="
             docker network create web || true
+
             cd /opt/codespartan/platform/stacks/monitoring
             echo "=== Files in monitoring directory ==="
             ls -la
+
             echo "=== Pulling images ==="
             docker compose pull
+
             echo "=== Starting services ==="
             docker compose up -d
+
             echo "=== Container status ==="
             docker compose ps
+
+            echo "=== Waiting for health checks (30s) ==="
+            sleep 30
+
+            echo "=== Verifying container health ==="
+            FAILED=0
+            for container in $(docker compose ps -q); do
+              STATUS=$(docker inspect "$container" --format='{{.State.Health.Status}}' 2>/dev/null || echo "no health check")
+              NAME=$(docker inspect "$container" --format='{{.Name}}' | sed 's/\///')
+              if [ "$STATUS" = "unhealthy" ]; then
+                echo "❌ $NAME is unhealthy"
+                docker logs "$container" --tail 20
+                FAILED=$((FAILED + 1))
+              else
+                echo "✅ $NAME is $STATUS"
+              fi
+            done
+
+            if [ $FAILED -gt 0 ]; then
+              echo "❌ $FAILED container(s) failed health check"
+              exit 1
+            fi
+
+            echo "✅ All containers passed health checks"
