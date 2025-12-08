@@ -10,6 +10,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Copy metrics script to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/scripts/fail2ban-metrics.sh"
+          target: "/tmp/"
+          strip_components: 2
+
+      - name: Copy monitoring config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/stacks/monitoring/docker-compose.yml,codespartan/platform/stacks/monitoring/victoriametrics/prometheus.yml"
+          target: "/tmp/monitoring-update/"
+          strip_components: 4
+
       - name: Deploy Fail2ban metrics solution
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -22,21 +42,18 @@ jobs:
             echo "🚀 Deploying Fail2ban Custom Metrics Solution"
             echo "=============================================="
 
+            # Install metrics script
+            echo ""
+            echo "📋 Installing metrics script..."
+            sudo cp /tmp/fail2ban-metrics.sh /opt/codespartan/scripts/
+            sudo chmod +x /opt/codespartan/scripts/fail2ban-metrics.sh
+            sudo chown root:root /opt/codespartan/scripts/fail2ban-metrics.sh
+
             # Create textfile collector directory
             echo ""
             echo "📁 Creating textfile collector directory..."
             sudo mkdir -p /var/lib/node_exporter/textfile_collector
-            sudo chown -R nobody:nogroup /var/lib/node_exporter/textfile_collector
             sudo chmod 755 /var/lib/node_exporter/textfile_collector
-
-            # Copy metrics script
-            echo ""
-            echo "📋 Deploying metrics script..."
-            sudo tee /opt/codespartan/scripts/fail2ban-metrics.sh > /dev/null << 'SCRIPT_EOF'
-            $(cat /opt/codespartan/scripts/fail2ban-metrics.sh)
-            SCRIPT_EOF
-
-            sudo chmod +x /opt/codespartan/scripts/fail2ban-metrics.sh
 
             # Run script once to test
             echo ""
@@ -59,47 +76,62 @@ jobs:
             echo "⏰ Setting up cron job (runs every minute)..."
             CRON_JOB="* * * * * /opt/codespartan/scripts/fail2ban-metrics.sh 2>&1 | logger -t fail2ban-metrics"
 
-            # Check if cron job already exists
+            # Remove old cron job if exists
             if sudo crontab -l 2>/dev/null | grep -q "fail2ban-metrics.sh"; then
-                echo "Cron job already exists, updating..."
-                sudo crontab -l 2>/dev/null | grep -v "fail2ban-metrics.sh" | sudo crontab -
+                echo "Removing old cron job..."
+                sudo crontab -l 2>/dev/null | grep -v "fail2ban-metrics.sh" | sudo crontab - || true
             fi
 
-            # Add cron job
+            # Add new cron job
             (sudo crontab -l 2>/dev/null; echo "$CRON_JOB") | sudo crontab -
             echo "✅ Cron job installed"
+
+            # Verify cron job
+            echo ""
+            echo "Verifying cron job:"
+            sudo crontab -l | grep fail2ban-metrics || echo "⚠️  Cron job not found"
+
+            # Update monitoring configuration
+            echo ""
+            echo "📦 Updating monitoring configuration..."
+            sudo cp /tmp/monitoring-update/docker-compose.yml /opt/codespartan/platform/stacks/monitoring/
+            sudo cp /tmp/monitoring-update/prometheus.yml /opt/codespartan/platform/stacks/monitoring/victoriametrics/
+
+            # Stop old fail2ban-exporter if exists
+            echo ""
+            echo "🛑 Stopping old fail2ban-exporter..."
+            if docker ps -a | grep -q fail2ban-exporter; then
+                docker stop fail2ban-exporter 2>/dev/null || true
+                docker rm fail2ban-exporter 2>/dev/null || true
+                echo "✅ Old exporter removed"
+            else
+                echo "No old exporter found"
+            fi
 
             # Update monitoring stack
             echo ""
             echo "🔄 Updating monitoring stack..."
             cd /opt/codespartan/platform/stacks/monitoring
-
-            # Stop fail2ban-exporter if it exists
-            if docker ps -a | grep -q fail2ban-exporter; then
-                echo "Stopping old fail2ban-exporter..."
-                docker stop fail2ban-exporter 2>/dev/null || true
-                docker rm fail2ban-exporter 2>/dev/null || true
-            fi
-
-            # Update docker-compose and restart node-exporter
             docker compose up -d node-exporter
 
             echo ""
             echo "⏳ Waiting for node-exporter to be ready..."
             sleep 10
 
-            # Verify node-exporter is healthy
-            if docker ps | grep -q "node-exporter.*healthy\|node-exporter.*Up"; then
+            # Verify node-exporter is running
+            if docker ps | grep -q node-exporter; then
                 echo "✅ node-exporter is running"
-            else
-                echo "⚠️  node-exporter status unknown"
                 docker ps | grep node-exporter
+            else
+                echo "❌ node-exporter is not running"
+                exit 1
             fi
 
             # Restart vmagent to pick up changes
             echo ""
             echo "🔄 Restarting vmagent..."
             docker restart vmagent
+            sleep 5
 
             echo ""
             echo "✅ Deployment completed!"
@@ -111,40 +143,8 @@ jobs:
             echo "  - Cron job: Every minute"
             echo "  - Collection: via node-exporter textfile collector"
             echo ""
-            echo "🔍 Verify metrics:"
+            echo "🔍 Verify metrics in node-exporter:"
             echo "  curl -s http://localhost:9100/metrics | grep f2b_"
-            echo "  cat /var/lib/node_exporter/textfile_collector/fail2ban.prom"
-            echo ""
-            echo "📈 Query in Grafana:"
-            echo "  f2b_up"
-            echo "  f2b_banned_current"
-            echo "  f2b_failed_total"
-
-      - name: Copy updated docker-compose to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "codespartan/platform/stacks/monitoring/docker-compose.yml,codespartan/platform/stacks/monitoring/victoriametrics/prometheus.yml"
-          target: "/tmp/monitoring-update/"
-          strip_components: 4
-
-      - name: Apply updated configuration
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -e
-
-            echo ""
-            echo "📦 Applying updated configuration..."
-            sudo cp /tmp/monitoring-update/docker-compose.yml /opt/codespartan/platform/stacks/monitoring/
-            sudo cp /tmp/monitoring-update/prometheus.yml /opt/codespartan/platform/stacks/monitoring/victoriametrics/
-
-            echo "✅ Configuration updated"
 
       - name: Verify metrics in VictoriaMetrics
         uses: appleboy/ssh-action@v1.0.3
@@ -154,20 +154,22 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             echo ""
-            echo "🔍 Verifying metrics in VictoriaMetrics..."
-            echo "========================================="
+            echo "🔍 Verifying metrics collection..."
+            echo "=================================="
 
-            # Wait for metrics to be scraped
-            sleep 60
+            # Wait for first scrape
+            echo "Waiting 30 seconds for first scrape..."
+            sleep 30
 
-            # Query for fail2ban metrics
+            # Check if metrics are available in node-exporter
             echo ""
-            echo "📊 Querying fail2ban metrics..."
-            curl -s "http://localhost:8428/api/v1/query?query=f2b_up" | grep -o '"result":\[[^]]*\]' && echo "✅ Metrics found" || echo "⚠️  Waiting for first scrape"
+            echo "📊 Checking node-exporter metrics:"
+            curl -s http://localhost:9100/metrics | grep -c "^f2b_" && echo "✅ Fail2ban metrics found in node-exporter" || echo "⚠️  No metrics yet"
 
+            # Query VictoriaMetrics
             echo ""
-            echo "📊 Available fail2ban metrics:"
-            curl -s "http://localhost:8428/api/v1/label/__name__/values" | grep -o 'f2b_[^"]*' || echo "Metrics will appear after first scrape (15-30s)"
+            echo "📊 Querying VictoriaMetrics:"
+            curl -s "http://localhost:8428/api/v1/query?query=f2b_up" | grep -q '"result":\[' && echo "✅ Metrics found in VictoriaMetrics" || echo "⚠️  Waiting for scrape (may take up to 30s more)"
 
             echo ""
             echo "✅ Verification complete!"
@@ -175,5 +177,8 @@ jobs:
             echo "🎯 Next steps:"
             echo "  1. Open Grafana: https://grafana.mambo-cloud.com"
             echo "  2. Go to Explore"
-            echo "  3. Query: f2b_up, f2b_banned_current, f2b_failed_total"
+            echo "  3. Query examples:"
+            echo "     - f2b_up{jail=\"sshd\"}"
+            echo "     - f2b_banned_current"
+            echo "     - rate(f2b_failed_total[5m])"
             echo "  4. Create dashboard with fail2ban panels"
