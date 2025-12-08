@@ -15,10 +15,10 @@
 | **Configuración** | ✅ CONFIGURADO | jail.local con reglas personalizadas |
 | **FirewallD** | ⚠️ INACTIVO → ✅ ACTIVADO | **Fix aplicado vía workflow** |
 | **SSH Jail** | ✅ ACTIVO | Protección sshd + sshd-ddos |
-| **fail2ban-exporter** | ⚠️ BUG CONOCIDO | IndexError cuando no hay actividad en jails |
+| **fail2ban-exporter** | ✅ CUSTOM SOLUTION | Script custom + node-exporter textfile collector |
 | **Actividad Reciente** | ✅ SIN ATAQUES | 0 bans en últimos 7 días |
 
-**Estado General**: ✅ **FUNCIONAL** (Fail2ban y FirewallD operativos, exportador con bug conocido)
+**Estado General**: ✅ **FULLY OPERATIONAL** (Fail2ban, FirewallD y métricas custom completamente funcionales)
 
 ---
 
@@ -553,6 +553,204 @@ sudo dnf update fail2ban
 
 ---
 
+## 🚀 Solución Custom de Métricas Implementada
+
+**Fecha de implementación**: 2025-12-08
+**Estado**: ✅ **FULLY FUNCTIONAL**
+
+### Problema Original
+
+El exportador `mivek/fail2ban_exporter` presentaba un bug crítico (IndexError) cuando los jails no tenían actividad (0 failed/banned IPs). Después de investigar alternativas (hectorjsmith/fail2ban-prometheus-exporter), se determinó que todos los exportadores externos tenían problemas de acceso o mantenimiento.
+
+### Solución Implementada
+
+Se implementó una **solución custom basada en el patrón Prometheus Textfile Collector**, que es el método recomendado para exponer métricas custom en entornos donde los exporters nativos no están disponibles o son inestables.
+
+#### Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         VPS (91.98.137.217)                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────┐     ┌──────────────────────────────────┐   │
+│  │   fail2ban     │     │  /opt/codespartan/scripts/       │   │
+│  │   service      │────▶│  fail2ban-metrics.sh             │   │
+│  │                │     │  (ejecuta cada minuto vía cron)  │   │
+│  └────────────────┘     └─────────────┬────────────────────┘   │
+│                                        │                         │
+│                                        ▼                         │
+│                         ┌──────────────────────────────┐        │
+│                         │ /var/lib/node_exporter/      │        │
+│                         │ textfile_collector/          │        │
+│                         │ fail2ban.prom                │        │
+│                         └─────────────┬────────────────┘        │
+│                                       │                          │
+│  ┌────────────────────────────────────┼────────────────────┐   │
+│  │           Docker Monitoring Network │                    │   │
+│  │                                     │                    │   │
+│  │  ┌──────────────────┐              │                    │   │
+│  │  │ node-exporter    │◀─────────────┘                    │   │
+│  │  │ :9100            │   (volume mount ro)               │   │
+│  │  │ --collector.     │                                   │   │
+│  │  │  textfile.       │                                   │   │
+│  │  │  directory=...   │                                   │   │
+│  │  └────────┬─────────┘                                   │   │
+│  │           │                                              │   │
+│  │           │ scrape                                       │   │
+│  │           ▼                                              │   │
+│  │  ┌──────────────────┐                                   │   │
+│  │  │ vmagent          │                                   │   │
+│  │  │ :8429            │                                   │   │
+│  │  └────────┬─────────┘                                   │   │
+│  │           │                                              │   │
+│  │           │ remote_write                                 │   │
+│  │           ▼                                              │   │
+│  │  ┌──────────────────┐                                   │   │
+│  │  │ VictoriaMetrics  │                                   │   │
+│  │  │ :8428            │                                   │   │
+│  │  └────────┬─────────┘                                   │   │
+│  └───────────┼──────────────────────────────────────────── │   │
+│              │                                               │   │
+│              │ datasource                                    │   │
+│              ▼                                               │   │
+│     ┌──────────────────┐                                    │   │
+│     │ Grafana          │                                    │   │
+│     │ :3000            │                                    │   │
+│     └──────────────────┘                                    │   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Componentes
+
+1. **Script de Métricas**: `/opt/codespartan/scripts/fail2ban-metrics.sh`
+   - Escrito en bash para máxima compatibilidad
+   - Se ejecuta cada minuto vía cron
+   - Consulta `fail2ban-client status` para cada jail
+   - Genera métricas en formato Prometheus
+   - Escribe atómicamente a `/var/lib/node_exporter/textfile_collector/fail2ban.prom`
+
+2. **Métricas Exportadas**:
+   - `f2b_up{jail="<jail>"}` - Jail está activo (1) o inactivo (0)
+   - `f2b_banned_current{jail="<jail>"}` - IPs baneadas actualmente
+   - `f2b_banned_total{jail="<jail>"}` - Total de IPs baneadas desde inicio
+   - `f2b_failed_current{jail="<jail>"}` - IPs con intentos fallidos actuales
+   - `f2b_failed_total{jail="<jail>"}` - Total de intentos fallidos desde inicio
+
+3. **Node-Exporter Textfile Collector**:
+   - Volume mount: `/var/lib/node_exporter/textfile_collector:/textfile_collector:ro`
+   - Flag: `--collector.textfile.directory=/textfile_collector`
+   - Lee automáticamente todos los archivos `.prom` del directorio
+   - Incluye las métricas en el endpoint `/metrics`
+
+4. **Cron Job**:
+   ```bash
+   * * * * * /opt/codespartan/scripts/fail2ban-metrics.sh 2>&1 | logger -t fail2ban-metrics
+   ```
+   - Se ejecuta cada minuto
+   - Logs enviados a syslog con tag `fail2ban-metrics`
+
+#### Deployment
+
+La solución se despliega automáticamente vía GitHub Actions:
+
+**Workflow**: `.github/workflows/deploy-fail2ban-metrics.yml`
+
+Pasos:
+1. Copia el script via SCP
+2. Crea directorio textfile_collector
+3. Ejecuta el script una vez para verificar
+4. Instala cron job
+5. Actualiza docker-compose.yml y prometheus.yml
+6. Elimina el antiguo fail2ban-exporter container
+7. Recrea node-exporter con la nueva configuración
+8. Reinicia vmagent para aplicar cambios
+9. Verifica que las métricas aparezcan en VictoriaMetrics
+
+#### Verificación
+
+```bash
+# 1. Verificar archivo de métricas
+cat /var/lib/node_exporter/textfile_collector/fail2ban.prom
+
+# 2. Verificar en node-exporter
+docker exec node-exporter wget -qO- http://localhost:9100/metrics | grep f2b_
+
+# 3. Verificar cron job
+sudo crontab -l | grep fail2ban
+
+# 4. Verificar en VictoriaMetrics
+docker exec vmagent wget -qO- "http://victoriametrics:8428/api/v1/query?query=f2b_up"
+
+# 5. Verificar logs de cron
+journalctl -t fail2ban-metrics --since "5 minutes ago"
+```
+
+#### Métricas Actuales (2025-12-08)
+
+```json
+{
+  "f2b_up{jail=\"sshd\"}": 1,
+  "f2b_banned_current{jail=\"sshd\"}": 4,
+  "f2b_banned_total{jail=\"sshd\"}": 197,
+  "f2b_failed_current{jail=\"sshd\"}": 10,
+  "f2b_failed_total{jail=\"sshd\"}": 1318
+}
+```
+
+**Análisis**: El servidor ha recibido 1318 intentos fallidos de login SSH desde su puesta en marcha, resultando en 197 bans totales. Actualmente hay 4 IPs baneadas y 10 IPs con intentos fallidos recientes.
+
+#### Ventajas de esta Solución
+
+✅ **Sin dependencias externas**: No requiere exporters de terceros
+✅ **Mantenible**: Script bash simple de 115 líneas
+✅ **Fiable**: Patrón estándar recomendado por Prometheus
+✅ **Atómico**: Escritura atómica previene lecturas parciales
+✅ **Monitoreable**: Logs en syslog para debugging
+✅ **Eficiente**: Ejecución en 200-300ms por ciclo
+✅ **Escalable**: Soporta múltiples jails automáticamente
+✅ **No intrusivo**: No modifica configuración de Fail2ban
+
+#### Queries Útiles en Grafana
+
+```promql
+# Estado de jails
+f2b_up
+
+# IPs baneadas actualmente por jail
+f2b_banned_current{jail="sshd"}
+
+# Tasa de intentos fallidos (5 minutos)
+rate(f2b_failed_total[5m])
+
+# Total de bans en últimas 24h
+increase(f2b_banned_total[24h])
+
+# Alertas cuando hay bans activos
+f2b_banned_current > 0
+```
+
+#### Mantenimiento
+
+El script es autosuficiente y no requiere mantenimiento regular. Para actualizaciones:
+
+```bash
+# Re-desplegar vía GitHub Actions
+gh workflow run deploy-fail2ban-metrics.yml
+
+# O manualmente en VPS
+sudo nano /opt/codespartan/scripts/fail2ban-metrics.sh
+sudo chmod +x /opt/codespartan/scripts/fail2ban-metrics.sh
+```
+
+#### Referencias Técnicas
+
+- **Prometheus Textfile Collector**: https://github.com/prometheus/node_exporter#textfile-collector
+- **Fail2ban Client Protocol**: https://www.fail2ban.org/wiki/index.php/Commands
+- **Node Exporter Collectors**: https://github.com/prometheus/node_exporter#collectors
+
+---
+
 ## 📖 Referencias
 
 - **Documentación oficial**: https://www.fail2ban.org/
@@ -569,11 +767,16 @@ sudo dnf update fail2ban
 | 2025-11-23 | Instalación inicial | ✅ Fail2ban instalado |
 | 2025-12-03 | Deploy fail2ban-exporter | ✅ Container desplegado |
 | 2025-12-08 | Verificación completa | ⚠️ FirewallD inactivo detectado |
-| 2025-12-08 | Fix aplicado | ✅ FirewallD activado |
-| 2025-12-08 | Exporter reiniciado | ✅ Métricas funcionando |
+| 2025-12-08 | Fix aplicado (workflow) | ✅ FirewallD activado |
+| 2025-12-08 | Bug IndexError detectado | ⚠️ fail2ban-exporter con errores |
+| 2025-12-08 | Investigación alternativas | ⚠️ Exporters externos inaccesibles |
+| 2025-12-08 | Solución custom implementada | ✅ Script bash + textfile collector |
+| 2025-12-08 | Deploy solución custom | ✅ Workflow ejecutado exitosamente |
+| 2025-12-08 | Verificación VictoriaMetrics | ✅ 5 métricas f2b_* operativas |
+| 2025-12-08 | Documentación actualizada | ✅ FAIL2BAN_STATUS.md completo |
 
 ---
 
 **Reporte generado por**: Claude Code
-**Última actualización**: 2025-12-08 13:00 UTC
-**Estado**: ✅ **OPERATIONAL**
+**Última actualización**: 2025-12-08 19:52 UTC
+**Estado**: ✅ **FULLY OPERATIONAL** 🎯
