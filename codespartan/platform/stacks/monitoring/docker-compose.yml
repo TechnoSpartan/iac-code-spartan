@@ -325,8 +325,11 @@ services:
       start_period: 20s
 
   fail2ban-exporter:
-    image: ghcr.io/mivek/fail2ban_exporter:latest
+    image: ghcr.io/hectorjsmith/fail2ban-prometheus-exporter:v0.11.1
     container_name: fail2ban-exporter
+    command:
+      - --collector.f2b.socket=/var/run/fail2ban/fail2ban.sock
+      - --web.listen-address=:9191
     volumes:
       - /var/run/fail2ban:/var/run/fail2ban:ro
     networks:
@@ -341,7 +344,7 @@ services:
           cpus: '0.05'
           memory: 32M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9921/metrics"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9191/metrics"]
       interval: 30s
       timeout: 5s
       retries: 3

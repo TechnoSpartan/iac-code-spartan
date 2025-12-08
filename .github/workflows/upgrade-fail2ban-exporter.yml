@@ -1,0 +1,137 @@
+name: Upgrade Fail2ban Exporter
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy monitoring stack to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/stacks/monitoring/*"
+          target: "/opt/codespartan/platform/stacks/monitoring/"
+          strip_components: 4
+
+      - name: Upgrade Fail2ban Exporter on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "🔄 Upgrading Fail2ban Exporter"
+            echo "==============================="
+
+            cd /opt/codespartan/platform/stacks/monitoring
+
+            # Backup current state
+            echo ""
+            echo "📦 Creating backup..."
+            mkdir -p /opt/codespartan/backups/fail2ban-exporter-$(date +%Y%m%d-%H%M%S)
+            docker inspect fail2ban-exporter > /opt/codespartan/backups/fail2ban-exporter-$(date +%Y%m%d-%H%M%S)/inspect.json
+
+            # Show current state
+            echo ""
+            echo "📊 Current State:"
+            echo "----------------"
+            docker ps | grep fail2ban-exporter
+            docker inspect fail2ban-exporter --format '{{.Config.Image}}' || echo "Container not found"
+
+            # Stop and remove old container
+            echo ""
+            echo "🛑 Stopping old exporter..."
+            docker stop fail2ban-exporter || true
+            docker rm fail2ban-exporter || true
+
+            # Pull new image
+            echo ""
+            echo "📥 Pulling new image..."
+            docker compose pull fail2ban-exporter
+
+            # Start new container
+            echo ""
+            echo "🚀 Starting new exporter..."
+            docker compose up -d fail2ban-exporter
+
+            # Wait for container to be ready
+            echo ""
+            echo "⏳ Waiting for container to be healthy..."
+            sleep 10
+
+            # Verify new container
+            echo ""
+            echo "✅ Verification:"
+            echo "---------------"
+            docker ps | grep fail2ban-exporter
+            docker inspect fail2ban-exporter --format 'Image: {{.Config.Image}}'
+            docker inspect fail2ban-exporter --format 'Status: {{.State.Status}}'
+            docker inspect fail2ban-exporter --format 'Health: {{.State.Health.Status}}'
+
+            # Check if metrics endpoint is accessible
+            echo ""
+            echo "🧪 Testing metrics endpoint..."
+            docker exec fail2ban-exporter wget -q -O- http://localhost:9191/metrics | head -10 && echo "✅ Metrics OK" || echo "⚠️  Metrics not yet available"
+
+            # Show container logs
+            echo ""
+            echo "📋 Container logs:"
+            docker logs fail2ban-exporter --tail 20
+
+            # Restart vmagent to pick up new metrics
+            echo ""
+            echo "🔄 Restarting vmagent..."
+            docker restart vmagent
+
+            echo ""
+            echo "✅ Upgrade completed!"
+            echo "===================="
+            echo ""
+            echo "📝 Summary:"
+            echo "  - Old exporter: mivek/fail2ban_exporter (Python, port 9921)"
+            echo "  - New exporter: hectorjsmith/fail2ban-prometheus-exporter:v0.11.1 (Go, port 9191)"
+            echo "  - Status: $(docker inspect fail2ban-exporter --format '{{.State.Status}}')"
+            echo ""
+            echo "🔍 Monitor with:"
+            echo "  docker logs fail2ban-exporter -f"
+            echo "  docker exec fail2ban-exporter wget -O- http://localhost:9191/metrics"
+
+      - name: Verify metrics in VictoriaMetrics
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo ""
+            echo "🔍 Checking metrics in VictoriaMetrics..."
+            echo "========================================"
+            sleep 30  # Wait for first scrape
+
+            # Query VictoriaMetrics
+            curl -s "http://localhost:8428/api/v1/query?query=up{job='fail2ban'}" | grep -o '"result":\[[^]]*\]' && echo "✅ Metrics found in VictoriaMetrics" || echo "⚠️  Waiting for first scrape (may take up to 30s)"
+
+            # Show available fail2ban metrics
+            echo ""
+            echo "📊 Available fail2ban metrics:"
+            curl -s "http://localhost:8428/api/v1/label/__name__/values" | grep -o 'f2b_[^"]*' | head -10 || echo "Waiting for metrics..."
+
+            echo ""
+            echo "✅ Verification complete!"
+            echo ""
+            echo "📈 View metrics in Grafana:"
+            echo "  https://grafana.mambo-cloud.com"
+            echo ""
+            echo "Query examples:"
+            echo "  up{job='fail2ban'}"
+            echo "  f2b_jail_banned_current"
+            echo "  f2b_jail_failed_current"
