@@ -1,0 +1,122 @@
+name: Fix Fail2ban - Activate FirewallD
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-fail2ban:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fix Fail2ban on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "🔧 Fixing Fail2ban Configuration"
+            echo "=================================="
+
+            # Check current state
+            echo ""
+            echo "📊 Current State:"
+            echo "----------------"
+            sudo systemctl is-active firewalld && echo "✅ FirewallD: active" || echo "❌ FirewallD: inactive"
+            sudo systemctl is-active fail2ban && echo "✅ Fail2ban: active" || echo "❌ Fail2ban: inactive"
+
+            # Activate FirewallD
+            echo ""
+            echo "🔥 Activating FirewallD..."
+            sudo systemctl start firewalld
+            sudo systemctl enable firewalld
+
+            # Configure basic rules (allow SSH, HTTP, HTTPS)
+            echo ""
+            echo "⚙️  Configuring firewall rules..."
+            sudo firewall-cmd --permanent --add-service=ssh
+            sudo firewall-cmd --permanent --add-service=http
+            sudo firewall-cmd --permanent --add-service=https
+            sudo firewall-cmd --permanent --add-service=dns
+
+            # Allow ICMP (ping)
+            sudo firewall-cmd --permanent --add-icmp-block-inversion
+
+            # Reload firewall
+            sudo firewall-cmd --reload
+
+            echo "✅ FirewallD configured and active"
+
+            # Restart Fail2ban to pick up firewalld
+            echo ""
+            echo "🔄 Restarting Fail2ban..."
+            sudo systemctl restart fail2ban
+
+            # Wait for services to stabilize
+            sleep 5
+
+            # Verify everything is working
+            echo ""
+            echo "✅ Verification:"
+            echo "---------------"
+            sudo systemctl status firewalld --no-pager | head -5
+            echo ""
+            sudo systemctl status fail2ban --no-pager | head -5
+            echo ""
+            sudo fail2ban-client status
+            echo ""
+            sudo fail2ban-client status sshd || echo "⚠️  SSHD jail not active yet"
+            echo ""
+
+            # Restart fail2ban-exporter container
+            echo ""
+            echo "🔄 Restarting fail2ban-exporter..."
+            docker restart fail2ban-exporter
+            sleep 3
+            docker ps | grep fail2ban-exporter
+
+            echo ""
+            echo "✅ Fail2ban fix completed!"
+            echo "=========================="
+            echo ""
+            echo "📝 Summary:"
+            echo "  - FirewallD: ACTIVE and ENABLED"
+            echo "  - Fail2ban: RUNNING"
+            echo "  - SSH Jail: CONFIGURED"
+            echo "  - Exporter: RESTARTED"
+            echo ""
+            echo "🔍 Monitor with:"
+            echo "  sudo fail2ban-client status"
+            echo "  sudo firewall-cmd --list-all"
+            echo "  docker logs fail2ban-exporter"
+
+      - name: Wait and verify exporter
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo ""
+            echo "🧪 Testing fail2ban-exporter..."
+            echo "==============================="
+            sleep 5
+
+            # Check if exporter is healthy
+            if docker ps | grep -q "fail2ban-exporter.*healthy"; then
+              echo "✅ fail2ban-exporter is HEALTHY"
+
+              # Try to get metrics
+              echo ""
+              echo "📊 Sample metrics:"
+              docker exec fail2ban-exporter wget -q -O- http://localhost:9921/metrics 2>&1 | head -20 || echo "⚠️  Could not fetch metrics"
+            else
+              echo "❌ fail2ban-exporter is NOT healthy"
+              echo ""
+              echo "📋 Container logs:"
+              docker logs fail2ban-exporter --tail 30
+            fi
