@@ -15,10 +15,10 @@
 | **Configuración** | ✅ CONFIGURADO | jail.local con reglas personalizadas |
 | **FirewallD** | ⚠️ INACTIVO → ✅ ACTIVADO | **Fix aplicado vía workflow** |
 | **SSH Jail** | ✅ ACTIVO | Protección sshd + sshd-ddos |
-| **fail2ban-exporter** | ⚠️ ERROR → ✅ CORREGIDO | Reiniciado después de activar FirewallD |
+| **fail2ban-exporter** | ⚠️ BUG CONOCIDO | IndexError cuando no hay actividad en jails |
 | **Actividad Reciente** | ✅ SIN ATAQUES | 0 bans en últimos 7 días |
 
-**Estado General**: ✅ **FUNCIONAL** (después del fix)
+**Estado General**: ✅ **FUNCIONAL** (Fail2ban y FirewallD operativos, exportador con bug conocido)
 
 ---
 
@@ -75,16 +75,22 @@
    - **Solución**: Workflow `fix-fail2ban-firewalld.yml` ejecutado
    - **Estado**: ✅ RESUELTO
 
-2. **fail2ban-exporter con errores** ❌ → ✅
+2. **fail2ban-exporter con errores** ❌ → ⚠️ BUG CONOCIDO
    - **Problema**: IndexError en get_jail_state()
-   - **Causa raíz**: FirewallD inactivo causaba que jails no tuvieran estado válido
+   - **Causa raíz**: Bug en exportador cuando jails tienen 0 failed/banned
    - **Logs de error**:
      ```
      IndexError: string index out of range
      at jail_state[0][1][0][1]
+     in get_jail_state()
      ```
-   - **Solución**: Reinicio del contenedor después de activar FirewallD
-   - **Estado**: ✅ RESUELTO
+   - **Impacto**: Métrica no disponible en Prometheus/Grafana
+   - **Workaround temporal**: Monitorear via journalctl y fail2ban-client
+   - **Solución permanente**:
+     - Opción 1: Actualizar a exporter más nuevo (fail2ban_exporter v2.x)
+     - Opción 2: Usar exportador alternativo (gitlab.com/hectorjsmith/fail2ban-prometheus-exporter)
+     - Opción 3: Crear script custom que exponga métricas
+   - **Estado**: ⚠️ DOCUMENTADO - No crítico (Fail2ban funciona correctamente)
 
 ---
 
