@@ -325,7 +325,7 @@ services:
       start_period: 20s
 
   fail2ban-exporter:
-    image: ghcr.io/hectorjsmith/fail2ban-prometheus-exporter:v0.11.1
+    image: registry.gitlab.com/hectorjsmith/fail2ban-prometheus-exporter:latest
     container_name: fail2ban-exporter
     command:
       - --collector.f2b.socket=/var/run/fail2ban/fail2ban.sock
