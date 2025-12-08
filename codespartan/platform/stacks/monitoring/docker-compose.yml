@@ -325,13 +325,12 @@ services:
       start_period: 20s
 
   fail2ban-exporter:
-    image: registry.gitlab.com/hectorjsmith/fail2ban-prometheus-exporter:latest
+    image: yolokube/fail2ban-prometheus-exporter:latest
     container_name: fail2ban-exporter
-    command:
-      - --collector.f2b.socket=/var/run/fail2ban/fail2ban.sock
-      - --web.listen-address=:9191
     volumes:
       - /var/run/fail2ban:/var/run/fail2ban:ro
+    ports:
+      - "9191:9191"
     networks:
       - monitoring
     restart: unless-stopped
