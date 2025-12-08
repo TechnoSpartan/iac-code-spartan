@@ -36,8 +36,6 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  - job_name: 'fail2ban'
-    static_configs:
-      - targets: ['fail2ban-exporter:9191']
-    scrape_interval: 30s
-    scrape_timeout: 10s
+  # fail2ban metrics now collected via node-exporter textfile collector
+  # Custom script at /opt/codespartan/scripts/fail2ban-metrics.sh
+  # Metrics available in node-exporter job with f2b_ prefix
