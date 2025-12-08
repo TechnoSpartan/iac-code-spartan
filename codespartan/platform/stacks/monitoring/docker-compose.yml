@@ -301,11 +301,13 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      - /var/lib/node_exporter/textfile_collector:/textfile_collector:ro
     command:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
       - --path.rootfs=/rootfs
       - --collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($|/)
+      - --collector.textfile.directory=/textfile_collector
     networks:
       - monitoring
     restart: unless-stopped
@@ -324,30 +326,9 @@ services:
       retries: 3
       start_period: 20s
 
-  fail2ban-exporter:
-    image: yolokube/fail2ban-prometheus-exporter:latest
-    container_name: fail2ban-exporter
-    volumes:
-      - /var/run/fail2ban:/var/run/fail2ban:ro
-    ports:
-      - "9191:9191"
-    networks:
-      - monitoring
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.1'
-          memory: 64M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9191/metrics"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+  # fail2ban-exporter removed due to bugs with zero activity
+  # Metrics now collected via custom script + node-exporter textfile collector
+  # See: /opt/codespartan/scripts/fail2ban-metrics.sh
 
 volumes:
   victoria-data:
