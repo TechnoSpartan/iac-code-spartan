@@ -45,6 +45,7 @@ jobs:
             # Install metrics script
             echo ""
             echo "📋 Installing metrics script..."
+            sudo mkdir -p /opt/codespartan/scripts
             sudo cp /tmp/fail2ban-metrics.sh /opt/codespartan/scripts/
             sudo chmod +x /opt/codespartan/scripts/fail2ban-metrics.sh
             sudo chown root:root /opt/codespartan/scripts/fail2ban-metrics.sh
