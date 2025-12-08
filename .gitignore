@@ -10,16 +10,46 @@ override.tf.json
 *.override.tf.json
 .terraform.lock.hcl
 
-# Local environment
+# Local environment and secrets
 .env
 .env.*
 !.env.example
 !**/.env.example
 
+# Temporary secret files (NEVER commit)
+SECRETS_TO_ADD.md
+**/secrets.txt
+**/passwords.txt
+**/*_secrets.*
+**/*_passwords.*
+
 # Compose artifacts
 **/letsencrypt/
 **/acme.json
 **/.DS_Store
+
+# Sensitive configuration files (only templates should be committed)
+**/configuration.yml
+!**/configuration.yml.template
+**/users_database.yml
+!**/users_database.yml.example
+
+# SSH keys and certificates
+*.pem
+*.key
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+*.crt
+*.cer
+!**/ca.crt
+
+# Backup files
+*.backup
+*.bak
+*-backup
+*.old
 
 # Logs
 logs/
