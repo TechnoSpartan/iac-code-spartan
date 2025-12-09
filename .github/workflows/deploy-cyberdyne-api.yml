@@ -27,16 +27,62 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           GHCR_TOKEN: ${{ secrets.GH_PAT }}
+          MONGODB_ROOT_USERNAME: ${{ secrets.TRACKWORKS_MONGODB_USERNAME }}
+          MONGODB_ROOT_PASSWORD: ${{ secrets.TRACKWORKS_MONGODB_PASSWORD }}
+          MONGODB_DATABASE: ${{ secrets.TRACKWORKS_MONGODB_DATABASE }}
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: GHCR_TOKEN
+          envs: GHCR_TOKEN,MONGODB_ROOT_USERNAME,MONGODB_ROOT_PASSWORD,MONGODB_DATABASE
           script: |
             set -euo pipefail
             cd /opt/codespartan/apps/cyberdyne-systems-es/api
 
             DEPLOY_START=$(date +%s)
+
+            # Create .env file with MongoDB credentials from GitHub Secrets
+            echo "🔐 Creating .env file with secure MongoDB credentials..."
+            cat > .env << EOF
+            # Backend Environment Variables - PRODUCTION
+            PORT=3001
+            NODE_ENV=production
+
+            # CORS - Allowed origins
+            ALLOWED_ORIGINS=https://cyberdyne-systems.es,https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://api.cyberdyne-systems.es
+
+            # MongoDB Configuration (from GitHub Secrets)
+            MONGODB_ROOT_USERNAME=${MONGODB_ROOT_USERNAME}
+            MONGODB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
+            MONGODB_DATABASE=${MONGODB_DATABASE}
+
+            # Database
+            DB_PATH=./data/truckworks.db
+            USE_DATABASE=true
+
+            # API Configuration
+            API_BASE_PATH=/api
+            API_VERSION=v1
+
+            # Frontend URL
+            FRONTEND_URL=https://www.cyberdyne-systems.es
+
+            # Logging
+            LOG_LEVEL=info
+            EOF
+
+            # Verify .env was created and has no empty critical values
+            if [ ! -f .env ]; then
+              echo "❌ Failed to create .env file"
+              exit 1
+            fi
+
+            if grep -q "MONGODB_ROOT_PASSWORD=$" .env; then
+              echo "❌ MongoDB password is empty in .env"
+              exit 1
+            fi
+
+            echo "✅ .env file created successfully"
 
             # Ensure network exists
             docker network create web || true
