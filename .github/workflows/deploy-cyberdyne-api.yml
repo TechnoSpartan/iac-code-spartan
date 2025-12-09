@@ -99,49 +99,61 @@ jobs:
             echo "🚀 Starting API container..."
             docker compose up -d
 
-            # Health check
+            # Health check - using docker inspect for reliability
             echo "🔍 Running health checks..."
-            if docker ps | grep -q trackworks-api; then
-              echo "✅ Container is running"
 
-              # Esperar a que el health check interno de Docker pase
-              echo "⏳ Waiting for container to be healthy..."
-              HEALTH_CHECK_ATTEMPTS=0
-              MAX_ATTEMPTS=24
-
-              while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-                HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' trackworks-api 2>/dev/null || echo "unknown")
-                
-                if [ "$HEALTH_STATUS" = "healthy" ]; then
-                  echo "✅ Health check passed"
-                  
-                  DEPLOY_END=$(date +%s)
-                  DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
-                  echo "DEPLOY_TIME=${DEPLOY_TIME}" >> /tmp/deploy_metrics.txt
-                  echo "DEPLOY_STATUS=success" >> /tmp/deploy_metrics.txt
-
-                  echo "🧹 Cleaning up old images..."
-                  docker image prune -f
-
-                  echo "✨ API deployed successfully in ${DEPLOY_TIME}s!"
-                  docker ps | grep trackworks-api
-                  exit 0
-                fi
-                
-                echo "⏳ Health status: $HEALTH_STATUS - waiting... ($((HEALTH_CHECK_ATTEMPTS + 1))/$MAX_ATTEMPTS)"
-                HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_ATTEMPTS + 1))
-                sleep 3
-              done
-
-              echo "❌ Health check failed after $((MAX_ATTEMPTS * 3)) seconds"
-              echo "📋 Container logs:"
-              docker logs --tail 50 trackworks-api
-              
-              echo "DEPLOY_STATUS=health_check_failed" >> /tmp/deploy_metrics.txt
-              exit 1
-            else
-              echo "❌ Container failed to start"
-              echo "DEPLOY_STATUS=container_failed" >> /tmp/deploy_metrics.txt
+            # Check if container exists
+            if ! docker inspect trackworks-api >/dev/null 2>&1; then
+              echo "❌ Container trackworks-api does not exist"
+              echo "DEPLOY_STATUS=container_not_found" >> /tmp/deploy_metrics.txt
               exit 1
             fi
+
+            # Check if container is running
+            CONTAINER_STATE=$(docker inspect --format='{{.State.Status}}' trackworks-api)
+            if [ "$CONTAINER_STATE" != "running" ]; then
+              echo "❌ Container is not running (state: $CONTAINER_STATE)"
+              echo "📋 Container logs:"
+              docker logs --tail 50 trackworks-api
+              echo "DEPLOY_STATUS=container_not_running" >> /tmp/deploy_metrics.txt
+              exit 1
+            fi
+
+            echo "✅ Container is running"
+
+            # Wait for health check to pass
+            echo "⏳ Waiting for container to be healthy..."
+            HEALTH_CHECK_ATTEMPTS=0
+            MAX_ATTEMPTS=24
+
+            while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' trackworks-api 2>/dev/null || echo "unknown")
+
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "✅ Health check passed"
+
+                DEPLOY_END=$(date +%s)
+                DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+                echo "DEPLOY_TIME=${DEPLOY_TIME}" >> /tmp/deploy_metrics.txt
+                echo "DEPLOY_STATUS=success" >> /tmp/deploy_metrics.txt
+
+                echo "🧹 Cleaning up old images..."
+                docker image prune -f
+
+                echo "✨ API deployed successfully in ${DEPLOY_TIME}s!"
+                docker ps --filter "name=trackworks-api" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                exit 0
+              fi
+
+              echo "⏳ Health status: $HEALTH_STATUS - waiting... ($((HEALTH_CHECK_ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+              HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_ATTEMPTS + 1))
+              sleep 3
+            done
+
+            echo "❌ Health check failed after $((MAX_ATTEMPTS * 3)) seconds"
+            echo "📋 Container logs:"
+            docker logs --tail 50 trackworks-api
+
+            echo "DEPLOY_STATUS=health_check_failed" >> /tmp/deploy_metrics.txt
+            exit 1
 
