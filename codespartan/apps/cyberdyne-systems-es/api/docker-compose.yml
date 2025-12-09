@@ -4,9 +4,9 @@ services:
     container_name: trackworks-mongodb
     restart: unless-stopped
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=truckworks
-      - MONGO_INITDB_ROOT_PASSWORD=truckworks_secure_password_2025
-      - MONGO_INITDB_DATABASE=trackworks
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
     volumes:
       - mongodb-data:/data/db
     healthcheck:
@@ -37,7 +37,7 @@ services:
       - API_VERSION=v1
       - ALLOWED_ORIGINS=https://cyberdyne-systems.es,https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://api.cyberdyne-systems.es
       - USE_DATABASE=true
-      - MONGODB_URI=mongodb://truckworks:truckworks_secure_password_2025@mongodb:27017/trackworks?authSource=admin
+      - MONGODB_URI=mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?authSource=admin
       - API_BASE_PATH=/api
       - LOG_LEVEL=info
     volumes:
