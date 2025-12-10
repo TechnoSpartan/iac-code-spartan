@@ -37,4 +37,3 @@ jobs:
             EOF
             cd /opt/codespartan/apps/dental-io-com/www
             docker compose --env-file .env up -d
-

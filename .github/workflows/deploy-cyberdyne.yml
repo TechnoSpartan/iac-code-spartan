@@ -90,7 +90,7 @@ jobs:
               echo "❌ Health check failed after $((MAX_ATTEMPTS * 3)) seconds"
               echo "📋 Container logs:"
               docker logs --tail 50 cyberdyne-frontend
-              
+
               echo "DEPLOY_STATUS=health_check_failed" >> /tmp/deploy_metrics.txt
               exit 1
             else
@@ -103,12 +103,12 @@ jobs:
         if: success()
         run: |
           echo "🌐 Checking production URL..."
-          
+
           # Wait a bit for proxy to update
           sleep 5
-          
+
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.cyberdyne-systems.es)
-          
+
           if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "✅ Production site is responding correctly (HTTP $HTTP_STATUS)"
             echo "status=$HTTP_STATUS" >> $GITHUB_OUTPUT
@@ -124,7 +124,7 @@ jobs:
             echo "  - Verify domain configuration"
             echo ""
             echo "Container is working correctly. Issue is in the proxy layer."
-            
+
             # Don't fail the deployment since the container is working
             echo "status=$HTTP_STATUS" >> $GITHUB_OUTPUT
           fi

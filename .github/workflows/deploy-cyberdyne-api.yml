@@ -156,4 +156,3 @@ jobs:
 
             echo "DEPLOY_STATUS=health_check_failed" >> /tmp/deploy_metrics.txt
             exit 1
-

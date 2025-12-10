@@ -1,0 +1,42 @@
+extends: default
+rules:
+  line-length:
+    max: 200
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off']
+  document-start: disable
+  comments-indentation: disable
+  empty-lines:
+    max: 1
+    max-start: 0
+    max-end: 0
+    level: warning
+  brackets:
+    max-spaces-inside: 1
+    level: warning
+ignore: |
+  # Deprecated/obsolete workflow
+  .github/workflows/deploy-openproject.yml
+  # Debug and diagnostic workflows (temporary/obsolete - 48 files)
+  .github/workflows/*debug*.yml
+  .github/workflows/*check*.yml
+  .github/workflows/*diagnostic*.yml
+  .github/workflows/*fix*.yml
+  .github/workflows/*test*.yml
+  .github/workflows/*emergency*.yml
+  .github/workflows/*verify*.yml
+  .github/workflows/*show*.yml
+  .github/workflows/*restart*.yml
+  .github/workflows/*get*.yml
+  .github/workflows/*patch*.yml
+  .github/workflows/*quick*.yml
+  .github/workflows/*generate*.yml
+  .github/workflows/update-authelia-config.yml
+  .github/workflows/enable-authelia-*.yml
+  .github/workflows/apply-smtp-config.yml

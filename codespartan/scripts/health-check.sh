@@ -220,7 +220,7 @@ check_containers() {
     # Check for unexpected containers
     if [ "$VERBOSE" = true ]; then
         local unexpected=$(docker ps --format "{{.Names}}" | while read -r name; do
-            if [[ ! " ${EXPECTED_CONTAINERS[@]} " =~ " ${name} " ]]; then
+            if [[ ! " ${EXPECTED_CONTAINERS[*]} " =~ " ${name} " ]]; then
                 echo "$name"
             fi
         done)
