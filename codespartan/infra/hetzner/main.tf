@@ -106,11 +106,11 @@ resource "hcloud_firewall" "basic" {
 }
 
 resource "hcloud_server" "vps" {
-  name        = var.server_name
-  image       = var.image
-  server_type = var.server_type
-  location    = var.location
-  ssh_keys    = [hcloud_ssh_key.main.id]
+  name         = var.server_name
+  image        = var.image
+  server_type  = var.server_type
+  location     = var.location
+  ssh_keys     = [hcloud_ssh_key.main.id]
   firewall_ids = [hcloud_firewall.basic.id]
 
   user_data = <<-CLOUD

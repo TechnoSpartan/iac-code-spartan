@@ -19,10 +19,10 @@ domains    = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud"]
 subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo"]
 
 # IPv4/IPv6 concretos para los registros A/AAAA
-manual_ipv4_address  = "91.98.137.217"
-create_aaaa_records  = true
+manual_ipv4_address = "91.98.137.217"
+create_aaaa_records = true
 # IPv6 correcta proporcionada por el usuario
-manual_ipv6_address  = "2a01:4f8:1c1a:7d21::1"
+manual_ipv6_address = "2a01:4f8:1c1a:7d21::1"
 
 # Apex/root del dominio (ambos activados para cyberdyne-systems.es)
 create_apex_a    = true

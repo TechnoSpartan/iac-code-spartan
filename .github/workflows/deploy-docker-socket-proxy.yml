@@ -103,4 +103,3 @@ jobs:
             echo "🌐 Test manually:"
             echo "  - Traefik Dashboard: https://traefik.mambo-cloud.com"
             echo "  - Check containers: docker ps | grep -E 'traefik|docker-socket-proxy'"
-
