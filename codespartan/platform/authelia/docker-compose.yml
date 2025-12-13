@@ -46,13 +46,12 @@ services:
           cpus: '0.1'
           memory: 64M
 
-    # Healthcheck temporarily disabled for debugging
-    # healthcheck:
-    #   test: ["CMD", "authelia", "healthcheck"]
-    #   interval: 30s
-    #   timeout: 5s
-    #   retries: 3
-    #   start_period: 30s
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep authelia || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
     depends_on:
       authelia-redis:

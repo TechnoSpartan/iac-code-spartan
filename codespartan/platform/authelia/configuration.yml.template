@@ -140,7 +140,7 @@ storage:
 
 # Notification Provider
 notifier:
-  disable_startup_check: false
+  disable_startup_check: true  # Disabled to prevent startup failures if SMTP is misconfigured
 
   # REMOVED: filesystem notifier (conflicts with SMTP)
   # Only one notifier can be active at a time
