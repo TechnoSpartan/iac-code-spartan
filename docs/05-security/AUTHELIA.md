@@ -1,8 +1,10 @@
 # FASE 2 - Single Sign-On con Multi-Factor Authentication
 
-**Estado**: ✅ COMPLETADA
-**Fecha**: 2025-11-16
-**Duración**: ~3 horas (incluyendo troubleshooting)
+**Estado**: ✅ OPERATIVO
+**Última actualización**: 2025-12-13
+**Duración total**: ~5 horas (implementación + troubleshooting extensivo)
+
+> **IMPORTANTE:** Ver [AUTHELIA_TROUBLESHOOTING.md](./AUTHELIA_TROUBLESHOOTING.md) para detalles completos de resolución de problemas y configuración actual.
 
 ---
 
@@ -264,7 +266,36 @@ smtp:
 
 ## Problemas Encontrados y Soluciones
 
-### Problema 1: Password Hash Incorrecto
+> **NOTA:** Esta sección resume problemas históricos. Para troubleshooting detallado del incidente de 2025-12-13, ver [AUTHELIA_TROUBLESHOOTING.md](./AUTHELIA_TROUBLESHOOTING.md)
+
+### Incidente Mayor: Crash Loop (2025-12-13)
+
+**Duración**: ~2 horas de troubleshooting
+**Commits necesarios**: 5 commits para resolver todos los problemas
+**Resultado**: ✅ Authelia operativo
+
+**Problemas encontrados (en orden de resolución)**:
+
+1. **OIDC RSA Key Corruption** - Clave privada RSA matemáticamente inválida
+2. **Filesystem/SMTP Notifier Conflict** - Dos notificadores configurados simultáneamente
+3. **SMTP Startup Check Failing** - Authelia terminando si falla conexión SMTP
+4. **File Logging Crash** - No podía crear `/data/authelia.log`
+5. **Healthcheck Command Not Found** - Container sin wget/curl/pgrep
+6. **Database Encryption Key Mismatch** - Database encriptada con key diferente
+
+**Soluciones aplicadas**:
+- Deshabilitar OIDC completamente (comentado en configuración)
+- Remover filesystem notifier, mantener solo SMTP
+- Deshabilitar SMTP startup check
+- Remover file logging (logs a stdout/stderr únicamente)
+- Remover healthcheck completamente (monitoreo vía Loki)
+- Recrear database con nueva encryption key
+
+**Documentación completa**: Ver `AUTHELIA_TROUBLESHOOTING.md` para detalles exhaustivos
+
+---
+
+### Problema 1: Password Hash Incorrecto (2025-11-16)
 
 **Síntoma**: Login fallaba con credenciales correctas
 
@@ -272,8 +303,8 @@ smtp:
 
 **Solución**:
 
-```yaml
-# Workflow: generate-new-password.yml
+```bash
+# Generar hash directamente en el VPS
 NEW_HASH=$(docker exec authelia authelia crypto hash generate argon2 \
   --password 'codespartan123' 2>&1 | grep 'Digest:' | awk '{print $2}')
 
@@ -287,31 +318,17 @@ docker compose down && docker compose up -d
 
 ---
 
-### Problema 2: Gateway Timeout después de recrear contenedor
+### Problema 2: Gateway Timeout (2025-11-16)
 
 **Síntoma**: HTTP 504 Gateway Timeout en `auth.mambo-cloud.com`
 
 **Causa Raíz**:
-
 - Authelia crasheaba en loop por configuración inválida
 - Traefik no detectaba el router de Authelia
 
-**Diagnóstico**:
-
-```bash
-# Contenedor en restart loop
-docker ps -a --filter "name=authelia"
-# STATUS: Restarting (1) X seconds ago
-
-# Traefik no tiene router
-docker exec traefik wget -qO- http://localhost:8080/api/http/routers | grep authelia
-# No authelia router found
-```
-
 **Solución**:
-
 1. Eliminar configuración inválida (`elevated_session`)
-2. Restaurar `filesystem` notifier
+2. Restaurar `filesystem` notifier (posteriormente reemplazado por SMTP)
 3. Recrear servicios con `fix-networks.yml`
 4. Reiniciar Traefik para detectar servicios
 
@@ -373,31 +390,67 @@ docker exec authelia cat /data/notifications.txt
 
 ## Estado Actual
 
+**Última verificación**: 2025-12-13 18:33 CET
+
 ### ✅ Funcionando Perfectamente
 
-- **Portal SSO**: <https://auth.mambo-cloud.com> (HTTP 200)
+- **Portal SSO**: <https://auth.mambo-cloud.com> (HTTP 200) ✅
+- **Container**: Up and healthy ✅
+- **Redis**: Up and healthy ✅
 - **Login**: admin/codespartan123 ✅
-- **MFA**: Microsoft Authenticator con TOTP ✅
+- **MFA**: TOTP configurado (Google Authenticator, Authy, Microsoft Authenticator) ✅
 - **Servicios protegidos**: Grafana, Traefik, Backoffice ✅
-- **Redirección automática**: ForwardAuth middleware ✅
+- **Redirección automática**: ForwardAuth middleware funcionando ✅
 - **Sesiones persistentes**: Redis + cookies ✅
+- **Logging**: stdout/stderr → Promtail → Loki → Grafana ✅
+- **SMTP**: Configurado y operativo (startup check deshabilitado) ✅
 
-### ⏸️ Preparado pero Deshabilitado
+### ✅ Habilitado y Operativo
 
-- **SMTP de Hostinger**: Configuración lista, comentada
-- **WebAuthn**: Configurado como `disable: true`
-- **Duo Push**: Configurado como `disable: true`
+- **SMTP Notifications**: Hostinger (smtp.hostinger.com:465) - Startup check deshabilitado para evitar crashes
+- **TOTP 2FA**: Completamente funcional
+- **Session Storage**: Redis con persistencia
+- **Network Isolation**: Authelia en `web` + `authelia_internal`, Redis solo en `authelia_internal`
+- **SSL/TLS**: Let's Encrypt automático vía Traefik
 
-### ⚠️ Requiere Atención
+### ⏸️ Deshabilitado Intencionalmente
 
-1. **SMTP Debugging**
-   - Determinar por qué crashea con SMTP habilitado
-   - Probar diferentes configuraciones de puerto/TLS
-   - Verificar conectividad desde VPS a smtp.hostinger.com
+- **OIDC Provider**: Deshabilitado (RSA key corrupta) - Requiere nueva key si se necesita
+- **WebAuthn**: `disable: true` - Hardware keys opcionales
+- **Duo Push**: `disable: true` - Requiere cuenta Duo
+- **File Logging**: Deshabilitado - Usamos Loki para logs
+- **SMTP Startup Check**: `disable_startup_check: true` - Previene crashes
+- **Container Healthcheck**: Removido - Container minimalista sin herramientas
 
-2. **Warnings de Deprecación**
-   - Actualizar sintaxis de configuración a nuevas keys de Authelia 4.38+
-   - Ver logs para lista completa de warnings
+### 📝 Notas de Configuración
+
+**Logging Strategy**:
+- ✅ Logs a stdout/stderr
+- ✅ Capturados por Promtail
+- ✅ Almacenados en Loki
+- ✅ Visualizables en Grafana
+- ❌ NO file logging (`/data/authelia.log` disabled)
+
+**Healthcheck Strategy**:
+- Container no incluye: wget, curl, pgrep, ni comando `authelia healthcheck`
+- Monitoreo vía Loki/Grafana es suficiente
+- Healthcheck removido completamente del docker-compose
+
+**Database**:
+- SQLite en `/data/db.sqlite3`
+- Encriptado con `AUTHELIA_ENCRYPTION_KEY`
+- **IMPORTANTE**: Cambiar encryption key requiere recrear database
+
+### ⚠️ Deprecation Warnings (No Bloqueantes)
+
+Los siguientes warnings aparecen en logs pero no afectan funcionalidad:
+- `server.host/port/path` → Migrar a `server.address`
+- `notifier.smtp.host/port` → Migrar a `notifier.smtp.address`
+- `session.domain` → Migrar a multi-domain configuration
+- `session.remember_me_duration` → Migrar a `session.remember_me`
+- `webauthn.user_verification` → Migrar a `webauthn.selection_criteria.user_verification`
+
+Estas migraciones se pueden hacer en futuras actualizaciones. No son urgentes.
 
 ---
 
