@@ -72,5 +72,7 @@ networks:
     name: docker_api
     driver: bridge
     internal: true  # ⚠️ Red INTERNA - Sin acceso a internet
-    # Docker seleccionará automáticamente una subnet libre
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
 

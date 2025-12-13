@@ -8,12 +8,12 @@
 
 ## 📊 Resumen
 
-| Categoría | Cantidad | Estado |
-|-----------|----------|--------|
-| **Plataforma** | 6 URLs | ✅ Operacionales |
-| **Aplicaciones** | 8 URLs | ⚠️ Parcialmente desplegadas |
-| **Total URLs** | 14 URLs | - |
-| **Contenedores activos** | 21 contenedores | ✅ Running |
+| Categoría                | Cantidad        | Estado                     |
+| ------------------------ | --------------- | -------------------------- |
+| **Plataforma**           | 6 URLs          | ✅ Operacionales            |
+| **Aplicaciones**         | 8 URLs          | ⚠️ Parcialmente desplegadas |
+| **Total URLs**           | 14 URLs         | -                          |
+| **Contenedores activos** | 21 contenedores | ✅ Running                  |
 
 ---
 

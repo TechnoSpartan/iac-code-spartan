@@ -82,4 +82,9 @@ networks:
   web:
     external: true
   trackworks:
+    name: api_trackworks
     driver: bridge
+    internal: true  # No internet access - isolated network
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
