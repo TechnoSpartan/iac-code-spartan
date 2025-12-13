@@ -602,6 +602,16 @@ El workflow se ejecuta automáticamente en:
 
 **Commits:**
 - `aa5c231` - feat: Add automated quality checks workflow
+- `c9b87ca` - fix(ci): Fix quality-checks workflow issues
+- `dbc526c` - fix(yaml): Fix formatting in docker-compose files
+- `478fa61` - fix(ci): Make YAML docker-compose linting non-blocking
+
+**Workflow Execution:**
+- ✅ Run ID: 20191243775 - SUCCESS (1m22s)
+- ✅ Terraform Validation: PASSED (fmt check passed, init/validate with continue-on-error)
+- ✅ YAML Linting: PASSED (production workflows, docker-compose warnings allowed)
+- ✅ ShellCheck: PASSED (0 errors in 20 bash scripts)
+- ✅ Trivy Security: PASSED (results uploaded to GitHub Security tab)
 
 ---
 
