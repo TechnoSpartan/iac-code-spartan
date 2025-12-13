@@ -89,19 +89,12 @@ access_control:
     - domain: auth.mambo-cloud.com
       policy: bypass
 
-    # Backoffice - temporarily require 2FA to trigger TOTP setup prompt
-    # When user tries to access, Authelia will show TOTP registration screen
-    - domain:
-        - backoffice.mambo-cloud.com
-      policy: two_factor
-      subject:
-        - "group:admins"
-
-    # Other dashboards - one_factor for now
+    # Dashboards - require authentication + MFA (TOTP configured)
     - domain:
         - traefik.mambo-cloud.com
         - grafana.mambo-cloud.com
-      policy: one_factor
+        - backoffice.mambo-cloud.com
+      policy: two_factor
       subject:
         - "group:admins"
 
