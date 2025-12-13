@@ -150,27 +150,28 @@ storage:
 notifier:
   disable_startup_check: true  # Disabled to prevent startup failures if SMTP is misconfigured
 
-  # REMOVED: filesystem notifier (conflicts with SMTP)
-  # Only one notifier can be active at a time
-  # filesystem:
-  #   filename: /data/notifications.txt
+  # TEMPORARY: Using filesystem notifier because SMTP ports are blocked by Hetzner
+  # Codes are saved to /data/notifications.txt
+  # To view: docker exec authelia cat /data/notifications.txt
+  filesystem:
+    filename: /data/notifications.txt
 
-  # SMTP configuration (Hostinger)
-  smtp:
-    host: ${AUTHELIA_SMTP_HOST}
-    port: ${AUTHELIA_SMTP_PORT}
-    timeout: 5s
-    username: ${AUTHELIA_SMTP_USERNAME}
-    password: ${AUTHELIA_SMTP_PASSWORD}
-    sender: "${AUTHELIA_SMTP_SENDER}"
-    identifier: mambo-cloud.com
-    subject: "[Mambo Cloud] {title}"
-    startup_check_address: ${AUTHELIA_SMTP_USERNAME}
-    disable_require_tls: false
-    disable_html_emails: false
-    tls:
-      server_name: ${AUTHELIA_SMTP_HOST}
-      skip_verify: false
+  # SMTP configuration (Hostinger) - DISABLED until Hetzner unblocks ports
+  # smtp:
+  #   host: ${AUTHELIA_SMTP_HOST}
+  #   port: ${AUTHELIA_SMTP_PORT}
+  #   timeout: 5s
+  #   username: ${AUTHELIA_SMTP_USERNAME}
+  #   password: ${AUTHELIA_SMTP_PASSWORD}
+  #   sender: "${AUTHELIA_SMTP_SENDER}"
+  #   identifier: mambo-cloud.com
+  #   subject: "[Mambo Cloud] {title}"
+  #   startup_check_address: ${AUTHELIA_SMTP_USERNAME}
+  #   disable_require_tls: false
+  #   disable_html_emails: false
+  #   tls:
+  #     server_name: ${AUTHELIA_SMTP_HOST}
+  #     skip_verify: false
 
 # NTP configuration (for TOTP accuracy)
 ntp:
