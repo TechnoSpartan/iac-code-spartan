@@ -142,9 +142,10 @@ storage:
 notifier:
   disable_startup_check: false
 
-  # Filesystem fallback (keeps copy of notifications)
-  filesystem:
-    filename: /data/notifications.txt
+  # REMOVED: filesystem notifier (conflicts with SMTP)
+  # Only one notifier can be active at a time
+  # filesystem:
+  #   filename: /data/notifications.txt
 
   # SMTP configuration (Hostinger)
   smtp:
@@ -172,96 +173,97 @@ ntp:
   disable_failure: false
 
 # OpenID Connect / OAuth 2.0 Provider
-identity_providers:
-  oidc:
-    hmac_secret: RbLkGnkJy/aRM+B3VczDpN9M3wMIhYTdpccEFPCDJGIedRnS/m50ulrjcYWCmEd/tymmgN+Mm0FXcR5lG5xcTw==
-
-    # JWKS configuration with RSA key for signing
-    jwks:
-      - algorithm: RS256
-        use: sig
-        key: |
-          -----BEGIN PRIVATE KEY-----
-          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
-          PnIpEiBHDnH6/9JqboeaXa6AfnhMoA==
-          -----END PRIVATE KEY-----
-
-    access_token_lifespan: 1h
-    authorize_code_lifespan: 1m
-    id_token_lifespan: 1h
-    refresh_token_lifespan: 90m
-    enable_client_debug_messages: false
-    enforce_pkce: public_clients_only
-
-    cors:
-      endpoints:
-        - authorization
-        - token
-        - revocation
-        - introspection
-        - userinfo
-      allowed_origins_from_client_redirect_uris: true
-
-    clients:
-      - id: grafana
-        description: Grafana Dashboard
-        secret: 'tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs='
-        public: false
-        authorization_policy: two_factor
-        redirect_uris:
-          - https://grafana.mambo-cloud.com/login/generic_oauth
-        scopes:
-          - openid
-          - profile
-          - email
-          - groups
-        userinfo_signing_algorithm: none
-        token_endpoint_auth_method: client_secret_basic
+# DISABLED: OIDC configuration (RSA key was corrupted)
+# To re-enable, generate new RSA key with: openssl genrsa -out private.pem 4096
+# identity_providers:
+#   oidc:
+#     hmac_secret: RbLkGnkJy/aRM+B3VczDpN9M3wMIhYTdpccEFPCDJGIedRnS/m50ulrjcYWCmEd/tymmgN+Mm0FXcR5lG5xcTw==
+#     # JWKS configuration with RSA key for signing
+#     jwks:
+#       - algorithm: RS256
+#         use: sig
+#         key: |
+#           -----BEGIN PRIVATE KEY-----
+#           MIIJQgIBADANBgkqhkiG9w0BAQEFAASCCSwwggkoAgEAAoICAQDFGp69ypLqrOSm
+#           0G0re6Z/IByb1QwERdVM99fUr2rfLpmVfkFmZyXs/FdZejRTdkNxG90vOw2IeZbp
+#           gJG763yUQe5mD/wR03T4tCH4ev+n1LMo7Aq1XTLsEmg7rFNeFK7E8Wi+MM/G7RzB
+#           /cpfiQpJ7rdHMvGW5ILs88aaJ4T9lgUik0+EjQJi98YRYhuunUg7Wdut1mO3nyc0
+#           dVBF2zstaYErOuUlGwy3OwpMrg4RLg3hHQ9uibFTkqkkQjCNiZR6x2pxMZk1KRKg
+#           ZUUukCWx1TZaKEA54e1ysAhK0VqzWmSIyeQoT+LOXK0ihVQ/4+8j90ADX85+Es/4
+#           Z4MFE78MxYwLi6Jv/ZuBlF+z0sR0wDsCcAJmf2vLRu0YVPn8feMOg8ga6BD5fI/h
+#           K8bJoLRVlC2RIm9ovEahQ1Qtz7LTvNigdZo3QBzmMfOjjBjG10xHCeMCk8WnVYUI
+#           FaXvx0NbxTBiFiw8+UZVep/xCChPqOLJ6Cl/8wOAEYIiO2myRIvFT6iK/1+VQOan
+#           DGxGvT/X6iZ165fR6LtHXmsBXDskZiLBeYRleZbN4Olz7zQKtY1SbZngg//sTXX0
+#           Y7yOiAkXt+At6CdOWZ9zxKP0ZGlVq11OAE9DwPX0AdIpT6CWJbz4HtMbu9B+DP8d
+#           m85zVr4caUiOIpnFJl8a4Nxyqt0MswIDAQABAoICAE1mbDK8Y2ALX8jP7SbXqiSe
+#           sA1TpqHg6GeOpe8rqWyV6JLHXxg+5io/V2/YKMcjmE1I810SM/jFQolURyZDzYqM
+#           r3jdyw8W+gaV+gcRCebWhDpMItJglFgWzF6uh5hYx96nrAmPsm/7+cCGEFvevS8W
+#           MlufujYWawFwoysy3KsWJ9MRhPbYxrilct6tp5A0zEIeQcFsgIEBWwxjCxA7jGwD
+#           U8ltmcEt85racOt2qCh/7MxbNI2kPYHDhG8sHNPf1HI4b+ieYPr6s4lP61BjI6JH
+#           R041Iy93tF5GmSMEPjlTBEqg+VsJL9f4lbaKI/Do6aY2eCk7DKP+cDOsNkuemvVR
+#           C8ycgH0umJaL4CrBgj7mDXB+SqiKMq5fjJ2i4RoybfahNTjAE1e/2E5hLlxI1Zqv
+#           7gCz+Q6oqcys7R+83tOqk15Zca4MYWC8XXWWgcMAoqR2zyiyN0Vqje5Kzz0Lgwvt
+#           o0UQkzy5j2XpJI9VtpSHu7sMYeJ5cAGsGCJ9MxFNJOcua3CZpzd5yDmFdnJUP7B8
+#           /6aVTkdQxQsvhE/SEs6kknXbAm/BZIwMdemc4B2wkHkdG+nlpMFlObYgnB8PaTfb
+#           4fGEoBgPPhVtOOHhA5vRr8Edmb5M0ocFFpP+g1Qh8y3b+kEDOZj6qH6ptVmQug/j
+#           7hJVXeerQJWmqay0mgcVAoIBAQDhiTgr2RKLboy+wAf7Ycf43Pxp4c+Ol3FNdPo3
+#           uDBfnlU9n8CmcMoHcdQ9guf4rluYmWcCtqcR+OwzOeGVUQKL1/4VPYN2m7nd/+v+
+#           /SvYh78m2ULX6R5wqnfyQ3P7NuQqMR3Md7ACc/CVCd3Lwjp7/mXbBSoEzalr+NyE
+#           hnTPebX5QKz+V5Sg4wb3it3SAf/4o2PKQkwtide/QibzfZGTU1nMnolCvhhKM9NW
+#           0R5+iK9gM0Sy/p4Gf7otqTIVjxmGU1TqoKP046oroa5Wxw/k97Fm2BHCJBFaegqB
+#           UxJlCbQD0iBeduZgLdQfQgNVzHAtv93Dh7zxaLpdzkOQNLBXAoIBAQDfukDTqs9W
+#           WuvyZjbMkVQzG8786NnwBD9LHLg0KI4gRCqEl/jg+Kx73blHU4yD2dW9PeegSeHN
+#           jWllacaEDnaFtXKvivAJoYLF4IduZZqLKcOU1fVBvPm38WidcX7eSUfqgRuD6MBY
+#           HuEsckt0pFSvoe4GYN8mptllZIVhC+PQjeVtFuaK+6Bsm/dIe5Ip5Q+jAZIIncTO
+#           j98iyG4eU/7EsaDZGyFvP/z+5Lej8WXfycbVB2cLkEngLMARy5B/ES4VhUD5aWTI
+#           l/NS4w7PypS0SsF+4fnhub/r3ts6Ry6FZWKaPT99QUd1BKRbxuPwdH08g54/dyBp
+#           hYzW/3LEql0VAoIBAC9LZiMTxybEDPGnNUVK0PNn6+qMNskxCspyYFI05rf2bOua
+#           R3zfpA4Bmb84Z0qnzX9nk8lm4gwLxgRL+/ki3sTSi26K0rmZmFVsaGG1V291r+kG
+#           oFTEhuSbasG70WN5tEkAub35z0gEZgvq4L7swPTleRh/sbsGIaQJsLx9sZsca8OU
+#           A3LmjL1cPkbEsRVr4/CQ2sk8M9tMz5hE2AQxbciWLvuQtznuwQs2aPgIrDtekGA9
+#           AAgFCsBUIoeWtnD87B5V9TWqcBdXcoTpx7Rc1AFwy5vEbZznkVgGxZMvB2l2qnAu
+#           rSkCB/ddROE1J5vjXhbJ6Egre7yn+ITZTyO7WMsCggEAFsbPcr0g/pmjC7p8ObdR
+#           6yIZoIXUKitEhlEWL7kxPvexnG4cWEr4xGN+SVSoKYQzzmBPBHKBGnwbDsgF/cu7
+#           JUGju1tZtKFMvvhs0UBmy2QlFTHzFg43HhLlo6G6WMb9G1KpinRXoKEEK5I3PFi+
+#           hmLl6KBUF4tE9p2VNpwPRVwszz5VmjCj1GrMcgSijMFVJjMyus3VC3J6NQBStaO3
+#           fC7ZQUER1lGdYBXI3FfnFzFjnKx0QSkfXEMyCp2+yDDnkClQxBOGvyU5EGctStpE
+#           6VXy/QfkeKaAc3LsvrIgelQoBavWmtnafH9MfEtzSTeSyGZd5fgqxJNkEz9OX9c4
+#           QQKCAQEAgPVpkLBTfLR6WW9GHhJdDq6ry4whc18G7Fbb0fP7lQW5n4W4+Ia1g996
+#           +H40qXq6w1tMmSXdTLO/jJlZDuUXDwSUb+ufgRDfdFCMLZJTfotDGnDt8FbvidKe
+#           iUiHkazTCTFCxLImss5suzS7/JRXJYbiHILqUVGFSus5Tzp680+S1YNnTeRXyrtn
+#           pl1zQfWLxVkkoqFrnjYmK88DFNVCS+BAoUxX9stA0elmSg4Lnqtot5AjzRvbUKH+
+#           ZaBDWBmnMKNao3fErw3osPiezJ9X2RAgm2RhSarW6lqQkJT3Y55WBK7aI2jnhUd5
+#           PnIpEiBHDnH6/9JqboeaXa6AfnhMoA==
+#           -----END PRIVATE KEY-----
+#
+#     access_token_lifespan: 1h
+#     authorize_code_lifespan: 1m
+#     id_token_lifespan: 1h
+#     refresh_token_lifespan: 90m
+#     enable_client_debug_messages: false
+#     enforce_pkce: public_clients_only
+#
+#     cors:
+#       endpoints:
+#         - authorization
+#         - token
+#         - revocation
+#         - introspection
+#         - userinfo
+#       allowed_origins_from_client_redirect_uris: true
+#
+#     clients:
+#       - id: grafana
+#         description: Grafana Dashboard
+#         secret: 'tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs='
+#         public: false
+#         authorization_policy: two_factor
+#         redirect_uris:
+#           - https://grafana.mambo-cloud.com/login/generic_oauth
+#         scopes:
+#           - openid
+#           - profile
+#           - email
+#           - groups
+#         userinfo_signing_algorithm: none
+#         token_endpoint_auth_method: client_secret_basic
