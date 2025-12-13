@@ -46,12 +46,14 @@ services:
           cpus: '0.1'
           memory: 64M
 
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep authelia || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+    # Healthcheck disabled - Authelia container has minimal tools (no wget/curl/pgrep)
+    # Container runs successfully without healthcheck, monitored via Loki/Grafana instead
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pgrep authelia || exit 1"]
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 30s
 
     depends_on:
       authelia-redis:
