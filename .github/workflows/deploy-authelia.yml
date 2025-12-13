@@ -23,6 +23,8 @@ jobs:
           AUTHELIA_SMTP_USERNAME: ${{ secrets.AUTHELIA_SMTP_USERNAME }}
           AUTHELIA_SMTP_PASSWORD: ${{ secrets.AUTHELIA_SMTP_PASSWORD }}
           AUTHELIA_SMTP_SENDER: ${{ secrets.AUTHELIA_SMTP_SENDER }}
+          AUTHELIA_ADMIN_EMAIL: ${{ secrets.AUTHELIA_ADMIN_EMAIL }}
+          AUTHELIA_ADMIN_PASSWORD_HASH: ${{ secrets.AUTHELIA_ADMIN_PASSWORD_HASH }}
         run: |
           mkdir -p artifacts/authelia
           cp -r codespartan/platform/authelia/* artifacts/authelia/
@@ -45,6 +47,25 @@ jobs:
           fi
 
           echo "✅ configuration.yml generated successfully"
+
+          # Generate users_database.yml from template
+          echo "🔐 Generating users_database.yml from template with secrets..."
+          envsubst < codespartan/platform/authelia/users_database.yml.template > artifacts/authelia/users_database.yml
+
+          # Verify users_database.yml was created
+          if [ ! -f artifacts/authelia/users_database.yml ]; then
+            echo "❌ Failed to generate users_database.yml"
+            exit 1
+          fi
+
+          # Verify no template variables remain (security check)
+          if grep -q '\${' artifacts/authelia/users_database.yml; then
+            echo "⚠️  WARNING: Template variables still present in users_database.yml"
+            grep '\${' artifacts/authelia/users_database.yml
+            exit 1
+          fi
+
+          echo "✅ users_database.yml generated successfully"
 
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v1.0.3
