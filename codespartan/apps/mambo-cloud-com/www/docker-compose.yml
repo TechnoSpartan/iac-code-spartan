@@ -1,4 +1,3 @@
-
 services:
   app:
     image: nginx:stable-alpine
@@ -10,17 +9,14 @@ services:
       - traefik.http.routers.mambo-www.entrypoints=websecure
       - traefik.http.routers.mambo-www.tls.certresolver=le
       - traefik.http.routers.mambo-www.service=mambo-app
-
       - traefik.http.routers.mambo-staging.rule=Host(`staging.mambo-cloud.com`)
       - traefik.http.routers.mambo-staging.entrypoints=websecure
       - traefik.http.routers.mambo-staging.tls.certresolver=le
       - traefik.http.routers.mambo-staging.service=mambo-app
-
       - traefik.http.routers.mambo-lab.rule=Host(`lab.mambo-cloud.com`)
       - traefik.http.routers.mambo-lab.entrypoints=websecure
       - traefik.http.routers.mambo-lab.tls.certresolver=le
       - traefik.http.routers.mambo-lab.service=mambo-app
-
       - traefik.http.services.mambo-app.loadbalancer.server.port=80
     volumes:
       - ./html:/usr/share/nginx/html:ro
@@ -42,7 +38,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-
 networks:
   web:
     external: true

@@ -30,7 +30,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
   app:
     image: openproject/openproject:16
     container_name: openproject-app
@@ -41,18 +40,15 @@ services:
     environment:
       # Database configuration
       DATABASE_URL: "${DATABASE_URL}"
-
       # Rails configuration
       RAILS_CACHE_STORE: "memcache"
       OPENPROJECT_CACHE__MEMCACHE__SERVER: "cache:11211"
       RAILS_ENV: "production"
       RAILS_LOG_TO_STDOUT: "true"
-
       # OpenProject configuration
       OPENPROJECT_HOST__NAME: "${OPENPROJECT_HOST__NAME}"
       OPENPROJECT_HTTPS: "true"
       OPENPROJECT_DEFAULT__LANGUAGE: "${OPENPROJECT_DEFAULT__LANGUAGE}"
-
       # Email configuration
       OPENPROJECT_EMAIL__DELIVERY__METHOD: "${OPENPROJECT_EMAIL__DELIVERY__METHOD}"
       OPENPROJECT_SMTP__ADDRESS: "${OPENPROJECT_SMTP__ADDRESS}"
@@ -62,10 +58,8 @@ services:
       OPENPROJECT_SMTP__USER__NAME: "${OPENPROJECT_SMTP__USER__NAME}"
       OPENPROJECT_SMTP__PASSWORD: "${OPENPROJECT_SMTP__PASSWORD}"
       OPENPROJECT_SMTP__ENABLE__STARTTLS: "${OPENPROJECT_SMTP__ENABLE__STARTTLS}"
-
       # Security
       OPENPROJECT_SECRET__KEY__BASE: "${OPENPROJECT_SECRET__KEY__BASE}"
-
       # Advanced settings
       OPENPROJECT_ATTACHMENTS__STORAGE: "file"
     volumes:
@@ -103,7 +97,6 @@ services:
       - traefik.http.routers.openproject.tls.certresolver=le
       - traefik.http.services.openproject.loadbalancer.server.port=8080
       - traefik.docker.network=web
-
   cache:
     image: memcached:1.6-alpine
     container_name: openproject-cache
@@ -128,7 +121,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
 volumes:
   openproject-db-data:
     driver: local
@@ -136,7 +128,6 @@ volumes:
     driver: local
   openproject-attachments:
     driver: local
-
 networks:
   web:
     external: true
