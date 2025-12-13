@@ -26,7 +26,8 @@ server:
 log:
   level: info
   format: text
-  file_path: /data/authelia.log
+  # file_path disabled - logs go to stdout/stderr and are collected by Loki
+  # file_path: /data/authelia.log
 
 # TOTP (Time-based One-Time Password) configuration
 totp:
