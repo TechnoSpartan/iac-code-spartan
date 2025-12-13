@@ -342,4 +342,7 @@ networks:
   monitoring:
     driver: bridge
     name: monitoring
+    ipam:
+      config:
+        - subnet: 172.24.0.0/24
 

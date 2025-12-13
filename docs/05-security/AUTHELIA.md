@@ -27,7 +27,7 @@ FASE 2 implementa **Single Sign-On (SSO)** con **Multi-Factor Authentication (MF
 
 ### Objetivos Cumplidos
 
-✅ **Authelia SSO** desplegado en https://auth.mambo-cloud.com
+✅ **Authelia SSO** desplegado en <https://auth.mambo-cloud.com>
 ✅ **MFA con TOTP** - Microsoft/Google Authenticator
 ✅ **Protección de servicios** - Grafana, Traefik dashboard requieren autenticación
 ✅ **Redirección automática** - Al intentar acceder a servicios protegidos
@@ -36,12 +36,12 @@ FASE 2 implementa **Single Sign-On (SSO)** con **Multi-Factor Authentication (MF
 
 ### Servicios Protegidos
 
-| Servicio | URL | Política |
-|----------|-----|----------|
-| Grafana | https://grafana.mambo-cloud.com | two_factor (admins) |
-| Traefik Dashboard | https://traefik.mambo-cloud.com | two_factor (admins) |
-| Backoffice | https://backoffice.mambo-cloud.com | two_factor (admins) |
-| Authelia Portal | https://auth.mambo-cloud.com | bypass (público) |
+| Servicio          | URL                                  | Política            |
+| ----------------- | ------------------------------------ | ------------------- |
+| Grafana           | <https://grafana.mambo-cloud.com>    | two_factor (admins) |
+| Traefik Dashboard | <https://traefik.mambo-cloud.com>    | two_factor (admins) |
+| Backoffice        | <https://backoffice.mambo-cloud.com> | two_factor (admins) |
+| Authelia Portal   | <https://auth.mambo-cloud.com>       | bypass (público)    |
 
 ---
 
@@ -78,6 +78,7 @@ Usuario                Traefik              Authelia            Servicio
 ### Componentes
 
 #### 1. Authelia (SSO Server)
+
 - **Imagen**: `authelia/authelia:latest`
 - **Puerto**: 9091 (interno)
 - **Redes**: `web` (Traefik), `authelia_internal` (Redis)
@@ -87,6 +88,7 @@ Usuario                Traefik              Authelia            Servicio
   - `authelia_data` (Docker volume) - SQLite DB, logs, notificaciones
 
 **Características**:
+
 - Autenticación de usuarios con Argon2id password hashing
 - TOTP (Time-based One-Time Password) para MFA
 - Sesiones con Redis para alta disponibilidad
@@ -94,22 +96,26 @@ Usuario                Traefik              Authelia            Servicio
 - Notificaciones por archivo (filesystem)
 
 #### 2. Redis (Session Store)
+
 - **Imagen**: `redis:7-alpine`
 - **Puerto**: 6379 (solo red interna)
 - **Red**: `authelia_internal` (aislada, no accesible desde internet)
 - **Persistencia**: Snapshot cada 60s si hay cambios
 
 **Por qué Redis**:
+
 - Sesiones compartidas entre múltiples instancias de Authelia (escalabilidad)
 - Performance superior para operaciones de sesión
 - TTL automático para expiración de sesiones
 
 #### 3. Traefik (Reverse Proxy)
+
 - **ForwardAuth Middleware**: Delega autenticación a Authelia
 - **Router para Authelia**: `auth.mambo-cloud.com`
 - **Headers**: `Remote-User`, `Remote-Groups`, `Remote-Name`, `Remote-Email`
 
 **Configuración de Labels en servicios protegidos**:
+
 ```yaml
 labels:
   - traefik.http.routers.grafana.middlewares=authelia@docker
@@ -131,6 +137,7 @@ networks:
 ```
 
 **Modelo de seguridad**:
+
 - Authelia en ambas redes: `web` (para Traefik) + `authelia_internal` (para Redis)
 - Redis **solo** en `authelia_internal` - NO accesible desde internet
 - Separación de responsabilidades: frontend (web) vs backend (internal)
@@ -151,10 +158,12 @@ networks:
    - `docker-compose.yml` - Definición de servicios (Authelia + Redis)
 
 3. **Generación de hash de contraseña**
+
    ```bash
    docker run authelia/authelia:latest authelia crypto hash generate argon2 \
      --password 'codespartan123'
    ```
+
    - Resultado: `$argon2id$v=19$m=65536,t=3,p=4$...$...`
 
 ### Fase 2: Despliegue Inicial (30 min)
@@ -203,6 +212,7 @@ networks:
 **Objetivo**: Configurar Hostinger SMTP para notificaciones por correo
 
 **Datos de conexión**:
+
 ```yaml
 smtp:
   host: smtp.hostinger.com
@@ -215,16 +225,20 @@ smtp:
 **Problemas encontrados**:
 
 1. **Conflicto de notifiers**
+
    ```
    ERROR: notifier: please ensure only one of the 'smtp' or 'filesystem' notifier is configured
    ```
+
    - Authelia NO permite tener ambos al mismo tiempo
    - Intenté tener `filesystem` como fallback - rechazado
 
 2. **Configuración inválida `elevated_session`**
+
    ```
    ERROR: configuration key not expected: identity_validation.elevated_session.elevation_duration
    ```
+
    - Intenté deshabilitar validación por correo para registro de dispositivos
    - La key `elevated_session` no existe en Authelia 4.39
    - Causó crash loop del contenedor
@@ -235,11 +249,13 @@ smtp:
    - No mostraba error específico de SMTP
 
 **Solución temporal**:
+
 - ✅ Restaurar configuración con `filesystem` notifier
 - ✅ Comentar SMTP en el archivo para uso futuro
 - ✅ Reiniciar Traefik y Authelia → **HTTP 200** 🎉
 
 **Estado SMTP**: ⏸️ **PREPARADO PERO DESHABILITADO**
+
 - Configuración lista en el archivo (comentada)
 - Requiere debugging adicional
 - No es bloqueante para funcionalidad SSO
@@ -255,6 +271,7 @@ smtp:
 **Causa Raíz**: El hash generado localmente no coincidía con la contraseña
 
 **Solución**:
+
 ```yaml
 # Workflow: generate-new-password.yml
 NEW_HASH=$(docker exec authelia authelia crypto hash generate argon2 \
@@ -275,10 +292,12 @@ docker compose down && docker compose up -d
 **Síntoma**: HTTP 504 Gateway Timeout en `auth.mambo-cloud.com`
 
 **Causa Raíz**:
+
 - Authelia crasheaba en loop por configuración inválida
 - Traefik no detectaba el router de Authelia
 
 **Diagnóstico**:
+
 ```bash
 # Contenedor en restart loop
 docker ps -a --filter "name=authelia"
@@ -290,6 +309,7 @@ docker exec traefik wget -qO- http://localhost:8080/api/http/routers | grep auth
 ```
 
 **Solución**:
+
 1. Eliminar configuración inválida (`elevated_session`)
 2. Restaurar `filesystem` notifier
 3. Recrear servicios con `fix-networks.yml`
@@ -304,6 +324,7 @@ docker exec traefik wget -qO- http://localhost:8080/api/http/routers | grep auth
 **Causa Raíz**: `appleboy/scp-action` por defecto no sobrescribe archivos existentes
 
 **Solución**:
+
 ```yaml
 - name: Copy Authelia files to VPS
   uses: appleboy/scp-action@v0.1.7
@@ -322,6 +343,7 @@ docker exec traefik wget -qO- http://localhost:8080/api/http/routers | grep auth
 **Causa Raíz**: `docker compose restart` no recarga volúmenes
 
 **Solución**:
+
 ```bash
 # ❌ NO funciona para archivos de configuración
 docker compose restart authelia
@@ -340,6 +362,7 @@ docker compose up -d --force-recreate
 **Causa Raíz**: Filesystem notifier escribe a archivo, no envía correo
 
 **Solución Temporal**: Leer archivo de notificaciones
+
 ```bash
 docker exec authelia cat /data/notifications.txt
 ```
@@ -352,7 +375,7 @@ docker exec authelia cat /data/notifications.txt
 
 ### ✅ Funcionando Perfectamente
 
-- **Portal SSO**: https://auth.mambo-cloud.com (HTTP 200)
+- **Portal SSO**: <https://auth.mambo-cloud.com> (HTTP 200)
 - **Login**: admin/codespartan123 ✅
 - **MFA**: Microsoft Authenticator con TOTP ✅
 - **Servicios protegidos**: Grafana, Traefik, Backoffice ✅
@@ -381,6 +404,7 @@ docker exec authelia cat /data/notifications.txt
 ## Roadmap Completo de la Plataforma
 
 ### FASE 1: Infraestructura Base ✅ COMPLETADA
+
 - [x] Terraform + Hetzner Cloud (VPS ARM64)
 - [x] Docker installation
 - [x] Traefik reverse proxy
@@ -390,6 +414,7 @@ docker exec authelia cat /data/notifications.txt
 - [x] GitHub Actions CI/CD
 
 ### FASE 2: Security & SSO ✅ COMPLETADA
+
 - [x] Authelia SSO deployment
 - [x] Multi-Factor Authentication (TOTP)
 - [x] Protect dashboards (Grafana, Traefik)
@@ -398,12 +423,15 @@ docker exec authelia cat /data/notifications.txt
 - [ ] **PENDIENTE**: WebAuthn (hardware keys)
 
 ### FASE 3: Container Management 🔜 PRÓXIMA
+
 **Objetivo**: Gestión visual de contenedores y seguridad del Docker socket
 
 #### 3.1 Docker Socket Proxy ✅ COMPLETADO
+
 **Estado**: ✅ Implementado y funcionando (Up 47+ hours, healthy)
 
 **Problema original**: Traefik tenía acceso directo a `/var/run/docker.sock`
+
 ```yaml
 # ⚠️ INSEGURO - Acceso total al daemon de Docker (YA NO USADO)
 volumes:
@@ -411,6 +439,7 @@ volumes:
 ```
 
 **Riesgos mitigados**:
+
 - ✅ Container escape bloqueado
 - ✅ Acceso al sistema host restringido
 - ✅ Principio de mínimo privilegio aplicado
@@ -450,6 +479,7 @@ services:
 ```
 
 **Beneficios activos**:
+
 - ✅ Least privilege: Traefik solo ve lo que necesita
 - ✅ Read-only access a Docker API
 - ✅ No puede crear/destruir contenedores
@@ -457,6 +487,7 @@ services:
 - ✅ Red interna `docker_api` aislada
 
 **Implementación completada**:
+
 1. ✅ Directorio `codespartan/platform/docker-socket-proxy/`
 2. ✅ `docker-compose.yml` con configuración restrictiva desplegado
 3. ✅ Traefik configurado para usar red `docker_api`
@@ -464,16 +495,19 @@ services:
 5. ✅ Health check: Container healthy durante 47+ horas
 
 **Verificación**:
+
 ```bash
 # Workflow para verificar estado actual
 gh workflow run check-docker-socket-proxy.yml
 ```
 
 #### 3.2 Portainer CE 📦 PENDIENTE
+
 **Objetivo**: Interfaz web para gestión de contenedores
 **Dependencias**: ✅ Docker Socket Proxy (ya implementado)
 
 **Características**:
+
 - Gestión visual de contenedores, imágenes, redes, volúmenes
 - Logs en tiempo real
 - Console/exec en contenedores
@@ -482,6 +516,7 @@ gh workflow run check-docker-socket-proxy.yml
 - User management con RBAC
 
 **Arquitectura propuesta**:
+
 ```
 Usuario → Traefik → Authelia (SSO+MFA) → Portainer
                          ↓
@@ -489,6 +524,7 @@ Usuario → Traefik → Authelia (SSO+MFA) → Portainer
 ```
 
 **docker-compose.yml**:
+
 ```yaml
 services:
   portainer:
@@ -533,6 +569,7 @@ networks:
 ```
 
 **Ventajas sobre CLI**:
+
 - ✅ Onboarding más fácil para nuevos devs
 - ✅ Visualización rápida del estado del sistema
 - ✅ Operaciones comunes sin SSH
@@ -540,21 +577,24 @@ networks:
 - ✅ Templates y App Templates
 
 **Consideraciones de Seguridad**:
+
 - ⚠️ Portainer es poderoso - requiere SSO + MFA
 - ⚠️ Limitar acceso solo a grupo `admins` en Authelia
 - ⚠️ Usar docker-socket-proxy con permisos mínimos
 - ⚠️ Activar audit logs en Portainer
 
 **Workflow de despliegue**:
+
 1. ✅ Desplegar docker-socket-proxy (COMPLETADO)
 2. ✅ Actualizar Traefik para usar el proxy (COMPLETADO)
 3. ✅ Verificar que Traefik sigue funcionando (COMPLETADO)
 4. ⏸️ Desplegar Portainer (PENDIENTE)
 5. ⏸️ Configurar integración con Authelia (PENDIENTE)
 
-**URL final**: https://portainer.mambo-cloud.com
+**URL final**: <https://portainer.mambo-cloud.com>
 
 #### 3.3 Mejoras Adicionales
+
 - [ ] Watchtower para auto-updates de contenedores
 - [ ] Diun para notificaciones de nuevas imágenes
 - [ ] Lazy para gestión desde terminal (TUI)
@@ -566,6 +606,7 @@ networks:
 ---
 
 ### FASE 4: Application Deployment 📦
+
 - [ ] Template de aplicación con network isolation
 - [ ] CI/CD pipelines por aplicación
 - [ ] Staging vs Production environments
@@ -573,6 +614,7 @@ networks:
 - [ ] Health checks y auto-healing
 
 ### FASE 5: Advanced Monitoring 📊
+
 - [ ] Application Performance Monitoring (APM)
 - [ ] Distributed tracing (Jaeger/Tempo)
 - [ ] Log aggregation avanzado
@@ -580,6 +622,7 @@ networks:
 - [ ] SLO/SLI monitoring
 
 ### FASE 6: Disaster Recovery 🔄
+
 - [ ] Backup completo de volumes
 - [ ] Disaster recovery plan
 - [ ] Infrastructure as Code testing
@@ -593,9 +636,11 @@ networks:
 ### Alta Prioridad
 
 #### 1. Docker Socket Proxy ✅ IMPLEMENTADO
+
 **Estado**: ✅ Desplegado y funcionando desde hace 47+ horas
 
 **Verificación** (2025-11-17):
+
 ```
 Container: docker-socket-proxy
 Estado: Up 47 hours (healthy)
@@ -607,6 +652,7 @@ Traefik: ✅ NO tiene montaje directo de /var/run/docker.sock
 **Problema original**: Traefik tenía acceso directo al socket de Docker (`/var/run/docker.sock`)
 
 **Riesgos mitigados**:
+
 - ✅ Si Traefik es comprometido, el atacante NO tiene control total del host
 - ✅ NO puede crear contenedores privilegiados
 - ✅ NO puede montar el filesystem del host
@@ -615,12 +661,14 @@ Traefik: ✅ NO tiene montaje directo de /var/run/docker.sock
 **Solución implementada**: [tecnativa/docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)
 
 **Beneficios activos**:
+
 - ✅ Filtrado de operaciones (solo READ permitido)
 - ✅ Read-only access al socket
 - ✅ Least privilege principle aplicado
 - ✅ Red interna aislada (`docker_api`)
 
 **Configuración actual**:
+
 ```yaml
 # codespartan/platform/docker-socket-proxy/docker-compose.yml
 services:
@@ -655,6 +703,7 @@ networks:
 ```
 
 **Traefik configurado correctamente**:
+
 ```yaml
 # Traefik usa discovery automático vía red docker_api
 # NO monta /var/run/docker.sock directamente
@@ -665,15 +714,18 @@ networks:
 ```
 
 **Referencias**:
-- https://github.com/Tecnativa/docker-socket-proxy
-- https://docs.traefik.io/providers/docker/#docker-api-access
+
+- <https://github.com/Tecnativa/docker-socket-proxy>
+- <https://docs.traefik.io/providers/docker/#docker-api-access>
 
 ---
 
 #### 2. Secrets Management
+
 **Problema**: Credenciales en plaintext en archivos de configuración
 
 **Ejemplos actuales**:
+
 - `users_database.yml` - Password hashes
 - `configuration.yml` - JWT secrets, encryption keys
 - Docker Compose - SMTP passwords (cuando se habilite)
@@ -681,6 +733,7 @@ networks:
 **Soluciones posibles**:
 
 **Opción A: Docker Secrets** (recomendado para Swarm)
+
 ```yaml
 services:
   authelia:
@@ -696,12 +749,14 @@ secrets:
 ```
 
 **Opción B: Vault by HashiCorp** (empresarial)
+
 - Centralización de secretos
 - Rotación automática
 - Audit logs
 - Dynamic secrets
 
 **Opción C: GitHub Secrets + Deploy Scripts**
+
 - Secretos en GitHub Secrets
 - Inyección durante deploy via workflows
 - Actualizar secrets sin commits
@@ -711,9 +766,11 @@ secrets:
 ---
 
 #### 3. Portainer para Gestión Visual
+
 **Objetivo**: UI web para gestionar contenedores
 
 **Beneficios**:
+
 - Visualización del estado de todos los contenedores
 - Logs en tiempo real
 - Shell/exec en contenedores
@@ -721,11 +778,13 @@ secrets:
 - Gestión de redes y volúmenes
 
 **Seguridad**:
+
 - DEBE estar protegido con Authelia (SSO + MFA)
 - Usar docker-socket-proxy (no acceso directo al socket)
 - Solo grupo `admins` tiene acceso
 
 **Despliegue**:
+
 ```yaml
 services:
   portainer:
@@ -746,11 +805,13 @@ services:
 ### Media Prioridad
 
 #### 4. Resource Limits Review
+
 **Estado**: Implementados pero requieren optimización
 
 **Acción**: Monitorear uso real y ajustar limits/reservations
 
 **Herramientas**:
+
 ```bash
 # Ver uso actual
 docker stats --no-stream
@@ -759,22 +820,27 @@ docker stats --no-stream
 ```
 
 #### 5. Network Isolation Audit
+
 **Estado**: Implementado parcialmente
 
 **Pendiente**:
+
 - Documentar todas las redes y su propósito
 - Verificar que servicios internos NO están en `web`
 - Crear diagrama de redes
 
 #### 6. Backup Strategy
+
 **Estado**: No implementado
 
 **Crítico para backup**:
+
 - Volúmenes de Docker (`authelia_data`, `grafana_data`, etc.)
 - Bases de datos (VictoriaMetrics, Authelia SQLite)
 - Configuraciones (`/opt/codespartan/platform/`)
 
 **Solución propuesta**:
+
 - Restic + B2/S3
 - Backup diario automatizado
 - Retention: 7 daily, 4 weekly, 12 monthly
@@ -785,9 +851,11 @@ docker stats --no-stream
 ### Baja Prioridad
 
 #### 7. WebAuthn Enablement
+
 **Estado**: Preparado pero deshabilitado
 
 **Cambio requerido**:
+
 ```yaml
 # configuration.yml
 webauthn:
@@ -795,14 +863,17 @@ webauthn:
 ```
 
 **Beneficios**:
+
 - Passwordless authentication
 - Hardware keys (YubiKey)
 - Biometric authentication (Face ID, Touch ID)
 
 #### 8. Multi-User Setup
+
 **Estado**: Solo existe usuario `admin`
 
 **Acción**: Crear usuarios adicionales con diferentes roles
+
 ```yaml
 users:
   admin:
@@ -814,6 +885,7 @@ users:
 ```
 
 #### 9. Email Notifications
+
 **Estado**: SMTP configurado pero deshabilitado
 
 **Requiere**: Debugging de por qué crashea con SMTP habilitado
@@ -887,11 +959,12 @@ Durante la implementación de FASE 2 y verificación de infraestructura se crear
 ### Infrastructure Verification
 
 10. **`check-docker-socket-proxy.yml`** ⭐ NUEVO
-   - Verifica si docker-socket-proxy está desplegado
-   - Comprueba estado del contenedor y health check
-   - Verifica red `docker_api`
-   - Confirma que Traefik NO monta `/var/run/docker.sock` directamente
-   - Lista containers conectados a `docker_api`
+
+- Verifica si docker-socket-proxy está desplegado
+- Comprueba estado del contenedor y health check
+- Verifica red `docker_api`
+- Confirma que Traefik NO monta `/var/run/docker.sock` directamente
+- Lista containers conectados a `docker_api`
 
 ### Uso Recomendado
 
@@ -924,15 +997,16 @@ gh workflow run check-docker-socket-proxy.yml
 
 ### Servicios
 
-| Servicio | URL | Usuario | Password | MFA |
-|----------|-----|---------|----------|-----|
-| Authelia Portal | https://auth.mambo-cloud.com | admin | codespartan123 | TOTP (Microsoft Authenticator) |
-| Grafana | https://grafana.mambo-cloud.com | admin | codespartan123 | Via Authelia |
-| Traefik | https://traefik.mambo-cloud.com | admin | codespartan123 | Via Authelia |
+| Servicio        | URL                               | Usuario | Password       | MFA                            |
+| --------------- | --------------------------------- | ------- | -------------- | ------------------------------ |
+| Authelia Portal | <https://auth.mambo-cloud.com>    | admin   | codespartan123 | TOTP (Microsoft Authenticator) |
+| Grafana         | <https://grafana.mambo-cloud.com> | admin   | codespartan123 | Via Authelia                   |
+| Traefik         | <https://traefik.mambo-cloud.com> | admin   | codespartan123 | Via Authelia                   |
 
 ### Archivos de Configuración
 
 #### `users_database.yml`
+
 ```yaml
 users:
   admin:
@@ -945,6 +1019,7 @@ users:
 ```
 
 **⚠️ IMPORTANTE**: El password hash debe generarse con:
+
 ```bash
 docker exec authelia authelia crypto hash generate argon2 \
   --password 'codespartan123'
@@ -953,6 +1028,7 @@ docker exec authelia authelia crypto hash generate argon2 \
 #### `configuration.yml` - Secciones Clave
 
 **TOTP**:
+
 ```yaml
 totp:
   disable: false
@@ -965,6 +1041,7 @@ totp:
 ```
 
 **Access Control**:
+
 ```yaml
 access_control:
   default_policy: deny
@@ -983,6 +1060,7 @@ access_control:
 ```
 
 **Session**:
+
 ```yaml
 session:
   name: authelia_session
@@ -999,6 +1077,7 @@ session:
 ```
 
 **Notifier** (estado actual):
+
 ```yaml
 notifier:
   disable_startup_check: false
@@ -1091,6 +1170,7 @@ notifier:
 **Objetivo**: Determinar por qué Authelia crashea con SMTP habilitado
 
 **Plan**:
+
 1. Crear contenedor de prueba de Authelia con SMTP
 2. Probar conectividad a `smtp.hostinger.com:465` desde VPS
 3. Revisar docs de Authelia 4.39 para sintaxis correcta de SMTP
@@ -1100,6 +1180,7 @@ notifier:
    - Diferentes valores de `timeout`
 
 **Verificación**:
+
 ```bash
 # Test conectividad SMTP desde VPS
 telnet smtp.hostinger.com 465
@@ -1114,6 +1195,7 @@ docker run --rm -it authelia/authelia:latest authelia crypto hash generate argon
 **Prioridad**: ALTA - Crítico para seguridad
 
 **Pasos**:
+
 1. Crear `codespartan/platform/docker-socket-proxy/`
 2. `docker-compose.yml` con permisos mínimos
 3. Workflow `deploy-docker-socket-proxy.yml`
@@ -1126,6 +1208,7 @@ docker run --rm -it authelia/authelia:latest authelia crypto hash generate argon
 **Dependencia**: Docker Socket Proxy
 
 **Pasos**:
+
 1. Crear `codespartan/platform/portainer/`
 2. `docker-compose.yml` con integración a socket proxy
 3. Labels de Traefik + Authelia middleware
@@ -1138,17 +1221,20 @@ docker run --rm -it authelia/authelia:latest authelia crypto hash generate argon
 ## Referencias
 
 ### Authelia
+
 - [Official Documentation](https://www.authelia.com/docs/)
 - [Configuration Reference](https://www.authelia.com/configuration/prologue/introduction/)
 - [TOTP](https://www.authelia.com/configuration/second-factor/time-based-one-time-password/)
 - [Access Control](https://www.authelia.com/configuration/security/access-control/)
 
 ### Docker Security
+
 - [Docker Socket Proxy](https://github.com/Tecnativa/docker-socket-proxy)
 - [CIS Docker Benchmark](https://www.cisecurity.org/benchmark/docker)
 - [Docker Security Best Practices](https://docs.docker.com/engine/security/)
 
 ### Traefik
+
 - [ForwardAuth Middleware](https://doc.traefik.io/traefik/middlewares/http/forwardauth/)
 - [Docker Provider](https://doc.traefik.io/traefik/providers/docker/)
 
@@ -1157,6 +1243,7 @@ docker run --rm -it authelia/authelia:latest authelia crypto hash generate argon
 ## Changelog
 
 ### 2025-11-16
+
 - ✅ FASE 2 completada - SSO con MFA funcionando
 - ✅ Authelia desplegado con Microsoft Authenticator
 - ✅ Servicios protegidos: Grafana, Traefik, Backoffice

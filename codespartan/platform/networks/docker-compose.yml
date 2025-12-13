@@ -1,0 +1,32 @@
+# Network Initialization
+# Run this ONCE before deploying other services to create the 'web' network
+# with explicit subnet configuration
+#
+# Usage:
+#   cd /opt/codespartan/platform/networks
+#   docker compose up -d
+#
+# This compose file creates no containers, only the network.
+
+version: '3.8'
+
+services:
+  # No services - only network creation
+  # Using a dummy container to keep docker-compose happy
+  network-init:
+    image: alpine:latest
+    container_name: network-init
+    command: echo "Networks initialized"
+    restart: "no"
+    networks:
+      - web
+
+networks:
+  web:
+    name: web
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

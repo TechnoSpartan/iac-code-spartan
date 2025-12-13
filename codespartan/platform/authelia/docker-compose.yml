@@ -96,3 +96,6 @@ networks:
     name: authelia_internal
     driver: bridge
     internal: true  # Redis solo accesible por Authelia
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
