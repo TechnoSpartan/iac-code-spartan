@@ -10,7 +10,7 @@ users:
   admin:
     displayname: "Administrator"
     password: "[REDACTED-AUTHELIA-ADMIN-HASH]"  # Password: codespartan123
-    email: admin@mambo-cloud.com
+    email: iam@codespartan.es
     groups:
       - admins
       - dev
