@@ -31,13 +31,18 @@
 
 - **URL:** <https://grafana.mambo-cloud.com>
 - **Servicio:** Dashboards de métricas y logs
-- **Credenciales:** admin / codespartan123
+- **Autenticación:** ✅ Authelia SSO + 2FA (Auth Proxy)
+- **Credenciales:** Via Authelia (https://auth.mambo-cloud.com)
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `grafana`
 - **Datasources:**
   - VictoriaMetrics (métricas)
   - Loki (logs)
 - **Dashboards:** 5 importados
+- **Acceso:**
+  1. Visitar https://grafana.mambo-cloud.com
+  2. Redirige automáticamente a Authelia
+  3. Login: admin / codespartan123 + TOTP
 
 ### Authelia - SSO (Single Sign-On)
 
@@ -270,7 +275,10 @@ ssh leonidas@91.98.137.217 "docker exec traefik wget -qO- http://localhost:8080/
 
 - **Usuario:** admin
 - **Password:** codespartan123
-- **Aplica a:** Traefik, Grafana, Authelia, Backoffice
+- **MFA (TOTP):** Requerido para dashboards protegidos
+- **Aplica a:** Authelia portal (protege: Traefik, Grafana, Backoffice)
+
+**Nota:** Grafana, Traefik y Backoffice ahora usan Authelia SSO. Login una sola vez en https://auth.mambo-cloud.com
 
 ### SSL/TLS
 
