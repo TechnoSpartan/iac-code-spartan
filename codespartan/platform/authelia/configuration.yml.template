@@ -94,6 +94,7 @@ access_control:
         - traefik.mambo-cloud.com
         - grafana.mambo-cloud.com
         - backoffice.mambo-cloud.com
+        - portainer.mambo-cloud.com
       policy: two_factor
       subject:
         - "group:admins"
