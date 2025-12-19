@@ -1,0 +1,46 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    # Connect to Docker via socket proxy (secure)
+    command: -H tcp://docker-socket-proxy:2375
+    volumes:
+      - portainer_data:/data
+    networks:
+      - web          # Public access via Traefik
+      - docker_api   # Access to Docker socket proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portainer.rule=Host(`portainer.mambo-cloud.com`)
+      - traefik.http.routers.portainer.entrypoints=websecure
+      - traefik.http.routers.portainer.tls=true
+      - traefik.http.routers.portainer.tls.certresolver=le
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+      - traefik.docker.network=web
+      # FASE 3: Portainer protected by Authelia SSO + MFA
+      - traefik.http.routers.portainer.middlewares=authelia@docker,rate-limit-strict@file,security-headers@file,compression@file
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/system/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  portainer_data:
+    name: portainer_data
+
+networks:
+  web:
+    external: true
+  docker_api:
+    external: true
