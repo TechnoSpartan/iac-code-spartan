@@ -20,14 +20,16 @@
 ## 🔧 Plataforma (Infraestructura)
 
 ### Traefik - Reverse Proxy
-- **URL:** https://traefik.mambo-cloud.com
+
+- **URL:** <https://traefik.mambo-cloud.com>
 - **Servicio:** Dashboard de Traefik
 - **Credenciales:** admin / codespartan123
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `traefik`
 
 ### Grafana - Observabilidad
-- **URL:** https://grafana.mambo-cloud.com
+
+- **URL:** <https://grafana.mambo-cloud.com>
 - **Servicio:** Dashboards de métricas y logs
 - **Credenciales:** admin / codespartan123
 - **Estado:** ✅ OPERACIONAL
@@ -38,7 +40,8 @@
 - **Dashboards:** 5 importados
 
 ### Authelia - SSO (Single Sign-On)
-- **URL:** https://auth.mambo-cloud.com
+
+- **URL:** <https://auth.mambo-cloud.com>
 - **Servicio:** Portal de autenticación con MFA
 - **Credenciales:** admin / codespartan123
 - **Estado:** ✅ OPERACIONAL
@@ -46,24 +49,27 @@
 - **Funcionalidades:**
   - ✅ Login
   - ✅ 2FA (TOTP)
-  - ✅ API Health: https://auth.mambo-cloud.com/api/health
+  - ✅ API Health: <https://auth.mambo-cloud.com/api/health>
 
 ### Backoffice - Panel de Gestión
-- **URL:** https://backoffice.mambo-cloud.com
+
+- **URL:** <https://backoffice.mambo-cloud.com>
 - **Servicio:** Panel de administración
 - **Credenciales:** admin / codespartan123
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `backoffice`
 
 ### VictoriaMetrics - Métricas
-- **URL:** http://91.98.137.217:8428 (No expuesto públicamente)
+
+- **URL:** <http://91.98.137.217:8428> (No expuesto públicamente)
 - **Servicio:** Time-series database para métricas
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `victoriametrics`
-- **UI interna:** http://localhost:8428/vmui
+- **UI interna:** <http://localhost:8428/vmui>
 
 ### Alertmanager - Gestión de Alertas
-- **URL:** http://91.98.137.217:9093 (No expuesto públicamente)
+
+- **URL:** <http://91.98.137.217:9093> (No expuesto públicamente)
 - **Servicio:** Gestión y routing de alertas
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `alertmanager`
@@ -73,79 +79,91 @@
 ## 🚀 Aplicaciones Desplegadas
 
 ### TruckWorks API (Cyberdyne Systems)
-- **URL:** https://api.cyberdyne-systems.es/api/v1/health
+
+- **URL:** <https://api.cyberdyne-systems.es/api/v1/health>
 - **Servicio:** Backend API REST para TruckWorks
 - **Estado:** ✅ OPERACIONAL
 - **Contenedores:** `trackworks-api`, `trackworks-mongodb`
 - **Base de datos:** MongoDB 8.0
 - **Endpoints:**
-  - Health: https://api.cyberdyne-systems.es/api/v1/health
-  - API Base: https://api.cyberdyne-systems.es/api/v1/
+  - Health: <https://api.cyberdyne-systems.es/api/v1/health>
+  - API Base: <https://api.cyberdyne-systems.es/api/v1/>
 
 ### Cyberdyne Systems - Frontend (Producción)
-- **URL:** https://www.cyberdyne-systems.es
-- **URL alternativa:** https://cyberdyne-systems.es
+
+- **URL:** <https://www.cyberdyne-systems.es>
+- **URL alternativa:** <https://cyberdyne-systems.es>
 - **Servicio:** Frontend de TruckWorks (React/Next.js)
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `cyberdyne-frontend-web`
 
 ### Cyberdyne Systems - Staging
-- **URL:** https://staging.cyberdyne-systems.es
+
+- **URL:** <https://staging.cyberdyne-systems.es>
 - **Servicio:** Frontend staging para pruebas
 - **Estado:** ❌ NO DESPLEGADO
 - **Notas:** Configuración existe, contenedor no activo
 
 ### Cyberdyne Systems - Lab
-- **URL:** https://lab.cyberdyne-systems.es
+
+- **URL:** <https://lab.cyberdyne-systems.es>
 - **Servicio:** Ambiente de desarrollo/experimentación
 - **Estado:** ❌ NO DESPLEGADO
 - **Notas:** Configuración existe, contenedor no activo
 
 ### TruckWorks API Staging
-- **URL:** https://api-staging.cyberdyne-systems.es
+
+- **URL:** <https://api-staging.cyberdyne-systems.es>
 - **Servicio:** Backend staging para pruebas
 - **Estado:** ❌ NO DESPLEGADO
 - **Notas:** Configuración existe, contenedor no activo
 
 ### CodeSpartan UI
-- **URL:** https://ui.codespartan.cloud
+
+- **URL:** <https://ui.codespartan.cloud>
 - **Servicio:** Dashboard de CodeSpartan
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `codespartan-ui`
 
 ### CodeSpartan WWW
-- **URL:** https://www.codespartan.cloud
+
+- **URL:** <https://www.codespartan.cloud>
 - **Servicio:** Sitio web corporativo CodeSpartan
 - **Estado:** ⚠️ CONFIGURADO (verificar estado)
 - **Notas:** Configuración existe, verificar contenedor
 
 ### Mambo Cloud WWW
-- **URL:** https://www.mambo-cloud.com
+
+- **URL:** <https://www.mambo-cloud.com>
 - **Servicio:** Landing page Mambo Cloud
 - **Estado:** ⚠️ CONFIGURADO (verificar estado)
 - **Notas:** Configuración existe, verificar contenedor
 
 ### Redmine - Project Management
-- **URL:** https://redmine.codespartan.cloud (estimada)
+
+- **URL:** <https://redmine.codespartan.cloud> (estimada)
 - **Servicio:** Gestión de proyectos
 - **Estado:** ✅ CONTENEDORES ACTIVOS
 - **Contenedores:** `redmine-app`, `redmine-db`
 - **Notas:** Contenedores corriendo, verificar URL pública
 
 ### Dental.io
-- **URL:** https://www.dental-io.com (estimada)
+
+- **URL:** <https://www.dental-io.com> (estimada)
 - **Servicio:** Aplicación dental
 - **Estado:** ⚠️ CONFIGURADO (verificar estado)
 - **Notas:** Configuración existe, verificar contenedor
 
 ### Mambo Cloud Staging
-- **URL:** https://staging.mambo-cloud.com
+
+- **URL:** <https://staging.mambo-cloud.com>
 - **Servicio:** Ambiente staging
 - **Estado:** ❌ NO DESPLEGADO
 - **Notas:** Configuración existe, contenedor no activo
 
 ### Mambo Cloud Lab
-- **URL:** https://lab.mambo-cloud.com
+
+- **URL:** <https://lab.mambo-cloud.com>
 - **Servicio:** Ambiente de laboratorio
 - **Estado:** ❌ NO DESPLEGADO
 - **Notas:** Configuración existe, contenedor no activo
@@ -155,12 +173,14 @@
 ## 🔒 Servicios Internos (No Expuestos Públicamente)
 
 ### Docker Socket Proxy
+
 - **Puerto:** N/A (solo interno)
 - **Servicio:** Proxy de seguridad para Docker socket
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `docker-socket-proxy`
 
 ### Loki - Log Aggregation
+
 - **Puerto:** 3100 (interno)
 - **Servicio:** Agregación y almacenamiento de logs
 - **Estado:** ✅ OPERACIONAL
@@ -168,18 +188,21 @@
 - **Acceso:** Vía Grafana
 
 ### Promtail - Log Shipper
+
 - **Puerto:** N/A (solo interno)
 - **Servicio:** Recolector de logs Docker → Loki
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `promtail`
 
 ### vmagent - Metrics Collector
+
 - **Puerto:** 8429 (interno)
 - **Servicio:** Recolector de métricas Prometheus
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `vmagent`
 
 ### vmalert - Alerting Rules
+
 - **Puerto:** 8880 (interno)
 - **Servicio:** Evaluación de reglas de alertas
 - **Estado:** ✅ OPERACIONAL
@@ -187,18 +210,21 @@
 - **Reglas activas:** 14 alertas configuradas
 
 ### cAdvisor - Container Metrics
+
 - **Puerto:** 8080 (interno)
 - **Servicio:** Métricas de contenedores Docker
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `cadvisor`
 
 ### Node Exporter - Host Metrics
+
 - **Puerto:** 9100 (interno)
 - **Servicio:** Métricas del host (CPU, RAM, Disk, Network)
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `node-exporter`
 
 ### ntfy-forwarder - Alert Notifications
+
 - **Puerto:** N/A (webhook)
 - **Servicio:** Forward de alertas a ntfy.sh
 - **Estado:** ✅ OPERACIONAL
@@ -241,45 +267,52 @@ ssh leonidas@91.98.137.217 "docker exec traefik wget -qO- http://localhost:8080/
 ## 📝 Notas Importantes
 
 ### Credenciales Predeterminadas
+
 - **Usuario:** admin
 - **Password:** codespartan123
 - **Aplica a:** Traefik, Grafana, Authelia, Backoffice
 
 ### SSL/TLS
+
 - **Proveedor:** Let's Encrypt
 - **Renovación:** Automática vía Traefik
 - **Wildcard:** No (certificados individuales por subdomain)
 
 ### Dominios DNS (Hetzner)
+
 Los siguientes dominios están configurados en Hetzner DNS:
 
 **mambo-cloud.com:**
+
 - traefik.mambo-cloud.com → 91.98.137.217
 - grafana.mambo-cloud.com → 91.98.137.217
 - auth.mambo-cloud.com → 91.98.137.217
 - backoffice.mambo-cloud.com → 91.98.137.217
-- www.mambo-cloud.com → 91.98.137.217
+- <www.mambo-cloud.com> → 91.98.137.217
 - staging.mambo-cloud.com → 91.98.137.217
 - lab.mambo-cloud.com → 91.98.137.217
 
 **cyberdyne-systems.es:**
+
 - api.cyberdyne-systems.es → 91.98.137.217
 - api-staging.cyberdyne-systems.es → 91.98.137.217
-- www.cyberdyne-systems.es → 91.98.137.217
+- <www.cyberdyne-systems.es> → 91.98.137.217
 - staging.cyberdyne-systems.es → 91.98.137.217
 - lab.cyberdyne-systems.es → 91.98.137.217
 - cyberdyne-systems.es → 91.98.137.217
 
 **codespartan.cloud:**
+
 - ui.codespartan.cloud → 91.98.137.217
-- www.codespartan.cloud → 91.98.137.217
+- <www.codespartan.cloud> → 91.98.137.217
 
 ### Próximos Pasos
 
 Para completar el inventario, verificar:
+
 1. ❓ Estado real de Redmine (URL pública)
-2. ❓ Estado de www.codespartan.cloud
-3. ❓ Estado de www.mambo-cloud.com
+2. ❓ Estado de <www.codespartan.cloud>
+3. ❓ Estado de <www.mambo-cloud.com>
 4. ❓ Estado de dental-io.com
 
 ---

@@ -200,33 +200,22 @@ services:
     image: grafana/grafana:11.3.1
     container_name: grafana
     environment:
-      # No default admin user - OAuth2 will create first user
+      # Server configuration
       - GF_SERVER_DOMAIN=${GRAFANA_HOST}
       - GF_SERVER_ROOT_URL=https://${GRAFANA_HOST}
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
-      # FASE 2: Authelia SSO Integration via OAuth2/OIDC
-      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
-      - GF_AUTH_GENERIC_OAUTH_NAME=Authelia
-      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=grafana
-      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs=
-      - GF_AUTH_GENERIC_OAUTH_SCOPES=openid profile email groups
-      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.mambo-cloud.com/api/oidc/authorization
-      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.mambo-cloud.com/api/oidc/token
-      - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.mambo-cloud.com/api/oidc/userinfo
-      - GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH=preferred_username
-      - GF_AUTH_GENERIC_OAUTH_GROUPS_ATTRIBUTE_PATH=groups
-      - GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH=name
-      - GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH=email
-      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
-      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(groups[*], 'admins') && 'Admin' || 'Viewer'
-      - GF_AUTH_SIGNOUT_REDIRECT_URL=https://auth.mambo-cloud.com/logout
-      - GF_AUTH_OAUTH_AUTO_LOGIN=false
+      # FASE 2: Authelia SSO Integration via Auth Proxy (Forward Auth)
+      # OIDC is disabled in Authelia, so we use Auth Proxy with HTTP headers
+      - GF_AUTH_PROXY_ENABLED=true
+      - GF_AUTH_PROXY_HEADER_NAME=Remote-User
+      - GF_AUTH_PROXY_HEADER_PROPERTY=username
+      - GF_AUTH_PROXY_AUTO_SIGN_UP=true
+      - GF_AUTH_PROXY_HEADERS=Name:Remote-Name Email:Remote-Email
+      - GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN=false
       - GF_AUTH_BASIC_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_USERS_AUTO_ASSIGN_ORG=true
       - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Admin
-      - GF_AUTH_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN=true
-      - GF_AUTH_OAUTH_SKIP_ORG_ROLE_SYNC=false
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -239,8 +228,8 @@ services:
       - traefik.http.routers.grafana.tls=true
       - traefik.http.routers.grafana.tls.certresolver=le
       - traefik.docker.network=web
-      # FASE 2: OAuth2/OIDC - No forward auth middleware needed
-      - traefik.http.routers.grafana.middlewares=rate-limit-global@file,security-headers@file,compression@file
+      # FASE 2: Authelia SSO - Forward Auth Middleware
+      - traefik.http.routers.grafana.middlewares=authelia@docker,rate-limit-global@file,security-headers@file,compression@file
     networks:
       - web  # Public access via Traefik
       - monitoring  # Access to VictoriaMetrics and Loki
