@@ -1,0 +1,103 @@
+name: Update Grafana for Authelia Auth Proxy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy updated Grafana config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/stacks/monitoring/docker-compose.yml"
+          target: "/opt/codespartan/platform/stacks/"
+          strip_components: 3
+          overwrite: true
+
+      - name: Update Grafana with Authelia Auth Proxy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "🔄 Updating Grafana to use Authelia Auth Proxy..."
+            echo ""
+
+            # Create backup
+            BACKUP_DIR="/tmp/grafana-backup-$(date +%s)"
+            mkdir -p "$BACKUP_DIR"
+            cp /opt/codespartan/platform/stacks/monitoring/docker-compose.yml "$BACKUP_DIR/"
+            echo "💾 Backup created: $BACKUP_DIR"
+            echo ""
+
+            # Verify Authelia is running
+            if ! docker ps | grep -q "authelia.*Up"; then
+              echo "❌ Authelia is not running! Aborting."
+              exit 1
+            fi
+            echo "✅ Authelia is running"
+            echo ""
+
+            # Recreate Grafana container
+            cd /opt/codespartan/platform/stacks/monitoring
+            echo "🔄 Recreating Grafana container..."
+            docker compose up -d grafana --force-recreate
+
+            # Wait for container to start
+            echo "⏳ Waiting for Grafana to initialize (20s)..."
+            sleep 20
+            echo ""
+
+            # Check container status
+            if docker ps | grep -q "grafana.*Up"; then
+              echo "✅ Grafana container is running"
+            else
+              echo "❌ Grafana failed to start - Check logs below:"
+              docker logs grafana --tail 50
+              exit 1
+            fi
+            echo ""
+
+            # Check for critical errors in logs
+            echo "📋 Checking Grafana logs for errors..."
+            if docker logs grafana 2>&1 | tail -30 | grep -qi "level=error.*fatal\|panic"; then
+              echo "⚠️  Found potential errors in Grafana logs:"
+              docker logs grafana --tail 30 | grep -i "level=error\|fatal\|panic"
+              echo ""
+              echo "If critical, rollback with:"
+              echo "  cp $BACKUP_DIR/docker-compose.yml /opt/codespartan/platform/stacks/monitoring/"
+              echo "  cd /opt/codespartan/platform/stacks/monitoring && docker compose up -d grafana --force-recreate"
+            else
+              echo "✅ No critical errors found in logs"
+            fi
+            echo ""
+
+            # Show last logs
+            echo "📋 Last 20 lines of Grafana logs:"
+            docker logs grafana --tail 20
+            echo ""
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "✨ Grafana updated to use Authelia Auth Proxy!"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "🌐 Test URL: https://grafana.mambo-cloud.com"
+            echo "   Should redirect to: https://auth.mambo-cloud.com"
+            echo ""
+            echo "📝 Login credentials at Authelia portal:"
+            echo "   Username: admin"
+            echo "   Password: codespartan123"
+            echo "   MFA: TOTP (Google/Microsoft Authenticator)"
+            echo ""
+            echo "Backup location: $BACKUP_DIR"
+            echo "════════════════════════════════════════════════════════════"
