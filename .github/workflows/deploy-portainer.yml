@@ -1,0 +1,131 @@
+name: Deploy Portainer (FASE 3 - Container Management)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/platform/portainer/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy Portainer files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/portainer/*"
+          target: "/opt/codespartan/platform/"
+          strip_components: 2
+          overwrite: true
+
+      - name: Deploy Portainer on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/codespartan/platform/portainer
+
+            DEPLOY_START=$(date +%s)
+
+            echo "🚀 FASE 3.2: Deploying Portainer CE..."
+            echo ""
+
+            # Verify dependencies
+            echo "📋 Checking dependencies..."
+
+            # Check docker-socket-proxy is running
+            if ! docker ps | grep -q "docker-socket-proxy.*Up"; then
+              echo "❌ docker-socket-proxy is not running!"
+              echo "Portainer requires docker-socket-proxy to be running."
+              exit 1
+            fi
+            echo "✅ docker-socket-proxy is running"
+
+            # Check Authelia is running
+            if ! docker ps | grep -q "authelia.*Up"; then
+              echo "❌ Authelia is not running!"
+              echo "Portainer should be protected by Authelia SSO."
+              exit 1
+            fi
+            echo "✅ Authelia is running"
+
+            # Ensure required networks exist
+            echo ""
+            echo "🌐 Verifying Docker networks..."
+            docker network create web 2>/dev/null || echo "  - web network exists"
+            docker network create docker_api 2>/dev/null || echo "  - docker_api network exists"
+            echo ""
+
+            # Deploy Portainer
+            echo "📦 Starting Portainer..."
+            docker compose up -d
+
+            # Wait for Portainer to be healthy
+            echo "⏳ Waiting for Portainer to be healthy..."
+            MAX_ATTEMPTS=40
+            ATTEMPT=0
+
+            while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+              PORTAINER_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' portainer 2>/dev/null || echo "unknown")
+
+              if [ "$PORTAINER_HEALTH" = "healthy" ]; then
+                echo "✅ Portainer is healthy"
+                break
+              fi
+
+              if [ $ATTEMPT -eq $((MAX_ATTEMPTS - 1)) ]; then
+                echo "⚠️  Portainer did not become healthy in time"
+                echo "Container status:"
+                docker ps --filter "name=portainer"
+                echo ""
+                echo "Last 30 lines of logs:"
+                docker logs portainer --tail 30
+                echo ""
+                echo "Note: Portainer may still be initializing. Check logs manually if needed."
+              fi
+
+              echo -n "."
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 3
+            done
+
+            DEPLOY_END=$(date +%s)
+            DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✨ Portainer deployed in ${DEPLOY_TIME}s!"
+            echo "════════════════════════════════════════════════════════════"
+            echo ""
+            echo "📊 Container status:"
+            docker ps --filter "name=portainer" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo ""
+            echo "🌐 URL: https://portainer.mambo-cloud.com"
+            echo ""
+            echo "🔐 Authentication:"
+            echo "   1. Login via Authelia: https://auth.mambo-cloud.com"
+            echo "   2. Username: admin"
+            echo "   3. Password: codespartan123"
+            echo "   4. MFA: TOTP (Google/Microsoft Authenticator)"
+            echo ""
+            echo "📝 Initial Setup:"
+            echo "   - First access will prompt for Portainer admin password"
+            echo "   - Docker environment is pre-configured (via socket proxy)"
+            echo "   - Start managing containers immediately!"
+            echo ""
+            echo "🔧 Architecture:"
+            echo "   User → Traefik → Authelia (SSO+MFA) → Portainer"
+            echo "                         ↓"
+            echo "                 Docker Socket Proxy → Docker Daemon"
+            echo ""
+            echo "✅ FASE 3.2 Complete!"
+            echo "════════════════════════════════════════════════════════════"
