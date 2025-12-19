@@ -60,9 +60,36 @@
 
 - **URL:** <https://backoffice.mambo-cloud.com>
 - **Servicio:** Panel de administración
-- **Credenciales:** admin / codespartan123
+- **Autenticación:** ✅ Authelia SSO + 2FA
+- **Credenciales:** Via Authelia (https://auth.mambo-cloud.com)
 - **Estado:** ✅ OPERACIONAL
 - **Contenedor:** `backoffice`
+
+### Portainer CE - Container Management
+
+- **URL:** <https://portainer.mambo-cloud.com>
+- **Servicio:** Gestión visual de contenedores Docker
+- **Autenticación:** ✅ Authelia SSO + 2FA
+- **Credenciales:** Via Authelia (https://auth.mambo-cloud.com)
+- **Estado:** ✅ OPERACIONAL (FASE 3.2)
+- **Contenedor:** `portainer`
+- **Funcionalidades:**
+  - 📊 Dashboard visual de todos los contenedores
+  - 📝 Logs en tiempo real
+  - 💻 Console/exec en contenedores
+  - 🚀 Deploy stacks (docker-compose via UI)
+  - 📈 Resource monitoring (CPU, RAM, Network)
+  - 🔐 User management con RBAC
+- **Arquitectura:**
+  - Conecta vía `docker-socket-proxy` (seguro, read-only)
+  - Protegido por Authelia (SSO + MFA obligatorio)
+  - Solo usuarios en grupo `admins` pueden acceder
+- **Initial Setup:**
+  1. Visitar https://portainer.mambo-cloud.com
+  2. Redirige automáticamente a Authelia
+  3. Login: admin / codespartan123 + TOTP
+  4. Primera vez: Crear password de admin de Portainer
+  5. Docker environment ya pre-configurado vía socket proxy
 
 ### VictoriaMetrics - Métricas
 
