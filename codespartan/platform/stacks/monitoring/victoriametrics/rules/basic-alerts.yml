@@ -27,3 +27,18 @@ groups:
         annotations:
           summary: "Low disk space"
           description: "Root filesystem free space < 10% on {{ $labels.instance }}"
+
+      - alert: PortainerUnhealthy
+        expr: |
+          (
+            count(container_last_seen{name="portainer"}) == 0
+          ) or (
+            (time() - container_last_seen{name="portainer"}) > 300
+          )
+        for: 2m
+        labels:
+          severity: warning
+          service: portainer
+        annotations:
+          summary: "Portainer container management UI is unhealthy"
+          description: "Portainer has not been responding for >2 minutes. Check container status with: docker logs portainer"
