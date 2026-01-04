@@ -5,6 +5,7 @@
 
 # FASE 2: User authentication database for Authelia SSO
 # Password format: Argon2id hash
+# Updated: 2024-12-19 - Verificación de GitHub Secrets
 
 users:
   admin:
