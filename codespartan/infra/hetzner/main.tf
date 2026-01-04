@@ -103,6 +103,14 @@ resource "hcloud_firewall" "basic" {
     port            = "123"
     destination_ips = ["0.0.0.0/0", "::/0"]
   }
+
+  # SMTP port 587 for email notifications (Authelia, etc.)
+  rule {
+    direction       = "out"
+    protocol        = "tcp"
+    port            = "587"
+    destination_ips = ["0.0.0.0/0", "::/0"]
+  }
 }
 
 resource "hcloud_server" "vps" {
