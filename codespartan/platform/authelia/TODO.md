@@ -32,10 +32,9 @@
 ### WebAuthn Configuration
 - [x] Replace `webauthn.user_verification` with `webauthn.selection_criteria.user_verification`
 
-## Security Improvements (Optional)
-- [ ] Hash Grafana OAuth2 client_secret (currently plaintext)
-  - Current: `tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs=`
-  - Use: `authelia crypto hash generate pbkdf2` or `authelia crypto hash generate argon2`
+## Security Improvements
+- [x] Hash Grafana OAuth2 client_secret (2026-01-08)
+  - Hashed with argon2id using `authelia crypto hash generate argon2`
 
 ## Reference
 - Authelia v4.38.0 deprecation warnings - RESOLVED
