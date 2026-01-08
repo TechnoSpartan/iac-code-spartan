@@ -13,11 +13,12 @@
 theme: dark
 
 server:
-  host: 0.0.0.0
-  port: 9091
-  path: ""
-  enable_pprof: false
-  enable_expvars: false
+  address: tcp://0.0.0.0:9091/
+
+  # Endpoints configuration (v5 format)
+  endpoints:
+    enable_pprof: false
+    enable_expvars: false
 
   # Headers sent to backend
   headers:
@@ -45,7 +46,8 @@ webauthn:
   timeout: 60s
   display_name: Mambo Cloud
   attestation_conveyance_preference: indirect
-  user_verification: preferred
+  selection_criteria:
+    user_verification: preferred
 
 # Duo Push (optional - requires Duo account)
 duo_api:
@@ -111,12 +113,17 @@ access_control:
 # Session configuration
 session:
   name: authelia_session
-  domain: mambo-cloud.com  # Root domain for SSO
   same_site: lax
   secret: ${AUTHELIA_SESSION_SECRET}
   expiration: 1h
   inactivity: 5m
-  remember_me_duration: 1M
+  remember_me: 1M
+
+  # Multi-domain cookies configuration (v5 format)
+  cookies:
+    - domain: mambo-cloud.com
+      authelia_url: https://auth.mambo-cloud.com
+      default_redirection_url: https://mambo-cloud.com
 
   redis:
     host: authelia-redis
@@ -234,10 +241,13 @@ ntp:
 #           PnIpEiBHDnH6/9JqboeaXa6AfnhMoA==
 #           -----END PRIVATE KEY-----
 #
-#     access_token_lifespan: 1h
-#     authorize_code_lifespan: 1m
-#     id_token_lifespan: 1h
-#     refresh_token_lifespan: 90m
+#     # Token lifespans (v5 format)
+#     lifespans:
+#       access_token: 1h
+#       authorize_code: 1m
+#       id_token: 1h
+#       refresh_token: 90m
+#
 #     enable_client_debug_messages: false
 #     enforce_pkce: public_clients_only
 #
@@ -251,9 +261,9 @@ ntp:
 #       allowed_origins_from_client_redirect_uris: true
 #
 #     clients:
-#       - id: grafana
-#         description: Grafana Dashboard
-#         secret: 'tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs='
+#       - client_id: grafana
+#         client_name: Grafana Dashboard
+#         client_secret: 'tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs='
 #         public: false
 #         authorization_policy: two_factor
 #         redirect_uris:
@@ -263,5 +273,5 @@ ntp:
 #           - profile
 #           - email
 #           - groups
-#         userinfo_signing_algorithm: none
+#         userinfo_signed_response_alg: none
 #         token_endpoint_auth_method: client_secret_basic
