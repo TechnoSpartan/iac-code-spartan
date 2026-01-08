@@ -263,7 +263,7 @@ ntp:
 #     clients:
 #       - client_id: grafana
 #         client_name: Grafana Dashboard
-#         client_secret: 'tBVp0E9iP9KDuaR/JbjHT6QpV4+yWiirtjdSzFCEzUs='
+#         client_secret: '[REDACTED-OIDC-CLIENT-SECRET-HASH]'
 #         public: false
 #         authorization_policy: two_factor
 #         redirect_uris:
