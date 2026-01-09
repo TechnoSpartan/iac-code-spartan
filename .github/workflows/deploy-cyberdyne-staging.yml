@@ -1,0 +1,121 @@
+name: Deploy Cyberdyne Frontend Staging
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/apps/cyberdyne-systems-es/staging/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.cyberdyne-systems.es
+    steps:
+      - name: Checkout IaC repo
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/apps/cyberdyne-systems-es/staging/docker-compose.yml"
+          target: "/opt/codespartan/apps/cyberdyne-systems-es/staging/"
+          strip_components: 4
+
+      - name: Deploy Frontend Staging on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_PAT }}
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_TOKEN
+          script: |
+            set -euo pipefail
+            cd /opt/codespartan/apps/cyberdyne-systems-es/staging
+
+            DEPLOY_START=$(date +%s)
+
+            # Ensure network exists
+            docker network create web 2>/dev/null || true
+
+            # Login to GitHub Container Registry
+            echo "🔐 Logging in to GitHub Container Registry..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            # Pull latest staging image
+            echo "📦 Pulling staging Docker image..."
+            docker compose pull
+
+            # Deploy
+            echo "🚀 Starting frontend staging container..."
+            docker compose up -d
+
+            # Health check
+            echo "🔍 Running health checks..."
+
+            # Check if container exists
+            if ! docker inspect cyberdyne-staging >/dev/null 2>&1; then
+              echo "❌ Container cyberdyne-staging does not exist"
+              docker ps -a
+              exit 1
+            fi
+
+            # Check if container is running
+            CONTAINER_STATE=$(docker inspect --format='{{.State.Status}}' cyberdyne-staging)
+            if [ "$CONTAINER_STATE" != "running" ]; then
+              echo "❌ Container is not running (state: $CONTAINER_STATE)"
+              docker logs --tail 50 cyberdyne-staging
+              exit 1
+            fi
+
+            echo "✅ Container is running"
+
+            # Wait for health check to pass
+            echo "⏳ Waiting for container to be healthy..."
+            HEALTH_CHECK_ATTEMPTS=0
+            MAX_ATTEMPTS=20
+
+            while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' cyberdyne-staging 2>/dev/null || echo "unknown")
+
+              if [ "$HEALTH_STATUS" = "healthy" ]; then
+                echo "✅ Health check passed"
+
+                DEPLOY_END=$(date +%s)
+                DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+                echo "🧹 Cleaning up old images..."
+                docker image prune -f
+
+                echo "✨ Frontend Staging deployed successfully in ${DEPLOY_TIME}s!"
+                docker ps --filter "name=cyberdyne-staging" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                exit 0
+              fi
+
+              echo "⏳ Health status: $HEALTH_STATUS - waiting... ($((HEALTH_CHECK_ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+              HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_ATTEMPTS + 1))
+              sleep 3
+            done
+
+            echo "❌ Health check failed after $((MAX_ATTEMPTS * 3)) seconds"
+            docker logs --tail 50 cyberdyne-staging
+            exit 1
+
+      - name: Verify staging frontend accessibility
+        run: |
+          echo "🌐 Waiting for DNS/SSL propagation..."
+          sleep 10
+
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://staging.cyberdyne-systems.es || echo "000")
+
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Staging frontend is accessible (HTTP $HTTP_STATUS)"
+          else
+            echo "⚠️ Staging frontend returned HTTP $HTTP_STATUS (may need SSL cert generation)"
+          fi
