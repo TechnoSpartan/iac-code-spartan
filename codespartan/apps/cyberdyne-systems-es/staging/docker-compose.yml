@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/technospartan/ft-rc-bko-trackworks:latest
+    image: ghcr.io/technospartan/ft-rc-bko-trackworks:staging-latest
     container_name: cyberdyne-staging
     restart: unless-stopped
     ports:

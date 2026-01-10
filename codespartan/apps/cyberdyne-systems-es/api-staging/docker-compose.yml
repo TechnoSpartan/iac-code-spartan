@@ -24,7 +24,7 @@ services:
       - trackworks-staging
 
   api:
-    image: ghcr.io/technospartan/ms-nd-bko-trackworks:latest
+    image: ghcr.io/technospartan/ms-nd-bko-trackworks:staging-latest
     container_name: trackworks-api-staging
     restart: unless-stopped
     depends_on:
