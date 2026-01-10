@@ -4,6 +4,8 @@ services:
     container_name: watchtower
     restart: unless-stopped
     environment:
+      # Docker API version compatibility
+      - DOCKER_API_VERSION=1.44
       # Only update containers with label "com.centurylinklabs.watchtower.enable=true"
       - WATCHTOWER_LABEL_ENABLE=true
       # Check for updates every 5 minutes (300 seconds)
