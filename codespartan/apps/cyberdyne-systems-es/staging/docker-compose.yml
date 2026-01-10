@@ -17,6 +17,7 @@ services:
         max-size: "10m"
         max-file: "3"
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - traefik.enable=true
       - traefik.http.routers.cyberdyne-staging.rule=Host(`staging.cyberdyne-systems.es`)
       - traefik.http.routers.cyberdyne-staging.entrypoints=websecure

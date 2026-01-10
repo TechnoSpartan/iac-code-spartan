@@ -54,6 +54,7 @@ services:
         max-size: "10m"
         max-file: "3"
     labels:
+      - "com.centurylinklabs.watchtower.enable=true"
       - traefik.enable=true
       - traefik.http.routers.trackworks-api-staging.rule=Host(`api-staging.cyberdyne-systems.es`)
       - traefik.http.routers.trackworks-api-staging.entrypoints=websecure
