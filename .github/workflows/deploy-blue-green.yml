@@ -1,0 +1,158 @@
+name: Deploy Blue/Green
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'Application name (e.g., cyberdyne-frontend)'
+        required: true
+        type: string
+      image:
+        description: 'Docker image with tag (e.g., ghcr.io/org/app:v1.2.3)'
+        required: true
+        type: string
+      domain:
+        description: 'Domain for Traefik routing (e.g., www.cyberdyne-systems.es)'
+        required: true
+        type: string
+      port:
+        description: 'Container port'
+        required: false
+        default: '80'
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ inputs.domain }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deploy script to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/blue-green/deploy.sh"
+          target: "/opt/codespartan/platform/blue-green/"
+          strip_components: 3
+
+      - name: Blue/Green Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_PAT }}
+          APP_NAME: ${{ inputs.app }}
+          IMAGE: ${{ inputs.image }}
+          DOMAIN: ${{ inputs.domain }}
+          PORT: ${{ inputs.port }}
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_TOKEN,APP_NAME,IMAGE,DOMAIN,PORT
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+
+            # Login to GHCR
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            # Determine slots
+            BLUE_CONTAINER="${APP_NAME}-blue"
+            GREEN_CONTAINER="${APP_NAME}-green"
+
+            # Find active slot
+            if docker ps --format '{{.Names}}' | grep -q "^${BLUE_CONTAINER}$"; then
+                ACTIVE="blue"
+                TARGET="green"
+            elif docker ps --format '{{.Names}}' | grep -q "^${GREEN_CONTAINER}$"; then
+                ACTIVE="green"
+                TARGET="blue"
+            else
+                ACTIVE="none"
+                TARGET="blue"
+            fi
+
+            TARGET_CONTAINER="${APP_NAME}-${TARGET}"
+            ACTIVE_CONTAINER="${APP_NAME}-${ACTIVE}"
+
+            echo "🔄 Blue/Green Deployment"
+            echo "App: $APP_NAME"
+            echo "Image: $IMAGE"
+            echo "Active: $ACTIVE → Target: $TARGET"
+
+            # Pull image
+            echo "📦 Pulling image..."
+            docker pull "$IMAGE"
+
+            # Remove old target if exists
+            docker rm -f "$TARGET_CONTAINER" 2>/dev/null || true
+
+            # Start new container
+            echo "🚀 Starting $TARGET_CONTAINER..."
+            docker run -d \
+                --name "$TARGET_CONTAINER" \
+                --restart unless-stopped \
+                --network web \
+                --health-cmd "curl --fail --silent http://localhost:${PORT}/ || exit 1" \
+                --health-interval 10s \
+                --health-timeout 5s \
+                --health-retries 3 \
+                --health-start-period 30s \
+                --label "traefik.enable=true" \
+                --label "traefik.http.routers.${APP_NAME}.rule=Host(\`${DOMAIN}\`)" \
+                --label "traefik.http.routers.${APP_NAME}.entrypoints=websecure" \
+                --label "traefik.http.routers.${APP_NAME}.tls=true" \
+                --label "traefik.http.routers.${APP_NAME}.tls.certresolver=le" \
+                --label "traefik.http.services.${APP_NAME}.loadbalancer.server.port=${PORT}" \
+                --label "traefik.docker.network=web" \
+                --label "deployment.slot=${TARGET}" \
+                --label "deployment.timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                "$IMAGE"
+
+            # Wait for healthy
+            echo "⏳ Waiting for health check..."
+            for i in {1..24}; do
+                STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$TARGET_CONTAINER" 2>/dev/null || echo "starting")
+                if [ "$STATUS" = "healthy" ]; then
+                    echo "✅ $TARGET_CONTAINER is healthy!"
+                    break
+                fi
+                echo "  Health: $STATUS ($i/24)"
+                sleep 5
+            done
+
+            # Verify healthy
+            FINAL_STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$TARGET_CONTAINER" 2>/dev/null || echo "failed")
+            if [ "$FINAL_STATUS" != "healthy" ]; then
+                echo "❌ Health check failed - rolling back"
+                docker rm -f "$TARGET_CONTAINER" 2>/dev/null || true
+                exit 1
+            fi
+
+            # Stop old container
+            if [ "$ACTIVE" != "none" ]; then
+                echo "🛑 Stopping old $ACTIVE container..."
+                docker rm -f "$ACTIVE_CONTAINER" 2>/dev/null || true
+            fi
+
+            # Cleanup
+            docker image prune -f > /dev/null 2>&1 || true
+
+            echo ""
+            echo "✨ Deployment Complete!"
+            docker ps --filter "name=${APP_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ inputs.domain }} || echo "000")
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Application is responding (HTTP $HTTP_STATUS)"
+          else
+            echo "⚠️ Application returned HTTP $HTTP_STATUS"
+          fi
