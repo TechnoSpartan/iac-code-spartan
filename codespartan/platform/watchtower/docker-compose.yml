@@ -1,0 +1,41 @@
+services:
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      # Only update containers with label "com.centurylinklabs.watchtower.enable=true"
+      - WATCHTOWER_LABEL_ENABLE=true
+      # Check for updates every 5 minutes (300 seconds)
+      - WATCHTOWER_POLL_INTERVAL=300
+      # Clean up old images after updating
+      - WATCHTOWER_CLEANUP=true
+      # Include stopped containers
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      # Revive stopped containers if updated
+      - WATCHTOWER_REVIVE_STOPPED=false
+      # Log level
+      - WATCHTOWER_DEBUG=false
+      # Notification via HTTP (ntfy.sh)
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=ntfy://ntfy.sh/codespartan-watchtower
+      # Timezone
+      - TZ=Europe/Madrid
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+
+networks:
+  monitoring:
+    external: true
