@@ -1,0 +1,87 @@
+services:
+  kong:
+    image: kong:3.9-alpine
+    container_name: kong-cyberdyne
+    restart: unless-stopped
+
+    environment:
+      # Modo DB-less (declarativo)
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+
+      # Listeners
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "127.0.0.1:8001"
+
+      # Logging estructurado JSON para Loki
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_LOG_LEVEL: info
+
+      # Metricas Prometheus
+      KONG_STATUS_LISTEN: "0.0.0.0:8100"
+
+      # Trust Traefik headers
+      KONG_TRUSTED_IPS: "172.20.0.0/16"
+      KONG_REAL_IP_HEADER: "X-Forwarded-For"
+      KONG_REAL_IP_RECURSIVE: "on"
+
+    volumes:
+      - ./kong.yml:/kong/declarative/kong.yml:ro
+
+    # Dual-homed: web (Traefik) + kong_cyberdyne (API interna)
+    networks:
+      - web
+      - kong_cyberdyne
+
+    labels:
+      # Traefik routing para api.cyberdyne-systems.es
+      - traefik.enable=true
+      - traefik.http.routers.kong-cyberdyne-api.rule=Host(`api.cyberdyne-systems.es`)
+      - traefik.http.routers.kong-cyberdyne-api.entrypoints=websecure
+      - traefik.http.routers.kong-cyberdyne-api.tls=true
+      - traefik.http.routers.kong-cyberdyne-api.tls.certresolver=le
+      - traefik.http.services.kong-cyberdyne-api.loadbalancer.server.port=8000
+      - traefik.docker.network=web
+
+      # Traefik routing para api-staging.cyberdyne-systems.es
+      - traefik.http.routers.kong-cyberdyne-staging.rule=Host(`api-staging.cyberdyne-systems.es`)
+      - traefik.http.routers.kong-cyberdyne-staging.entrypoints=websecure
+      - traefik.http.routers.kong-cyberdyne-staging.tls=true
+      - traefik.http.routers.kong-cyberdyne-staging.tls.certresolver=le
+      - traefik.http.services.kong-cyberdyne-staging.loadbalancer.server.port=8000
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  web:
+    external: true
+  kong_cyberdyne:
+    name: kong_cyberdyne
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.26.0.0/24

@@ -55,22 +55,10 @@ services:
         max-file: "3"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-      - traefik.enable=true
-      - traefik.http.routers.trackworks-api-staging.rule=Host(`api-staging.cyberdyne-systems.es`)
-      - traefik.http.routers.trackworks-api-staging.entrypoints=websecure
-      - traefik.http.routers.trackworks-api-staging.tls=true
-      - traefik.http.routers.trackworks-api-staging.tls.certresolver=le
-      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
-      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolallowheaders=*
-      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolalloworiginlist=https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es
-      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolmaxage=100
-      - traefik.http.middlewares.trackworks-api-staging-cors.headers.addvaryheader=true
-      - traefik.http.middlewares.trackworks-api-staging-cors.headers.accesscontrolallowcredentials=true
-      - traefik.http.routers.trackworks-api-staging.middlewares=trackworks-api-staging-cors
-      - traefik.docker.network=web
-      - traefik.http.services.trackworks-api-staging.loadbalancer.server.port=3001
+    # Traefik labels removed - Kong handles routing now
+    # See: codespartan/platform/kong/cyberdyne/
     networks:
-      - web
+      - kong_cyberdyne
       - trackworks-staging
 
 volumes:
@@ -80,7 +68,7 @@ volumes:
     driver: local
 
 networks:
-  web:
+  kong_cyberdyne:
     external: true
   trackworks-staging:
     driver: bridge

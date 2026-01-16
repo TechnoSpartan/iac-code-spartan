@@ -53,23 +53,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.trackworks-api.rule=Host(`api.cyberdyne-systems.es`)
-      - traefik.http.routers.trackworks-api.entrypoints=websecure
-      - traefik.http.routers.trackworks-api.tls=true
-      - traefik.http.routers.trackworks-api.tls.certresolver=le
-      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
-      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolallowheaders=*
-      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolalloworiginlist=https://www.cyberdyne-systems.es,https://staging.cyberdyne-systems.es,https://lab.cyberdyne-systems.es,https://cyberdyne-systems.es
-      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolmaxage=100
-      - traefik.http.middlewares.trackworks-api-cors.headers.addvaryheader=true
-      - traefik.http.middlewares.trackworks-api-cors.headers.accesscontrolallowcredentials=true
-      - traefik.http.routers.trackworks-api.middlewares=trackworks-api-cors
-      - traefik.docker.network=web
-      - traefik.http.services.trackworks-api.loadbalancer.server.port=3001
+    # Traefik labels removed - Kong handles routing now
+    # See: codespartan/platform/kong/cyberdyne/
     networks:
-      - web
+      - kong_cyberdyne
       - trackworks
 
 volumes:
@@ -79,7 +66,7 @@ volumes:
     driver: local
 
 networks:
-  web:
+  kong_cyberdyne:
     external: true
   trackworks:
     name: api_trackworks
