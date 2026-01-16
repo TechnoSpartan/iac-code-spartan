@@ -79,9 +79,4 @@ networks:
   web:
     external: true
   kong_cyberdyne:
-    name: kong_cyberdyne
-    driver: bridge
-    internal: true
-    ipam:
-      config:
-        - subnet: 172.26.0.0/24
+    external: true
