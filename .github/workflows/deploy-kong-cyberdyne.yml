@@ -42,12 +42,13 @@ jobs:
             echo "🔧 Preparando despliegue de Kong Cyberdyne..."
             cd /opt/codespartan/platform/kong/cyberdyne
 
-            # Verificar que red web existe (kong_cyberdyne la crea docker-compose)
-            echo "🌐 Verificando red Docker web..."
+            # Crear redes si no existen (ambas son external en docker-compose)
+            echo "🌐 Verificando redes Docker..."
             docker network create web 2>/dev/null || true
-
-            # Eliminar red kong_cyberdyne si existe con labels incorrectos
-            docker network rm kong_cyberdyne 2>/dev/null || true
+            docker network create kong_cyberdyne \
+              --driver bridge \
+              --internal \
+              --subnet 172.26.0.0/24 2>/dev/null || true
 
             # Validar configuracion Kong (modo DB-less)
             echo "✅ Validando configuracion kong.yml..."
