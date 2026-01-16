@@ -37,21 +37,25 @@ services:
       - kong_cyberdyne
 
     labels:
-      # Traefik routing para api.cyberdyne-systems.es
       - traefik.enable=true
+      - traefik.docker.network=web
+
+      # Servicio unico para Kong (puerto 8000)
+      - traefik.http.services.kong-cyberdyne.loadbalancer.server.port=8000
+
+      # Router para api.cyberdyne-systems.es
       - traefik.http.routers.kong-cyberdyne-api.rule=Host(`api.cyberdyne-systems.es`)
       - traefik.http.routers.kong-cyberdyne-api.entrypoints=websecure
       - traefik.http.routers.kong-cyberdyne-api.tls=true
       - traefik.http.routers.kong-cyberdyne-api.tls.certresolver=le
-      - traefik.http.services.kong-cyberdyne-api.loadbalancer.server.port=8000
-      - traefik.docker.network=web
+      - traefik.http.routers.kong-cyberdyne-api.service=kong-cyberdyne
 
-      # Traefik routing para api-staging.cyberdyne-systems.es
+      # Router para api-staging.cyberdyne-systems.es
       - traefik.http.routers.kong-cyberdyne-staging.rule=Host(`api-staging.cyberdyne-systems.es`)
       - traefik.http.routers.kong-cyberdyne-staging.entrypoints=websecure
       - traefik.http.routers.kong-cyberdyne-staging.tls=true
       - traefik.http.routers.kong-cyberdyne-staging.tls.certresolver=le
-      - traefik.http.services.kong-cyberdyne-staging.loadbalancer.server.port=8000
+      - traefik.http.routers.kong-cyberdyne-staging.service=kong-cyberdyne
 
     deploy:
       resources:
