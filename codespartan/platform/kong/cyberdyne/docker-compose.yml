@@ -1,6 +1,6 @@
 services:
   kong:
-    image: kong:3.9-alpine
+    image: kong:3.9
     container_name: kong-cyberdyne
     restart: unless-stopped
 

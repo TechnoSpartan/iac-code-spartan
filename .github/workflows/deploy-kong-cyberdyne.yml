@@ -52,7 +52,7 @@ jobs:
 
             # Validar configuracion Kong
             echo "✅ Validando configuracion kong.yml..."
-            docker run --rm -v $(pwd)/kong.yml:/kong.yml kong:3.9-alpine \
+            docker run --rm -v $(pwd)/kong.yml:/kong.yml kong:3.9 \
               kong config parse /kong.yml || {
                 echo "❌ Error: kong.yml invalido"
                 exit 1
