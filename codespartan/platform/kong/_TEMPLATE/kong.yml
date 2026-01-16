@@ -1,0 +1,164 @@
+# ============================================================================
+# Kong Declarative Configuration Template - {{DOMAIN_NAME}}
+# ============================================================================
+#
+# VARIABLES A REEMPLAZAR:
+# - {{DOMAIN_NAME}} -> nombre del dominio (ej: dental-io)
+# - {{DOMAIN_HOST}} -> host principal (ej: dental-io.com)
+# - {{API_HOST}} -> host de la API (ej: api.dental-io.com)
+# - {{API_STAGING_HOST}} -> host staging (ej: api-staging.dental-io.com)
+# - {{API_CONTAINER}} -> nombre del contenedor API (ej: dental-api)
+# - {{API_STAGING_CONTAINER}} -> contenedor staging (ej: dental-api-staging)
+# - {{API_PORT}} -> puerto de la API (ej: 3000)
+# - {{CORS_ORIGIN_PROD}} -> origen CORS produccion (ej: https://dental-io.com)
+# - {{CORS_ORIGIN_WWW}} -> origen CORS www (ej: https://www.dental-io.com)
+# - {{CORS_ORIGIN_STAGING}} -> origen CORS staging (ej: https://staging.dental-io.com)
+#
+# ============================================================================
+
+_format_version: "3.0"
+
+# ============================================================================
+# SERVICIOS
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # Produccion
+  # --------------------------------------------------------------------------
+  - name: {{DOMAIN_NAME}}-api-production
+    url: http://{{API_CONTAINER}}:{{API_PORT}}
+    routes:
+      - name: {{DOMAIN_NAME}}-api-production-route
+        hosts:
+          - {{API_HOST}}
+        strip_path: false
+        preserve_host: true
+
+    plugins:
+      # Rate Limiting - Produccion (mas restrictivo)
+      - name: rate-limiting
+        config:
+          second: 50
+          minute: 3000
+          hour: 100000
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+          redis_ssl: false
+          redis_ssl_verify: false
+
+      # CORS - Produccion
+      - name: cors
+        config:
+          origins:
+            - {{CORS_ORIGIN_PROD}}
+            - {{CORS_ORIGIN_WWW}}
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+            - HEAD
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - Origin
+            - X-Requested-With
+          exposed_headers:
+            - X-Kong-Upstream-Latency
+            - X-Kong-Proxy-Latency
+            - X-RateLimit-Limit-Second
+            - X-RateLimit-Remaining-Second
+          credentials: true
+          max_age: 3600
+          preflight_continue: false
+
+      # Request Transformer - Headers de tracking
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Kong-Proxy:true
+              - X-Environment:production
+
+  # --------------------------------------------------------------------------
+  # Staging
+  # --------------------------------------------------------------------------
+  - name: {{DOMAIN_NAME}}-api-staging
+    url: http://{{API_STAGING_CONTAINER}}:{{API_PORT}}
+    routes:
+      - name: {{DOMAIN_NAME}}-api-staging-route
+        hosts:
+          - {{API_STAGING_HOST}}
+        strip_path: false
+        preserve_host: true
+
+    plugins:
+      # Rate Limiting - Staging (mas permisivo para testing)
+      - name: rate-limiting
+        config:
+          second: 100
+          minute: 6000
+          hour: 200000
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+          redis_ssl: false
+          redis_ssl_verify: false
+
+      # CORS - Staging (mas permisivo)
+      - name: cors
+        config:
+          origins:
+            - {{CORS_ORIGIN_STAGING}}
+            - http://localhost:3000
+            - http://localhost:5173
+            - http://127.0.0.1:3000
+            - http://127.0.0.1:5173
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+            - HEAD
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - Origin
+            - X-Requested-With
+          exposed_headers:
+            - X-Kong-Upstream-Latency
+            - X-Kong-Proxy-Latency
+            - X-RateLimit-Limit-Second
+            - X-RateLimit-Remaining-Second
+          credentials: true
+          max_age: 3600
+          preflight_continue: false
+
+      # Request Transformer - Headers de tracking
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Kong-Proxy:true
+              - X-Environment:staging
+
+# ============================================================================
+# PLUGINS GLOBALES (aplican a todos los servicios)
+# ============================================================================
+
+plugins:
+  # Prometheus - Metricas globales
+  - name: prometheus
+    config:
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
