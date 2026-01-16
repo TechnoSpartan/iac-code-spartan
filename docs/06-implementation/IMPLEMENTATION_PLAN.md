@@ -467,80 +467,73 @@ curl https://traefik.mambo-cloud.com
 
 ---
 
-## FASE 2: Authelia SSO
+## FASE 2: Authelia SSO ✅ COMPLETADA
 
 ### 🎯 Objetivo
 Implementar Single Sign-On con MFA para todos los dashboards (Traefik, Grafana, Portainer, Backoffice).
 
-### 🟡 Prioridad: ALTA
-**Razón**: Mejora significativa en seguridad de acceso. Centraliza autenticación.
+### ✅ Estado: COMPLETADO
+**Fecha:** 2026-01-16
 
-### ⏱️ Duración: 2-3 días
+### 📝 Implementación Realizada
 
-### 📝 Implementación
-
-Ver [Arquitectura](../02-architecture/ARCHITECTURE.md) para configuración detallada de Authelia.
-
-**Archivos principales:**
+**Archivos creados:**
 - `codespartan/platform/authelia/docker-compose.yml`
-- `codespartan/platform/authelia/configuration.yml`
-- `codespartan/platform/authelia/users_database.yml`
+- `codespartan/platform/authelia/config/configuration.yml`
+- `.github/workflows/deploy-authelia.yml`
 
-**Middlewares Traefik:**
-```yaml
-# dynamic-config.yml
-http:
-  middlewares:
-    authelia:
-      forwardAuth:
-        address: http://authelia:9091/api/verify?rd=https://auth.mambo-cloud.com
-        trustForwardHeader: true
-        authResponseHeaders:
-          - Remote-User
-          - Remote-Groups
-          - Remote-Name
-          - Remote-Email
-```
+**Documentacion:** `docs/05-security/AUTHELIA.md`
+
+Ver [Arquitectura](../02-architecture/ARCHITECTURE.md) para configuracion detallada de Authelia.
 
 ---
 
-## FASE 3: Kong API Gateway
+## FASE 3: Kong API Gateway ✅ COMPLETADA (Cyberdyne)
 
 ### 🎯 Objetivo
 Desplegar Kong API Gateway por cada dominio para rate limiting, auth y logging avanzado.
 
-### 🟡 Prioridad: MEDIA
-**Razón**: Mejora operacional y observability. No crítico para seguridad básica.
+### ✅ Estado: COMPLETADO para Cyberdyne
+**Fecha:** 2026-01-16
 
-### ⏱️ Duración: 3-5 días
+### 📝 Implementación Realizada
 
-### 📝 Implementación
+**Archivos creados:**
+- `codespartan/platform/kong/cyberdyne/docker-compose.yml`
+- `codespartan/platform/kong/cyberdyne/kong.yml`
+- `codespartan/platform/kong/cyberdyne/README.md`
+- `.github/workflows/deploy-kong-cyberdyne.yml`
 
-Un Kong por dominio:
-- `kong-cyberdyne` → api.cyberdyne-systems.es
-- `kong-dental` → api.dental-io.com
-- `kong-trackworks` → api.cyberdyne-systems.es (backend)
-
-**Configuración declarativa:**
-```yaml
-# kong-cyberdyne.yml
-_format_version: "3.0"
-
-services:
-  - name: cyberdyne-api
-    url: http://cyberdyne-api:3000
-    routes:
-      - name: api-v1
-        paths:
-          - /v1
-    plugins:
-      - name: rate-limiting
-        config:
-          second: 10
-          minute: 100
-      - name: jwt
-      - name: prometheus
+**Arquitectura desplegada:**
 ```
+Internet → Traefik (SSL/443) → Kong (8000) → API Backend (3001) → MongoDB
+                                   |
+                                   v
+                               Prometheus (metricas :8100)
+                               Loki (logs JSON)
+```
+
+**Servicios configurados:**
+
+| Servicio | Host | Backend | Rate Limit |
+|----------|------|---------|------------|
+| Produccion | api.cyberdyne-systems.es | trackworks-api:3001 | 50 req/s |
+| Staging | api-staging.cyberdyne-systems.es | trackworks-api-staging:3001 | 100 req/s |
+
+**Plugins habilitados:**
+- rate-limiting (50/100 req/s por IP)
+- cors (origenes por servicio)
+- prometheus (puerto 8100)
+- request-transformer (headers X-Kong-*)
+
+**Red interna:**
+- `kong_cyberdyne` (172.26.0.0/24) - red interna entre Kong y APIs
+
+**Documentacion:** `docs/02-architecture/KONG.md`
+
+### 🔜 Pendiente
+- `kong-dental` → api.dental-io.com
+- `kong-mambo` → api.mambo-cloud.com (si aplica)
 
 ---
 
@@ -758,6 +751,6 @@ En caso de problemas durante la implementación:
 
 ---
 
-**Última actualización:** 2025-11-13
+**Ultima actualizacion:** 2026-01-16
 **Autor:** CodeSpartan Team
-**Estado:** En Progreso - FASE 1 Ready para implementación
+**Estado:** FASE 2 (Authelia) y FASE 3 (Kong Cyberdyne) completadas - FASE 4 (Aislamiento de Redes) pendiente

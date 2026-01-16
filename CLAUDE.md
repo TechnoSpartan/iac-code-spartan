@@ -25,6 +25,7 @@ The platform consists of three main layers:
 
 2. **Platform Layer** (`codespartan/platform/`)
    - **Traefik** (`platform/traefik/`): Reverse proxy with automatic Let's Encrypt SSL certificates
+   - **Kong API Gateway** (`platform/kong/`): Rate limiting, CORS, logging for APIs (DB-less mode)
    - **Monitoring Stack** (`platform/stacks/monitoring/`): VictoriaMetrics, vmagent, Grafana, Loki, Promtail, cAdvisor, Node Exporter (7-day retention)
    - **Backoffice** (`platform/stacks/backoffice/`): Management dashboard
 
@@ -37,10 +38,11 @@ The platform consists of three main layers:
 
 **Security Roadmap:**
 - 🔄 **docker-socket-proxy**: Filter for Docker API (eliminates Traefik direct access to socket)
-- 🔄 **Kong API Gateway**: One per domain for rate limiting, auth, logging
-- 🔄 **Authelia**: SSO with MFA for all dashboards
+- ✅ **Kong API Gateway** (Cyberdyne): Rate limiting 50/100 req/s, CORS, Prometheus metrics
+- 🔄 **Kong API Gateway** (Otros dominios): Pendiente para dental-io, mambo-cloud
+- ✅ **Authelia**: SSO con MFA implementado
 - 🔄 **Portainer**: Read-only dashboard behind Authelia
-- 🔄 **Network Isolation**: Each domain in its own internal network
+- ✅ **Network Isolation**: Cyberdyne con red interna kong_cyberdyne
 
 **Key Concepts:**
 - **docker-socket-proxy**: Security proxy that only allows GET operations to Docker API
@@ -189,10 +191,12 @@ networks:
 ```
 
 **Reserved subnets:**
+- `172.20.0.0/16` - web (Traefik routing)
 - `172.22.0.0/24` - mambo_internal
 - `172.23.0.0/24` - cyberdyne_internal
 - `172.24.0.0/24` - dental_internal
 - `172.25.0.0/24` - template example (available)
+- `172.26.0.0/24` - kong_cyberdyne (Kong <-> API internal)
 
 **Why this matters:**
 - Without network isolation, `cyberdyne-frontend` can directly communicate with `dental-io-db`
@@ -209,6 +213,7 @@ networks:
 |-------------|--------------|-----------|---------|
 | Databases | 512M - 1G | 0.5 - 1.0 | MongoDB, VictoriaMetrics |
 | API/Backend | 512M | 0.5 | Node.js, Python APIs |
+| API Gateway | 512M | 0.5 | Kong (uso real ~150-200MB) |
 | Frontend/Web | 512M | 0.5 | React, Vue apps |
 | Reverse Proxy | 512M | 0.5 | Traefik, Grafana, Loki |
 | Metrics Collectors | 256M | 0.25 | vmagent, Promtail, cAdvisor |
@@ -377,22 +382,25 @@ Services:
 
 ### Security Considerations (Current State)
 
+✅ **Implemented Security Features:**
+1. **Kong API Gateway** (Cyberdyne): Rate limiting 50/100 req/s, CORS, Prometheus metrics
+   - Arquitectura: `Traefik (SSL) → Kong (8000) → API (3001)`
+   - Red aislada: `kong_cyberdyne` (172.26.0.0/24)
+   - Docs: `docs/02-architecture/KONG.md`
+
+2. **Authelia SSO**: MFA habilitado para dashboards administrativos
+   - Protege: Traefik dashboard, Grafana, etc.
+
+3. **Network Isolation** (Cyberdyne): API solo accesible via Kong
+
 ⚠️ **Known Security Gaps (Being Addressed):**
 1. **Traefik has direct Docker socket access** (line 42 in `platform/traefik/docker-compose.yml`)
    - Risk: If Traefik is compromised, attacker has full Docker control
    - Solution: Implement docker-socket-proxy (see `docs/ARCHITECTURE.md`)
 
-2. **Shared network between applications**
-   - Risk: `cyberdyne-frontend` can communicate with `dental-io-db`
-   - Solution: Implement network isolation per domain (see `docs/ARCHITECTURE.md`)
-
-3. **No API Gateway**
-   - Risk: No rate limiting, no request transformation, limited logging
-   - Solution: Implement Kong per domain (see `docs/ARCHITECTURE.md`)
-
-4. **No centralized authentication**
-   - Risk: Each dashboard has separate credentials
-   - Solution: Implement Authelia SSO (see `docs/ARCHITECTURE.md`)
+2. **Kong pending for other domains**
+   - Risk: dental-io, mambo-cloud sin rate limiting
+   - Solution: Replicar patron Kong para otros dominios
 
 **When making changes to the architecture, consult `docs/ARCHITECTURE.md` for the target state and migration plan.**
 
@@ -408,6 +416,7 @@ This project is designed as a **replicable template**:
 
 ### Architecture and Design
 - **`docs/02-architecture/ARCHITECTURE.md`** - Complete architecture with high/low-level diagrams, security roadmap, and glossary of concepts (docker-socket-proxy, Kong, Authelia, Zero Trust)
+- **`docs/02-architecture/KONG.md`** - Kong API Gateway configuration, commands, and troubleshooting
 
 ### Quick Start and Overview
 - `README.md` - Quick start guide and project overview
