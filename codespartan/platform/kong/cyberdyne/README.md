@@ -74,7 +74,7 @@ curl -I https://api-staging.cyberdyne-systems.es/api/v1/health
 
 1. Validar kong.yml:
    ```bash
-   docker run --rm -v $(pwd)/kong.yml:/kong.yml kong:3.9-alpine kong config parse /kong.yml
+   docker run --rm -v $(pwd)/kong.yml:/kong.yml kong:3.9 kong config parse /kong.yml
    ```
 
 2. Verificar redes:
