@@ -1,0 +1,145 @@
+# ============================================================================
+# Kong API Gateway Workflow Template - {{DOMAIN_NAME}}
+# ============================================================================
+#
+# INSTRUCCIONES:
+# 1. Copiar este archivo: cp _TEMPLATE-deploy-kong.yml.template deploy-kong-{{DOMAIN_NAME}}.yml
+# 2. Reemplazar {{DOMAIN_NAME}} con el nombre del dominio (ej: dental-io)
+# 3. Reemplazar {{NETWORK_SUBNET}} con la subnet (ej: 172.27.0.0/24)
+# 4. Quitar la extension .template del nombre del archivo
+#
+# ============================================================================
+
+name: Deploy Kong {{DOMAIN_NAME}} (API Gateway)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/platform/kong/{{DOMAIN_NAME}}/**'
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy Kong config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/platform/kong/{{DOMAIN_NAME}}/*"
+          target: "/opt/codespartan/platform/kong/{{DOMAIN_NAME}}/"
+          strip_components: 4
+
+      - name: Deploy Kong
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            DEPLOY_START=$(date +%s)
+
+            echo "Preparando despliegue de Kong {{DOMAIN_NAME}}..."
+            cd /opt/codespartan/platform/kong/{{DOMAIN_NAME}}
+
+            # Crear redes si no existen (ambas son external en docker-compose)
+            echo "Verificando redes Docker..."
+            docker network create web 2>/dev/null || true
+            docker network create kong_{{DOMAIN_NAME}} \
+              --driver bridge \
+              --internal \
+              --subnet {{NETWORK_SUBNET}} 2>/dev/null || true
+
+            # Validar configuracion Kong (modo DB-less)
+            echo "Validando configuracion kong.yml..."
+            docker run --rm \
+              -e KONG_DATABASE=off \
+              -v $(pwd)/kong.yml:/kong.yml \
+              kong:3.9 kong config parse /kong.yml || {
+                echo "Error: kong.yml invalido"
+                exit 1
+              }
+
+            # Pull imagen
+            echo "Descargando imagen Kong..."
+            docker compose pull
+
+            # Deploy
+            echo "Desplegando Kong..."
+            docker compose up -d
+
+            # Health check
+            echo "Verificando salud de Kong..."
+            HEALTH_ATTEMPTS=0
+            MAX_ATTEMPTS=20
+
+            while [ $HEALTH_ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              HEALTH=$(docker inspect --format='{{.State.Health.Status}}' kong-{{DOMAIN_NAME}} 2>/dev/null || echo "starting")
+
+              if [ "$HEALTH" = "healthy" ]; then
+                echo "Kong esta saludable"
+                break
+              fi
+
+              echo "Estado: $HEALTH - esperando... ($((HEALTH_ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+              HEALTH_ATTEMPTS=$((HEALTH_ATTEMPTS + 1))
+              sleep 3
+            done
+
+            if [ $HEALTH_ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+              echo "Kong no alcanzo estado saludable"
+              docker logs kong-{{DOMAIN_NAME}} --tail 50
+              exit 1
+            fi
+
+            DEPLOY_END=$(date +%s)
+            DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+            echo ""
+            echo "========================================================"
+            echo "Kong {{DOMAIN_NAME}} desplegado exitosamente!"
+            echo "Tiempo: ${DEPLOY_TIME}s"
+            echo "========================================================"
+            echo ""
+            docker ps --filter "name=kong-{{DOMAIN_NAME}}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+      - name: Verify Traefik Discovery
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "Verificando discovery de Traefik..."
+            sleep 5
+
+            # Check if Traefik discovered Kong router
+            ROUTER_CHECK=$(docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>/dev/null | grep -c "kong-{{DOMAIN_NAME}}" || echo "0")
+
+            if [ "$ROUTER_CHECK" -gt "0" ]; then
+              echo "Traefik descubrio Kong correctamente"
+            else
+              echo "Traefik aun no descubre Kong (puede tomar unos segundos)"
+            fi
+
+            echo ""
+            echo "========================================================"
+            echo "Proximos pasos:"
+            echo "========================================================"
+            echo ""
+            echo "1. Modificar API para usar red kong_{{DOMAIN_NAME}}"
+            echo "2. Quitar labels Traefik de la API"
+            echo "3. Redeploy API: docker compose down && docker compose up -d"
+            echo ""

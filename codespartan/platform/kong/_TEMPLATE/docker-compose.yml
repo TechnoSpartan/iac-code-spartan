@@ -1,0 +1,110 @@
+# ============================================================================
+# Kong API Gateway Template - {{DOMAIN_NAME}}
+# ============================================================================
+#
+# INSTRUCCIONES DE USO:
+# 1. Copiar esta carpeta: cp -r _TEMPLATE {{domain-name}}
+# 2. Reemplazar en todos los archivos:
+#    - {{DOMAIN_NAME}} -> nombre del dominio (ej: dental-io)
+#    - {{DOMAIN_HOST}} -> host principal (ej: dental-io.com)
+#    - {{API_HOST}} -> host de la API (ej: api.dental-io.com)
+#    - {{API_STAGING_HOST}} -> host staging (ej: api-staging.dental-io.com)
+#    - {{API_CONTAINER}} -> nombre del contenedor API (ej: dental-api)
+#    - {{API_STAGING_CONTAINER}} -> contenedor staging (ej: dental-api-staging)
+#    - {{API_PORT}} -> puerto de la API (ej: 3000)
+#    - {{NETWORK_SUBNET}} -> subnet de la red (ej: 172.27.0.0/24)
+#    - {{CORS_ORIGINS}} -> origenes CORS permitidos
+#
+# 3. Crear la red antes de desplegar:
+#    docker network create kong_{{DOMAIN_NAME}} --driver bridge --internal --subnet {{NETWORK_SUBNET}}
+#
+# 4. Actualizar la API para usar la red kong_{{DOMAIN_NAME}} en lugar de web
+#
+# ============================================================================
+
+services:
+  kong:
+    image: kong:3.9
+    container_name: kong-{{DOMAIN_NAME}}
+    restart: unless-stopped
+
+    environment:
+      # Modo DB-less (declarativo)
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+
+      # Listeners
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "127.0.0.1:8001"
+
+      # Logging estructurado JSON para Loki
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_LOG_LEVEL: info
+
+      # Metricas Prometheus
+      KONG_STATUS_LISTEN: "0.0.0.0:8100"
+
+      # Trust Traefik headers
+      KONG_TRUSTED_IPS: "172.20.0.0/16"
+      KONG_REAL_IP_HEADER: "X-Forwarded-For"
+      KONG_REAL_IP_RECURSIVE: "on"
+
+    volumes:
+      - ./kong.yml:/kong/declarative/kong.yml:ro
+
+    # Dual-homed: web (Traefik) + kong_{{DOMAIN_NAME}} (API interna)
+    networks:
+      - web
+      - kong_{{DOMAIN_NAME}}
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+
+      # Servicio unico para Kong (puerto 8000)
+      - traefik.http.services.kong-{{DOMAIN_NAME}}.loadbalancer.server.port=8000
+
+      # Router para produccion: {{API_HOST}}
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-api.rule=Host(`{{API_HOST}}`)
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-api.entrypoints=websecure
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-api.tls=true
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-api.tls.certresolver=le
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-api.service=kong-{{DOMAIN_NAME}}
+
+      # Router para staging: {{API_STAGING_HOST}}
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-staging.rule=Host(`{{API_STAGING_HOST}}`)
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-staging.entrypoints=websecure
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-staging.tls=true
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-staging.tls.certresolver=le
+      - traefik.http.routers.kong-{{DOMAIN_NAME}}-staging.service=kong-{{DOMAIN_NAME}}
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  web:
+    external: true
+  kong_{{DOMAIN_NAME}}:
+    external: true
