@@ -19,10 +19,10 @@ jobs:
         with:
           path: iac-repo
 
-      - name: Checkout trackworks-maqueta repository
+      - name: Checkout codespartan-cloud repository
         uses: actions/checkout@v4
         with:
-          repository: TechnoSpartan/trackworks-maqueta
+          repository: TechnoSpartan/codespartan-cloud
           path: app-repo
           token: ${{ secrets.GH_PAT }}
 
@@ -73,11 +73,12 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           GHCR_TOKEN: ${{ secrets.GH_PAT }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: GHCR_TOKEN
+          envs: GHCR_TOKEN,OPENAI_API_KEY
           script: |
             set -euo pipefail
 
@@ -94,6 +95,12 @@ jobs:
             # Login to GHCR
             echo "🔐 Logging in to GitHub Container Registry..."
             echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            # Create .env file with secrets
+            echo "🔧 Creating environment variables..."
+            cat > .env <<EOF
+            OPENAI_API_KEY=$OPENAI_API_KEY
+            EOF
 
             # Pull latest image
             echo "📦 Pulling latest Docker image..."
