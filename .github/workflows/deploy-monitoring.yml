@@ -17,9 +17,9 @@ jobs:
           mkdir -p artifacts/monitoring
           cp -r codespartan/platform/stacks/monitoring/* artifacts/monitoring/
 
-          # Crear archivo .env con configuración de Grafana
-          # Nota: Grafana usa OAuth2 de Authelia, no hay usuario admin local
+          # Crear archivo .env con configuración de Grafana y secretos
           echo "GRAFANA_HOST=grafana.mambo-cloud.com" > artifacts/monitoring/.env
+          echo "DISCORD_WEBHOOK=${{ secrets.DISCORD_WEBHOOK }}" >> artifacts/monitoring/.env
 
           echo "✓ Files prepared:"
           ls -la artifacts/monitoring/

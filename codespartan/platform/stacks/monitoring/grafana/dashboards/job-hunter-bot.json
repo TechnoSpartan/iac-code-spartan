@@ -1,0 +1,57 @@
+{
+  "title": "Job Hunter Bot",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Requests per second",
+      "datasource": "VictoriaMetrics",
+      "targets": [
+        {
+          "expr": "sum(rate(job_hunter_http_requests_total[1m]))",
+          "legendFormat": "rps"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP 5xx rate",
+      "datasource": "VictoriaMetrics",
+      "targets": [
+        {
+          "expr": "sum(rate(job_hunter_http_requests_total{status=~\"5..\"}[1m]))",
+          "legendFormat": "5xx"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p95",
+      "datasource": "VictoriaMetrics",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(job_hunter_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests by route",
+      "datasource": "VictoriaMetrics",
+      "targets": [
+        {
+          "expr": "sum(rate(job_hunter_http_requests_total[1m])) by (route)",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 }
+    }
+  ]
+}
