@@ -1,0 +1,142 @@
+name: Deploy Job Hunter
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/apps/codespartan-cloud/job-hunter/**'
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare remote dir
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mkdir -p /opt/codespartan/apps/codespartan-cloud/job-hunter
+
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "codespartan/apps/codespartan-cloud/job-hunter/docker-compose.yml"
+          target: "/opt/codespartan/apps/codespartan-cloud/job-hunter/"
+          strip_components: 5
+          overwrite: true
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_PAT }}
+          JOB_HUNTER_BOT_TOKEN: ${{ secrets.JOB_HUNTER_BOT_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          FREELANCER_API_KEY: ${{ secrets.FREELANCER_API_KEY }}
+          REED_API_KEY: ${{ secrets.REED_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_TOKEN,JOB_HUNTER_BOT_TOKEN,OPENAI_API_KEY,CLAUDE_API_KEY,DEEPSEEK_API_KEY,GROQ_API_KEY,FREELANCER_API_KEY,REED_API_KEY,TELEGRAM_BOT_TOKEN,TELEGRAM_CHAT_ID
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚀 DEPLOYING JOB HUNTER"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /opt/codespartan/apps/codespartan-cloud/job-hunter
+            DEPLOY_START=$(date +%s)
+
+            docker network create web 2>/dev/null || echo "Network 'web' already exists"
+            docker network create monitoring 2>/dev/null || echo "Network 'monitoring' already exists"
+
+            echo "🔐 Logging in to GitHub Container Registry..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            echo "🔧 Creating .env..."
+            cat > .env <<EOF
+            NODE_ENV=production
+            TZ=Europe/Madrid
+
+            JOB_HUNTER_BOT_IMAGE=ghcr.io/technospartan/job-hunter-bot:latest
+            JOB_HUNTER_DASHBOARD_IMAGE=ghcr.io/technospartan/job-hunter-dashboard:latest
+
+            JOB_HUNTER_API_HOST=api.codespartan.cloud
+            JOB_HUNTER_DASHBOARD_HOST=dashboard.codespartan.cloud
+
+            DATABASE_PATH=/app/data/job-hunter.db
+
+            BOT_API_HOST=0.0.0.0
+            BOT_API_PORT=3101
+            BOT_API_CORS_ORIGIN=https://dashboard.codespartan.cloud
+            BOT_API_TOKEN=$JOB_HUNTER_BOT_TOKEN
+
+            BOT_METRICS_PORT=9102
+
+            NEXT_PUBLIC_BOT_API_URL=https://api.codespartan.cloud
+            NEXT_PUBLIC_BOT_API_TOKEN=$JOB_HUNTER_BOT_TOKEN
+
+            LLM_PROVIDER=multi
+            OPENAI_API_KEY=$OPENAI_API_KEY
+            CLAUDE_API_KEY=$CLAUDE_API_KEY
+            DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY
+            GROQ_API_KEY=$GROQ_API_KEY
+
+            FREELANCER_API_KEY=$FREELANCER_API_KEY
+            REED_API_KEY=$REED_API_KEY
+
+            TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
+            TELEGRAM_CHAT_ID=$TELEGRAM_CHAT_ID
+
+            CRON_SCHEDULE=0 8 * * *
+            EOF
+
+            echo "📦 Pulling latest images..."
+            docker compose pull
+
+            echo "🚀 Starting containers..."
+            docker compose up -d
+
+            echo "⏳ Waiting for health checks..."
+            sleep 20
+
+            FAILED=0
+            for container in $(docker compose ps -q); do
+              STATUS=$(docker inspect "$container" --format='{{.State.Health.Status}}' 2>/dev/null || echo "no health check")
+              NAME=$(docker inspect "$container" --format='{{.Name}}' | sed 's/\///')
+              if [ "$STATUS" = "unhealthy" ]; then
+                echo "❌ $NAME is unhealthy"
+                docker logs "$container" --tail 20
+                FAILED=$((FAILED + 1))
+              else
+                echo "✅ $NAME is $STATUS"
+              fi
+            done
+
+            if [ $FAILED -gt 0 ]; then
+              exit 1
+            fi
+
+            DEPLOY_END=$(date +%s)
+            echo ""
+            echo "════════════════════════════════════════════════════════════"
+            echo "✅ DEPLOYMENT SUCCESSFUL ($((DEPLOY_END - DEPLOY_START))s)"
+            echo "════════════════════════════════════════════════════════════"
+            echo "🌐 API:       https://api.codespartan.cloud"
+            echo "🌐 Dashboard: https://dashboard.codespartan.cloud"

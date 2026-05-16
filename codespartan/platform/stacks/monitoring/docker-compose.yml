@@ -126,7 +126,7 @@ services:
     container_name: ntfy-forwarder
     environment:
       - NTFY_URL=https://ntfy.sh/codespartan-mambo-alerts
-      - DISCORD_WEBHOOK=https://discord.com/api/webhooks/1428474626413170861/dn_13yS7C27tQ1jdkARIgTFlLt8UkNOr_tUUZmDQCrS9rBWZQ1olrOAfCGCVlE4A8UWx
+      - DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
     networks:
       - monitoring
     restart: unless-stopped
