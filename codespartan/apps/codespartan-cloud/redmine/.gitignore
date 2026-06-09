@@ -8,3 +8,12 @@
 *.tmp
 *.swp
 *~
+
+# Commercial plugin ZIPs (download after purchase, never commit)
+plugins/*.zip
+
+# Commercial plugin directories (unzip here before rebuilding the image)
+# These are excluded from git because they require a paid license.
+# After purchase: unzip into plugins/<plugin_name>/ and uncomment COPY in Dockerfile.
+plugins/at_checklist/
+plugins/at_rechnungstellung/

@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Checkout code
@@ -84,8 +84,11 @@ jobs:
             echo "=== Navigating to Redmine directory ==="
             cd /opt/codespartan/apps/codespartan-cloud/redmine
 
-            echo "=== Pulling latest images ==="
-            docker compose pull
+            echo "=== Pulling latest base images ==="
+            docker compose pull db
+
+            echo "=== Building Redmine image with plugins ==="
+            docker compose build app
 
             echo "=== Deploying Redmine ==="
             docker compose down
