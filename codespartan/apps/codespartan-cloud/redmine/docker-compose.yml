@@ -32,7 +32,7 @@ services:
         max-file: "3"
 
   app:
-    image: redmine:6-alpine
+    build: .
     container_name: redmine-app
     restart: unless-stopped
     depends_on:
@@ -66,7 +66,6 @@ services:
       REDMINE_HOSTNAME: "${REDMINE_HOSTNAME}"
     volumes:
       - redmine-data:/usr/src/redmine/files
-      - redmine-plugins:/usr/src/redmine/plugins
       - redmine-themes:/usr/src/redmine/public/themes
     networks:
       - web
@@ -103,8 +102,6 @@ volumes:
   redmine-db-data:
     driver: local
   redmine-data:
-    driver: local
-  redmine-plugins:
     driver: local
   redmine-themes:
     driver: local
