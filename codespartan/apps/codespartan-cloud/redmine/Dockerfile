@@ -1,6 +1,10 @@
 FROM redmine:6-alpine
 
-RUN apk add --no-cache git
+USER root
+
+RUN apk add --no-cache git && \
+    mkdir -p /home/redmine/.bundle && \
+    chmod 1777 /home/redmine/.bundle
 
 WORKDIR /usr/src/redmine
 
@@ -28,4 +32,7 @@ RUN git clone --depth=1 https://github.com/kory33/redmine_discord.git plugins/re
 # ─────────────────────────────────────────────────────────────────────────────
 
 RUN bundle install --without development test --no-cache && \
-    chmod -R g+w /usr/src/redmine/plugins /usr/src/redmine/files /usr/src/redmine/public/themes
+    chmod -R g+w /usr/src/redmine/plugins /usr/src/redmine/files /usr/src/redmine/public/themes && \
+    chown -R redmine:redmine /home/redmine /usr/src/redmine
+
+USER redmine
