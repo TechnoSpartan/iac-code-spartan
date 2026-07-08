@@ -45,6 +45,7 @@ jobs:
           build-args: |
             VITE_SUPABASE_URL=${{ secrets.SOCIAL_POSTS_VITE_SUPABASE_URL }}
             VITE_SUPABASE_ANON_KEY=${{ secrets.SOCIAL_POSTS_VITE_SUPABASE_ANON_KEY }}
+            VITE_API_URL=https://api.cyberdyne-systems.es
           tags: |
             ghcr.io/technospartan/ft-rc-bko-social_posts:${{ steps.vars.outputs.tag }}
             ghcr.io/technospartan/ft-rc-bko-social_posts:latest
@@ -58,3 +59,5 @@ jobs:
       image: ghcr.io/technospartan/ft-rc-bko-social_posts:${{ needs.build-and-push.outputs.image_tag }}
       domain: www.cyberdyne-systems.es
       port: '80'
+      memory: '128m'
+      cpus: '0.25'
