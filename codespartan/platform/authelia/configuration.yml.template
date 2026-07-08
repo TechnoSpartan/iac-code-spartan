@@ -105,9 +105,14 @@ access_control:
     - domain:
         - www.mambo-cloud.com
         - staging.mambo-cloud.com
+        - lab.mambo-cloud.com
         - www.cyberdyne-systems.es
         - staging.cyberdyne-systems.es
         - www.dental-io.com
+        - staging.dental-io.com
+        - lab.dental-io.com
+        - www.codespartan.cloud
+        - ui.codespartan.cloud
       policy: bypass
 
 # Session configuration

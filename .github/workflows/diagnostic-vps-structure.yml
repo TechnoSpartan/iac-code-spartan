@@ -21,7 +21,7 @@ jobs:
             find /opt/codespartan/apps -maxdepth 2 -type d 2>/dev/null | sort || echo "No subdirs"
             echo ""
             echo "=== Running Docker containers ==="
-            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E "(cyberdyne|dental|mambo|openproject)" || echo "No matching containers"
+            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E "(cyberdyne|dental|mambo|redmine)" || echo "No matching containers"
             echo ""
             echo "=== Traefik status ==="
             docker ps | grep traefik || echo "Traefik not running"

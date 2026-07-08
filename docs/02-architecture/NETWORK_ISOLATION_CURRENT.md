@@ -67,8 +67,7 @@ docker_api (1308264bf563)        - Red privada Docker API
 ├─ docker-socket-proxy          - Filtered Docker socket
 └─ traefik                      - Reverse proxy (+ web)
 
-openproject_internal (dd0d624edde0) - Red privada OpenProject
-└─ (sin contenedores activos actualmente)
+# openproject_internal - ELIMINADA (OpenProject reemplazado por Redmine)
 ```
 
 ---

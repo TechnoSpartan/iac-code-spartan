@@ -99,31 +99,12 @@
 
 ---
 
-### 3. Deploy OpenProject ✅ DEPRECATED
+### 3. Deploy OpenProject ✅ REMOVED
 
-**Severity**: N/A (DEPRECATED)
-**Status**: ✅ **DISABLED** - No longer in active use (replaced with Redmine)
-**Previous Failure Rate**: 1/1 run failed (100%)
-**Last Run**: 2025-12-02T13:22:06Z
-**Workflow File**: `.github/workflows/deploy-openproject.yml` (DISABLED)
-
-**Reason for Deprecation**:
-- OpenProject has been replaced with Redmine for project management
-- The `codespartan/apps/codespartan-cloud/project/` directory is no longer actively used
-- Deploy Redmine (FASE 1) is the current solution
-
-**Action Taken**:
-- Disabled automatic workflow triggers (push to project/** paths will no longer trigger)
-- Workflow can still be manually triggered via `workflow_dispatch` if needed
-- Marked workflow as DEPRECATED in GitHub
-
-**Fix Commits**:
-- `170417c` - Fix: Disable deprecated Deploy OpenProject workflow
-
-**Related Files**:
-- `codespartan/apps/codespartan-cloud/redmine/docker-compose.yml` (USE THIS INSTEAD)
-- `.github/workflows/deploy-redmine.yml` (ACTIVE REPLACEMENT)
-- `.github/workflows/deploy-openproject.yml` (DEPRECATED - disabled triggers)
+**Status**: 🗑️ **REMOVED** - OpenProject eliminado del repositorio
+**Replacement**: Redmine (`codespartan/apps/codespartan-cloud/redmine/`) 
+**Workflow**: `.github/workflows/deploy-openproject.yml` (DELETED)
+**Reason**: OpenProject consumía demasiados recursos (1.5GB+ RAM). Redmine usa ~512MB.
 
 ---
 

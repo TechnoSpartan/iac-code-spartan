@@ -192,11 +192,16 @@ networks:
 
 **Reserved subnets:**
 - `172.20.0.0/16` - web (Traefik routing)
-- `172.22.0.0/24` - mambo_internal
-- `172.23.0.0/24` - cyberdyne_internal
-- `172.24.0.0/24` - dental_internal
-- `172.25.0.0/24` - template example (available)
+- `172.21.0.0/24` - authelia_internal
+- `172.22.0.0/24` - api_trackworks (Cyberdyne API + MongoDB, internal)
+- `172.24.0.0/24` - monitoring stack
+- `172.25.0.0/24` - docker_api (socket proxy, internal)
 - `172.26.0.0/24` - kong_cyberdyne (Kong <-> API internal)
+- `172.27.0.0/24` - reserved for kong_dental (future)
+- `172.28.0.0/24` - reserved for kong_mambo (future)
+- `172.29.0.0/24` - mambo_internal
+- `172.30.0.0/24` - dental_internal
+- `172.31.0.0/24` - redmine_internal
 
 **Why this matters:**
 - Without network isolation, `cyberdyne-frontend` can directly communicate with `dental-io-db`

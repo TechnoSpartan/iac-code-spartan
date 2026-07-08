@@ -75,7 +75,7 @@ jobs:
             document-start: disable
             comments-indentation: disable
           ignore: |
-            .github/workflows/deploy-openproject.yml
+            # (vacío - no hay workflows deprecated que ignorar)
           EOF
 
       - name: Lint GitHub Workflows

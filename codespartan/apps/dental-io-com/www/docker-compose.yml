@@ -1,6 +1,6 @@
 services:
   web:
-    image: traefik/whoami:v1.11.0
+    image: nginx:stable-alpine
     container_name: dental-io-web
     labels:
       - traefik.enable=true
@@ -16,10 +16,16 @@ services:
       - traefik.http.routers.dental-www.tls.certresolver=le
       - traefik.http.routers.dental-staging.tls.certresolver=le
       - traefik.http.routers.dental-lab.tls.certresolver=le
+      - traefik.http.routers.dental-www.service=dental-web
+      - traefik.http.routers.dental-staging.service=dental-web
+      - traefik.http.routers.dental-lab.service=dental-web
+      - traefik.http.services.dental-web.loadbalancer.server.port=80
       - traefik.docker.network=web
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
     networks:
-      - web        # Accesible por Traefik
-      - dental_net # Red interna de la aplicación
+      - web
+      - dental_net
     restart: unless-stopped
     deploy:
       resources:
@@ -29,16 +35,19 @@ services:
         reservations:
           cpus: '0.05'
           memory: 32M
-    # Note: traefik/whoami is a minimal scratch image without wget/curl
-    # Healthcheck not needed - Traefik handles health monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 networks:
   web:
     external: true
   dental_net:
     name: dental_internal
     driver: bridge
-    internal: false # Permite acceso a internet si es necesario
+    internal: false
     ipam:
       config:
-        - subnet: 172.24.0.0/24
-
+        - subnet: 172.30.0.0/24
