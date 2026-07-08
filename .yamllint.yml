@@ -21,8 +21,6 @@ rules:
     max-spaces-inside: 1
     level: warning
 ignore: |
-  # Deprecated/obsolete workflow
-  .github/workflows/deploy-openproject.yml
   # Debug and diagnostic workflows (temporary/obsolete - 48 files)
   .github/workflows/*debug*.yml
   .github/workflows/*check*.yml

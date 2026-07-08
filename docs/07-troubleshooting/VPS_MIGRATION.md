@@ -24,7 +24,7 @@ codespartan/apps/
 │   ├── api/
 │   ├── api-staging/
 │   ├── mambo/
-│   ├── project/          ← OpenProject (docker-compose.yml)
+│   ├── project/          ← Redmine (docker-compose.yml) [OpenProject eliminado]
 │   ├── staging/
 │   ├── traefik/
 │   ├── ui/
@@ -126,9 +126,10 @@ if [ -d "/opt/codespartan/apps/cyberdyne" ]; then
   sudo mv /opt/codespartan/apps/cyberdyne/staging/* /opt/codespartan/apps/cyberdyne-systems-es/staging/ 2>/dev/null || true
 fi
 
+# OpenProject ha sido eliminado (reemplazado por Redmine)
 # Si existe /opt/codespartan/apps/openproject/
 if [ -d "/opt/codespartan/apps/openproject" ]; then
-  sudo mv /opt/codespartan/apps/openproject/* /opt/codespartan/apps/codespartan-cloud/project/ 2>/dev/null || true
+  echo "OpenProject ya no existe - eliminado en favor de Redmine" 
 fi
 
 # Si existe /opt/codespartan/apps/dental-io/
@@ -146,13 +147,14 @@ fi
 
 ```bash
 # Listar todos los contenedores relacionados
-docker ps -a | grep -E "(cyberdyne|dental|mambo|openproject)"
+docker ps -a | grep -E "(cyberdyne|dental|mambo|redmine)"
 
 # Detener y eliminar contenedores antiguos (CUIDADO)
 docker stop $(docker ps -q --filter "name=cyberdyne") 2>/dev/null || true
 docker stop $(docker ps -q --filter "name=dental") 2>/dev/null || true
 docker stop $(docker ps -q --filter "name=mambo") 2>/dev/null || true
-docker stop $(docker ps -q --filter "name=openproject") 2>/dev/null || true
+# OpenProject eliminado - ya no es necesario detenerlo
+# docker stop $(docker ps -q --filter "name=openproject") 2>/dev/null || true
 ```
 
 ### PASO 6: Verificar Traefik

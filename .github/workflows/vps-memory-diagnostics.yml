@@ -47,8 +47,8 @@ jobs:
             echo "Total Memory Limits: ${TOTAL_LIMIT_MB}MB ($(awk "BEGIN {printf \"%.2f\", ${TOTAL_LIMIT_MB}/1024}")GB)"
             
             echo ""
-            echo "=== OpenProject Containers (detailed) ==="
-            docker stats --no-stream openproject-app openproject-db openproject-cache 2>/dev/null || echo "OpenProject containers not running"
+            echo "=== OpenProject Containers (REMOVED - replaced by Redmine) ==="
+            echo "OpenProject was removed - check Redmine instead"
             
             echo ""
             echo "=== Monitoring Stack Containers (detailed) ==="

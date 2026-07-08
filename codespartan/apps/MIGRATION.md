@@ -69,7 +69,7 @@ codespartan/apps/
 | `cyberdyne/staging/` | `cyberdyne-systems-es/staging/` | ✅ Migrated |
 | `cyberdyne/backend/` | `cyberdyne-systems-es/api/` | ✅ Migrated |
 | `cyberdyne/backend-staging/` | `cyberdyne-systems-es/api-staging/` | ✅ Migrated |
-| `openproject/` | `cyberdyne-systems-es/project/` | ✅ Migrated |
+| `openproject/` | ~~`cyberdyne-systems-es/project/`~~ | 🗑️ **Removed** (replaced by Redmine) |
 | `mambo-cloud/` | `mambo-cloud-com/www/` | ✅ Migrated |
 | `dental-io/` | `dental-io-com/www/` | ✅ Migrated |
 | `cyberdyne-api/` | ❌ **Deprecated** (duplicate of cyberdyne/backend/) | To remove |
@@ -88,7 +88,7 @@ codespartan/apps/
 ├── cyberdyne-api/      # Duplicate - can be removed
 ├── dental-io/          # Replaced by dental-io-com/
 ├── mambo-cloud/        # Replaced by mambo-cloud-com/
-└── openproject/        # Replaced by cyberdyne-systems-es/project/
+└── openproject/        # 🗑️ Removed (replaced by codespartan-cloud/redmine/)
 ```
 
 ⚠️ **Do not delete old directories until**:

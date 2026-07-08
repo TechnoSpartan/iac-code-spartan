@@ -39,7 +39,6 @@ Documentación sobre despliegue y CI/CD:
 - [Añadir Aplicaciones](04-deployment/ADDING_APPS.md) - Cómo añadir nuevas aplicaciones
 - [CI/CD con GitHub Actions](04-deployment/GITHUB.md) - Configuración y uso de GitHub Actions
 - [Terraform](04-deployment/TERRAFORM.md) - Gestión de infraestructura con Terraform
-- [OpenProject Deployment](04-deployment/OPENPROJECT_DEPLOYMENT.md) - Resumen despliegue OpenProject
 - [Roadmap Cyberdyne](04-deployment/ROADMAP_CYBERDYNE.md) - Roadmap específico Cyberdyne Systems
 
 ## Seguridad

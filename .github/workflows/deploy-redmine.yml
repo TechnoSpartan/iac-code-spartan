@@ -36,14 +36,14 @@ jobs:
           REDMINE_LANG=en
           REDMINE_SECRET_KEY_BASE=${{ secrets.REDMINE_SECRET_KEY_BASE }}
 
-          # SMTP Configuration
+          # SMTP Configuration (using port 587 - Hetzner firewall only allows outbound 587)
           SMTP_ADDRESS=smtp.hostinger.com
-          SMTP_PORT=465
+          SMTP_PORT=587
           SMTP_DOMAIN=codespartan.es
           SMTP_AUTHENTICATION=login
           SMTP_USERNAME=noreply@codespartan.es
           SMTP_PASSWORD=${{ secrets.REDMINE_SMTP_PASSWORD }}
-          SMTP_TLS=true
+          SMTP_TLS=false
           EOF
 
       - name: Create remote directory
