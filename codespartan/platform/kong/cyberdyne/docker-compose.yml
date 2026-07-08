@@ -31,10 +31,10 @@ services:
     volumes:
       - ./kong.yml:/kong/declarative/kong.yml:ro
 
-    # Dual-homed: web (Traefik) + kong_cyberdyne (API interna)
+    # Solo necesita 'web' (Traefik): el upstream es la URL externa de Supabase,
+    # no hay ningun contenedor interno al que llegar.
     networks:
       - web
-      - kong_cyberdyne
 
     labels:
       - traefik.enable=true
@@ -49,13 +49,6 @@ services:
       - traefik.http.routers.kong-cyberdyne-api.tls=true
       - traefik.http.routers.kong-cyberdyne-api.tls.certresolver=le
       - traefik.http.routers.kong-cyberdyne-api.service=kong-cyberdyne
-
-      # Router para api-staging.cyberdyne-systems.es
-      - traefik.http.routers.kong-cyberdyne-staging.rule=Host(`api-staging.cyberdyne-systems.es`)
-      - traefik.http.routers.kong-cyberdyne-staging.entrypoints=websecure
-      - traefik.http.routers.kong-cyberdyne-staging.tls=true
-      - traefik.http.routers.kong-cyberdyne-staging.tls.certresolver=le
-      - traefik.http.routers.kong-cyberdyne-staging.service=kong-cyberdyne
 
     deploy:
       resources:
@@ -81,6 +74,4 @@ services:
 
 networks:
   web:
-    external: true
-  kong_cyberdyne:
     external: true
