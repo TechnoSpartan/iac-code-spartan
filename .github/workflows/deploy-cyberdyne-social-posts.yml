@@ -1,0 +1,60 @@
+name: Deploy Cyberdyne Social Posts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - name: Checkout IaC repository
+        uses: actions/checkout@v4
+        with:
+          path: iac-repo
+
+      - name: Checkout ft-rc-bko-social_posts repository
+        uses: actions/checkout@v4
+        with:
+          repository: TechnoSpartan/ft-rc-bko-social_posts
+          path: app-repo
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Compute image tag
+        id: vars
+        run: echo "tag=sha-$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: technospartan
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app-repo
+          file: ./app-repo/Dockerfile
+          platforms: linux/arm64
+          push: true
+          build-args: |
+            VITE_SUPABASE_URL=${{ secrets.SOCIAL_POSTS_VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.SOCIAL_POSTS_VITE_SUPABASE_ANON_KEY }}
+          tags: |
+            ghcr.io/technospartan/ft-rc-bko-social_posts:${{ steps.vars.outputs.tag }}
+            ghcr.io/technospartan/ft-rc-bko-social_posts:latest
+
+  deploy:
+    needs: build-and-push
+    uses: ./.github/workflows/deploy-blue-green.yml
+    secrets: inherit
+    with:
+      app: cyberdyne-social-posts
+      image: ghcr.io/technospartan/ft-rc-bko-social_posts:${{ needs.build-and-push.outputs.image_tag }}
+      domain: www.cyberdyne-systems.es
+      port: '80'

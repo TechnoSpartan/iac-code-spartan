@@ -20,6 +20,21 @@ on:
         required: false
         default: '80'
         type: string
+  workflow_call:
+    inputs:
+      app:
+        required: true
+        type: string
+      image:
+        required: true
+        type: string
+      domain:
+        required: true
+        type: string
+      port:
+        required: false
+        default: '80'
+        type: string
 
 jobs:
   deploy:

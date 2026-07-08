@@ -6,23 +6,23 @@ _transform: true
 # ==============================================================================
 services:
   # ---------------------------------------------------------------------------
-  # Production API (api.cyberdyne-systems.es)
+  # Social Posts API (api.cyberdyne-systems.es) — proxies to Supabase Edge Functions
   # ---------------------------------------------------------------------------
-  - name: cyberdyne-api-production
-    url: http://trackworks-api:3001
+  - name: cyberdyne-social-posts-api
+    url: https://YOUR-PROJECT-REF.supabase.co   # TODO: replace with your real VITE_SUPABASE_URL
     connect_timeout: 10000
     write_timeout: 60000
     read_timeout: 60000
     retries: 3
 
     routes:
-      - name: api-production-route
+      - name: social-posts-api-route
         hosts:
           - api.cyberdyne-systems.es
         paths:
           - /
         strip_path: false
-        preserve_host: true
+        preserve_host: false
         protocols:
           - http
           - https
@@ -39,15 +39,12 @@ services:
           error_code: 429
           error_message: "Rate limit exceeded. Please retry after some time."
 
-      # CORS para produccion
+      # CORS
       - name: cors
         config:
           origins:
             - https://cyberdyne-systems.es
             - https://www.cyberdyne-systems.es
-            - https://staging.cyberdyne-systems.es
-            - https://lab.cyberdyne-systems.es
-            - https://api.cyberdyne-systems.es
           methods:
             - GET
             - POST
@@ -75,71 +72,6 @@ services:
           add:
             headers:
               - "X-Kong-Proxy:true"
-
-  # ---------------------------------------------------------------------------
-  # Staging API (api-staging.cyberdyne-systems.es)
-  # ---------------------------------------------------------------------------
-  - name: cyberdyne-api-staging
-    url: http://trackworks-api-staging:3001
-    connect_timeout: 10000
-    write_timeout: 60000
-    read_timeout: 60000
-    retries: 3
-
-    routes:
-      - name: api-staging-route
-        hosts:
-          - api-staging.cyberdyne-systems.es
-        paths:
-          - /
-        strip_path: false
-        preserve_host: true
-        protocols:
-          - http
-          - https
-
-    plugins:
-      # Rate Limiting mas permisivo para staging
-      - name: rate-limiting
-        config:
-          minute: 6000
-          second: 100
-          policy: local
-          fault_tolerant: true
-          hide_client_headers: false
-
-      # CORS para staging (incluye localhost para desarrollo)
-      - name: cors
-        config:
-          origins:
-            - https://staging.cyberdyne-systems.es
-            - https://lab.cyberdyne-systems.es
-            - http://localhost:3000
-            - http://localhost:5173
-          methods:
-            - GET
-            - POST
-            - PUT
-            - DELETE
-            - PATCH
-            - OPTIONS
-          headers:
-            - Accept
-            - Authorization
-            - Content-Type
-            - Origin
-            - X-Requested-With
-            - X-Request-ID
-          credentials: true
-          max_age: 3600
-
-      # Request Transformer: Add tracking headers
-      - name: request-transformer
-        config:
-          add:
-            headers:
-              - "X-Kong-Proxy:true"
-              - "X-Kong-Environment:staging"
 
 # ==============================================================================
 # GLOBAL PLUGINS

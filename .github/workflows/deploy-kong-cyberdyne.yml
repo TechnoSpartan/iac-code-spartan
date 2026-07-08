@@ -42,13 +42,9 @@ jobs:
             echo "🔧 Preparando despliegue de Kong Cyberdyne..."
             cd /opt/codespartan/platform/kong/cyberdyne
 
-            # Crear redes si no existen (ambas son external en docker-compose)
-            echo "🌐 Verificando redes Docker..."
+            # Crear red si no existe (external en docker-compose)
+            echo "🌐 Verificando red Docker..."
             docker network create web 2>/dev/null || true
-            docker network create kong_cyberdyne \
-              --driver bridge \
-              --internal \
-              --subnet 172.26.0.0/24 2>/dev/null || true
 
             # Validar configuracion Kong (modo DB-less)
             echo "✅ Validando configuracion kong.yml..."
@@ -124,15 +120,9 @@ jobs:
 
             echo ""
             echo "════════════════════════════════════════════════════════"
-            echo "📋 Proximos pasos:"
+            echo "🔗 Endpoints:"
             echo "════════════════════════════════════════════════════════"
             echo ""
-            echo "1. Modificar API Cyberdyne para usar red kong_cyberdyne"
-            echo "2. Quitar labels Traefik de la API"
-            echo "3. Redeploy API: docker compose down && docker compose up -d"
-            echo ""
-            echo "🔗 Endpoints (despues de migrar API):"
-            echo "  - Produccion: https://api.cyberdyne-systems.es"
-            echo "  - Staging: https://api-staging.cyberdyne-systems.es"
+            echo "  - Produccion: https://api.cyberdyne-systems.es (proxy a Supabase)"
             echo "  - Metricas: http://localhost:8100/metrics (interno)"
             echo ""
