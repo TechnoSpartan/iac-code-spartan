@@ -3,6 +3,14 @@ services:
     image: ghcr.io/technospartan/ft-rc-bko-social_posts:latest
     container_name: cyberdyne-social-posts
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:80/"]
       interval: 30s
