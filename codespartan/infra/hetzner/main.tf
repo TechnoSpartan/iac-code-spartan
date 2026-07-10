@@ -274,6 +274,36 @@ resource "hcloud_server" "vps_apis" {
   }
 }
 
+# Red privada entre el VPS ARM y el VPS de APIs: el tráfico Traefik -> Kong
+# de Supabase (self-hosted) va por aquí, no por internet público. El puerto
+# del Kong de Supabase nunca se abre en el firewall público: solo es
+# alcanzable desde esta red privada.
+resource "hcloud_network" "internal" {
+  name     = "codespartan-internal"
+  ip_range = "10.0.0.0/24"
+}
+
+resource "hcloud_network_subnet" "internal" {
+  network_id   = hcloud_network.internal.id
+  type         = "cloud"
+  network_zone = "eu-central"
+  ip_range     = "10.0.0.0/24"
+}
+
+resource "hcloud_server_network" "vps" {
+  server_id  = hcloud_server.vps.id
+  network_id = hcloud_network.internal.id
+  ip         = "10.0.0.2"
+  depends_on = [hcloud_network_subnet.internal]
+}
+
+resource "hcloud_server_network" "vps_apis" {
+  server_id  = hcloud_server.vps_apis.id
+  network_id = hcloud_network.internal.id
+  ip         = "10.0.0.3"
+  depends_on = [hcloud_network_subnet.internal]
+}
+
 # DNS (opcional): crea zonas y A records para subdominios -> IPv4 del VPS
 # Si no usas Hetzner DNS (NS del dominio apuntando a Hetzner), comenta todo este bloque.
 # Usa los recursos nativos hcloud_zone/hcloud_zone_rrset (Cloud API) en vez del
