@@ -1,0 +1,10 @@
+services:
+  job-hunter-bot:
+    env_file: .env.staging
+    labels:
+      - traefik.http.routers.job-hunter-api.rule=Host(`${JOB_HUNTER_API_HOST}`)
+
+  job-hunter-dashboard:
+    env_file: .env.staging
+    labels:
+      - traefik.http.routers.job-hunter-dashboard.rule=Host(`${JOB_HUNTER_DASHBOARD_HOST}`)
