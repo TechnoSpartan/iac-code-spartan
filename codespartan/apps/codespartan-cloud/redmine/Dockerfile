@@ -31,7 +31,9 @@ RUN git clone --depth=1 https://github.com/kory33/redmine_discord.git plugins/re
 #   COPY plugins/at_rechnungstellung/ plugins/at_rechnungstellung/
 # ─────────────────────────────────────────────────────────────────────────────
 
-RUN bundle install --without development test --no-cache && \
+RUN bundle config set without 'development test' && \
+    bundle install --no-cache && \
+    mkdir -p /usr/src/redmine/public/themes && \
     chmod -R g+w /usr/src/redmine/plugins /usr/src/redmine/files /usr/src/redmine/public/themes && \
     chown -R redmine:redmine /home/redmine /usr/src/redmine
 
