@@ -101,8 +101,9 @@ docker logs redmine-app -f
    ```
    REDMINE_POSTGRES_PASSWORD=<generated-password>
    REDMINE_SECRET_KEY_BASE=<generated-secret>
-   REDMINE_SMTP_PASSWORD=<hostinger-email-password>
-   REDMINE_HOSTNAME=redmine.codespartan.cloud
+   REDMINE_SMTP_USERNAME=<your-brevo-login-email>
+   REDMINE_SMTP_PASSWORD=<brevo-smtp-key>
+   REDMINE_HOSTNAME=project.codespartan.cloud
    ```
 
 2. **Add DNS Record** in Hetzner DNS:
