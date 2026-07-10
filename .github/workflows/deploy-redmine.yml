@@ -78,11 +78,22 @@ jobs:
             echo "=== Ensuring web network exists ==="
             docker network create web 2>/dev/null || true
 
-            echo "=== Removing old redmine_internal network if exists ==="
-            docker network rm redmine_internal 2>/dev/null || true
-
             echo "=== Navigating to Redmine directory ==="
             cd /opt/codespartan/apps/codespartan-cloud/redmine
+
+            echo "=== Verifying .env file exists ==="
+            if [ ! -f .env ]; then
+              echo "ERROR: .env file not found. Cannot deploy without secrets."
+              exit 1
+            fi
+            # Check that critical secrets are not empty
+            for var in POSTGRES_PASSWORD REDMINE_SECRET_KEY_BASE; do
+              val=$(grep "^${var}=" .env | cut -d= -f2-)
+              if [ -z "$val" ]; then
+                echo "ERROR: ${var} is empty in .env. Check GitHub Secrets."
+                exit 1
+              fi
+            done
 
             echo "=== Pulling latest base images ==="
             docker compose pull db
@@ -90,8 +101,13 @@ jobs:
             echo "=== Building Redmine image with plugins ==="
             docker compose build app
 
+            echo "=== Stopping existing containers ==="
+            docker compose down --remove-orphans
+
+            echo "=== Removing old redmine_internal network if orphaned ==="
+            docker network rm redmine_internal 2>/dev/null || true
+
             echo "=== Deploying Redmine ==="
-            docker compose down
             docker compose up -d
 
             echo "=== Waiting for containers to start ==="
