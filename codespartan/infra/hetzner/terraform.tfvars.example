@@ -1,16 +1,25 @@
 # Ejemplo de variables para Terraform
 # Copia a terraform.tfvars y ajusta
 
-# hcloud_token = ""
-# hetzner_dns_token = ""
+# hcloud_token = ""  # también autentica DNS (hcloud_zone/hcloud_zone_rrset)
 server_name = "codespartan-vps"
 image       = "alma-9"
 server_type = "cax11"
 location    = "nbg1"
 
+# Segundo VPS opcional (x86): tier reutilizable para APIs/BBDD
+# server2_name     = "codespartan-apis"
+# server2_type     = "cx33"
+# server2_image    = "alma-9"
+# server2_location = "nbg1"
+
 ssh_key_name          = "codespartan"
 ssh_public_key_path   = "~/.ssh/id_ed25519.pub"
 firewall_allowed_ssh_cidrs = ["1.2.3.4/32", "::/0"]
+
+# Clave del usuario "deploy" (no-root) del segundo VPS, aislada de la de arriba.
+# Viene de GitHub Secret: TF_VAR_apis_deploy_ssh_public_key_content
+# apis_deploy_ssh_public_key_content = "ssh-ed25519 AAAA... apis-deploy@codespartan"
 
 # Si vas a gestionar DNS en Hetzner DNS, añade tus dominios aquí
 # domains = ["cyberdyne-systems.es", "dental-io.es"]
@@ -27,14 +36,15 @@ firewall_allowed_ssh_cidrs = ["1.2.3.4/32", "::/0"]
 
 # Registros adicionales por dominio (placeholders)
 # Importante: NO inventes valores de correo. Copia los que te dé tu proveedor (OVH u otro).
+# Nota: el valor de los TXT debe ir entre comillas escapadas (formato RRset de Hetzner).
 # dns_additional_records = {
 #   "cyberdyne-systems.es" = [
 #     # MX principal de tu proveedor de correo
 #     { name = "@", type = "MX", value = "10 mail.tu-proveedor.com." },
 #     # SPF (TXT)
-#     { name = "@", type = "TXT", value = "v=spf1 include:_spf.tu-proveedor.com ~all" },
+#     { name = "@", type = "TXT", value = "\"v=spf1 include:_spf.tu-proveedor.com ~all\"" },
 #     # DKIM (TXT) - ejemplo: selector1._domainkey
-#     { name = "selector1._domainkey", type = "TXT", value = "v=DKIM1; k=rsa; p=CLAVE_PUBLICA..." }
+#     { name = "selector1._domainkey", type = "TXT", value = "\"v=DKIM1; k=rsa; p=CLAVE_PUBLICA...\"" }
 #   ]
 #   "dental-io.es" = [
 #     # CNAME para verificación (si lo pide tu proveedor)

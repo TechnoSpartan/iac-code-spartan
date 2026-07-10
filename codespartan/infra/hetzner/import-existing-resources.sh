@@ -19,6 +19,19 @@ else
   echo "WARNING: SSH key 'codespartan' not found"
 fi
 
+# Import apis-deploy SSH key (won't exist on first run - Terraform will create it)
+echo "Importing apis-deploy SSH key..."
+APIS_DEPLOY_KEY_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
+  https://api.hetzner.cloud/v1/ssh_keys | \
+  jq -r '.ssh_keys[] | select(.name=="codespartan-apis-deploy") | .id')
+
+if [ -n "$APIS_DEPLOY_KEY_ID" ]; then
+  echo "Found SSH key: $APIS_DEPLOY_KEY_ID"
+  terraform import 'hcloud_ssh_key.apis_deploy' "$APIS_DEPLOY_KEY_ID" 2>/dev/null || echo "SSH key already in state"
+else
+  echo "INFO: SSH key 'codespartan-apis-deploy' not found yet - Terraform will create it"
+fi
+
 # Import Firewall
 echo "Importing firewall..."
 FIREWALL_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
@@ -46,68 +59,49 @@ else
   exit 1
 fi
 
-# Import DNS Zones
-echo "Importing DNS zones..."
-for domain in "mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud"; do
-  ZONE_ID=$(curl -s -H "Auth-API-Token: $TF_VAR_hetzner_dns_token" \
-    https://dns.hetzner.com/api/v1/zones | \
-    jq -r ".zones[] | select(.name==\"$domain\") | .id")
+# Import second server (tier APIs/BBDD, x86) - won't exist on the very first run,
+# that's expected: Terraform will just create it, nothing to import yet.
+echo "Importing second server (APIs/BBDD tier)..."
+APIS_SERVER_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
+  https://api.hetzner.cloud/v1/servers | \
+  jq -r '.servers[] | select(.name=="CodeSpartan-apis") | .id')
 
-  if [ -n "$ZONE_ID" ]; then
-    echo "Found DNS zone '$domain': $ZONE_ID"
-    terraform import "hetznerdns_zone.zones[\"$domain\"]" "$ZONE_ID" 2>/dev/null || echo "Zone $domain already in state"
-  else
-    echo "WARNING: DNS zone '$domain' not found"
-  fi
-done
+if [ -n "$APIS_SERVER_ID" ]; then
+  echo "Found server: $APIS_SERVER_ID (CodeSpartan-apis)"
+  terraform import 'hcloud_server.vps_apis' "$APIS_SERVER_ID" 2>/dev/null || echo "Server already in state"
+else
+  echo "INFO: Server 'CodeSpartan-apis' not found yet - Terraform will create it"
+fi
 
-# Import DNS Records (A and AAAA for subdomains)
-echo "Importing DNS records..."
-subdomains=("traefik" "grafana" "backoffice" "www" "staging" "lab" "lab-staging" "api" "api-staging" "project" "ui" "mambo")
+# Import DNS Zones + RRsets (hcloud_zone / hcloud_zone_rrset, Cloud API).
+# dns.hetzner.com and the old timohirt/hetznerdns provider are gone (Hetzner
+# closed the standalone DNS API/console in May 2026); DNS now lives under the
+# same Cloud API as servers, so no separate lookup token/call is needed - the
+# import ID is built directly from known values:
+#   zone:  "$ZONE_ID_OR_NAME"
+#   rrset: "$ZONE_ID_OR_NAME/$RRSET_NAME/$RRSET_TYPE"
+# A failed import just means the resource doesn't exist yet - swallowed like
+# every other "already in state" fallback in this script.
+echo "Importing DNS zones and records..."
+# Keep these two lists in sync with `domains`/`subdomains` in terraform.tfvars.
+domains=("mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud" "dental-io.com")
+subdomains=("traefik" "grafana" "backoffice" "www" "staging" "lab" "lab-staging" "api" "api-staging" "project" "ui" "mambo" "portainer")
 
-for domain in "mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud"; do
-  ZONE_ID=$(curl -s -H "Auth-API-Token: $TF_VAR_hetzner_dns_token" \
-    https://dns.hetzner.com/api/v1/zones | \
-    jq -r ".zones[] | select(.name==\"$domain\") | .id")
-
-  if [ -z "$ZONE_ID" ]; then
-    echo "Skipping $domain - zone not found"
-    continue
-  fi
-
-  # Get all records for this zone
-  RECORDS=$(curl -s -H "Auth-API-Token: $TF_VAR_hetzner_dns_token" \
-    "https://dns.hetzner.com/api/v1/records?zone_id=$ZONE_ID")
+for domain in "${domains[@]}"; do
+  terraform import "hcloud_zone.zones[\"$domain\"]" "$domain" 2>/dev/null \
+    && echo "Imported zone: $domain" || echo "Zone $domain: not found yet or already in state"
 
   for subdomain in "${subdomains[@]}"; do
-    # Import A record
-    RECORD_ID=$(echo "$RECORDS" | jq -r ".records[] | select(.name==\"$subdomain\" and .type==\"A\") | .id")
-    if [ -n "$RECORD_ID" ] && [ "$RECORD_ID" != "null" ]; then
-      echo "Importing A record: ${domain}_${subdomain}"
-      terraform import "hetznerdns_record.subs[\"${domain}_${subdomain}\"]" "$RECORD_ID" 2>/dev/null || echo "Already in state"
-    fi
-
-    # Import AAAA record
-    RECORD_ID=$(echo "$RECORDS" | jq -r ".records[] | select(.name==\"$subdomain\" and .type==\"AAAA\") | .id")
-    if [ -n "$RECORD_ID" ] && [ "$RECORD_ID" != "null" ]; then
-      echo "Importing AAAA record: ${domain}_${subdomain}"
-      terraform import "hetznerdns_record.subs_aaaa[\"${domain}_${subdomain}\"]" "$RECORD_ID" 2>/dev/null || echo "Already in state"
-    fi
+    terraform import "hcloud_zone_rrset.subs[\"${domain}_${subdomain}\"]" "$domain/$subdomain/A" 2>/dev/null \
+      && echo "Imported A: $domain/$subdomain" || echo "A $domain/$subdomain: not found yet or already in state"
+    terraform import "hcloud_zone_rrset.subs_aaaa[\"${domain}_${subdomain}\"]" "$domain/$subdomain/AAAA" 2>/dev/null \
+      && echo "Imported AAAA: $domain/$subdomain" || echo "AAAA $domain/$subdomain: not found yet or already in state"
   done
 
-  # Import apex A record
-  APEX_A_ID=$(echo "$RECORDS" | jq -r '.records[] | select(.name=="@" and .type=="A") | .id')
-  if [ -n "$APEX_A_ID" ] && [ "$APEX_A_ID" != "null" ]; then
-    echo "Importing apex A record for $domain"
-    terraform import "hetznerdns_record.apex_a[\"$domain\"]" "$APEX_A_ID" 2>/dev/null || echo "Already in state"
-  fi
-
-  # Import apex AAAA record
-  APEX_AAAA_ID=$(echo "$RECORDS" | jq -r '.records[] | select(.name=="@" and .type=="AAAA") | .id')
-  if [ -n "$APEX_AAAA_ID" ] && [ "$APEX_AAAA_ID" != "null" ]; then
-    echo "Importing apex AAAA record for $domain"
-    terraform import "hetznerdns_record.apex_aaaa[\"$domain\"]" "$APEX_AAAA_ID" 2>/dev/null || echo "Already in state"
-  fi
+  terraform import "hcloud_zone_rrset.apex_a[\"$domain\"]" "$domain/@/A" 2>/dev/null \
+    && echo "Imported apex A: $domain" || echo "Apex A $domain: not found yet or already in state"
+  terraform import "hcloud_zone_rrset.apex_aaaa[\"$domain\"]" "$domain/@/AAAA" 2>/dev/null \
+    && echo "Imported apex AAAA: $domain" || echo "Apex AAAA $domain: not found yet or already in state"
 done
 
 echo ""

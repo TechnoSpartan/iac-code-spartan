@@ -5,6 +5,12 @@ image       = "alma-9"
 server_type = "cax11"
 location    = "nbg1"
 
+# Segundo VPS (x86): tier reutilizable para APIs/BBDD (empieza con Supabase self-hosted)
+server2_name     = "CodeSpartan-apis"
+server2_type     = "cx33"
+server2_image    = "alma-9"
+server2_location = "nbg1"
+
 ssh_key_name = "codespartan"
 # SSH key content viene de GitHub Secret: TF_VAR_ssh_public_key_content
 # Para uso local, descomenta la línea siguiente y añade tu clave pública:
