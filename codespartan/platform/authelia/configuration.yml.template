@@ -156,8 +156,13 @@ storage:
 notifier:
   disable_startup_check: false  # Re-enabled - using port 587 (not blocked by Hetzner)
 
-  # SMTP configuration (Hostinger) - Using port 587 (STARTTLS)
+  # SMTP configuration (Brevo) - Using port 587 (STARTTLS)
   # Port 587 is NOT blocked by Hetzner (unlike 465/25)
+  # GitHub Secrets to update:
+  #   AUTHELIA_SMTP_HOST = smtp-relay.brevo.com
+  #   AUTHELIA_SMTP_PORT = 587
+  #   AUTHELIA_SMTP_USERNAME = your Brevo login email
+  #   AUTHELIA_SMTP_PASSWORD = Brevo SMTP key (from dashboard)
   smtp:
     host: ${AUTHELIA_SMTP_HOST}
     port: ${AUTHELIA_SMTP_PORT}
