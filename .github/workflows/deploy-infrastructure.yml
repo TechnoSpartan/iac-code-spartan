@@ -81,12 +81,12 @@ jobs:
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            ip -4 addr show | grep -A2 eth1 || ip -4 addr show
+            echo "--- trust codespartan-internal (10.0.0.0/24) in firewalld ---"
+            sudo firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/24
+            sudo firewall-cmd --reload
+            sudo firewall-cmd --zone=trusted --list-all
+            echo "--- ping APIs over private net ---"
             ping -c 2 -W 3 10.0.0.3
-            echo "--- firewalld ---"
-            (command -v firewall-cmd >/dev/null && sudo firewall-cmd --state && sudo firewall-cmd --get-active-zones && sudo firewall-cmd --list-all) || echo "no firewalld"
-            echo "--- iptables ---"
-            sudo iptables -L -n -v | head -60
 
       - name: Verify private network (APIs -> ARM)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'verify-network'
@@ -96,5 +96,9 @@ jobs:
           username: ${{ secrets.APIS_VPS_SSH_USER }}
           key: ${{ secrets.APIS_VPS_SSH_KEY }}
           script: |
-            ip -4 addr show | grep -A2 eth1 || ip -4 addr show
+            echo "--- trust codespartan-internal (10.0.0.0/24) in firewalld ---"
+            sudo firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/24
+            sudo firewall-cmd --reload
+            sudo firewall-cmd --zone=trusted --list-all
+            echo "--- ping ARM over private net ---"
             ping -c 2 -W 3 10.0.0.2
