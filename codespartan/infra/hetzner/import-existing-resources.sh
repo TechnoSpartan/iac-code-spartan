@@ -73,6 +73,25 @@ else
   echo "INFO: Server 'CodeSpartan-apis' not found yet - Terraform will create it"
 fi
 
+# Import private network (codespartan-internal) + subnet + server attachments.
+# Won't exist on the first run - Terraform will create them, nothing to import yet.
+echo "Importing private network..."
+NETWORK_ID=$(curl -s -H "Authorization: Bearer $HCLOUD_TOKEN" \
+  https://api.hetzner.cloud/v1/networks | \
+  jq -r '.networks[] | select(.name=="codespartan-internal") | .id')
+
+if [ -n "$NETWORK_ID" ]; then
+  echo "Found network: $NETWORK_ID"
+  terraform import 'hcloud_network.internal' "$NETWORK_ID" 2>/dev/null || echo "Network already in state"
+  terraform import 'hcloud_network_subnet.internal' "${NETWORK_ID}-10.0.0.0/24" 2>/dev/null || echo "Subnet already in state"
+  terraform import 'hcloud_server_network.vps' "${NETWORK_ID}-${SERVER_ID}" 2>/dev/null || echo "vps network attachment already in state"
+  if [ -n "$APIS_SERVER_ID" ]; then
+    terraform import 'hcloud_server_network.vps_apis' "${NETWORK_ID}-${APIS_SERVER_ID}" 2>/dev/null || echo "vps_apis network attachment already in state"
+  fi
+else
+  echo "INFO: Network 'codespartan-internal' not found yet - Terraform will create it"
+fi
+
 # Import DNS Zones + RRsets (hcloud_zone / hcloud_zone_rrset, Cloud API).
 # dns.hetzner.com and the old timohirt/hetznerdns provider are gone (Hetzner
 # closed the standalone DNS API/console in May 2026); DNS now lives under the
