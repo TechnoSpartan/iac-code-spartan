@@ -12,7 +12,6 @@ on:
           - plan
           - apply
           - destroy
-          - teardown-kong-cyberdyne
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -70,20 +69,3 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
-
-      # TEMPORAL: retira el contenedor kong-cyberdyne, ya redundante ahora que
-      # Traefik hablará directo con el Kong propio de Supabase self-hosted.
-      # Borrar este step tras usarlo.
-      - name: Teardown kong-cyberdyne container
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'teardown-kong-cyberdyne'
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            docker ps -a --filter "name=kong-cyberdyne"
-            docker stop kong-cyberdyne || echo "not running"
-            docker rm kong-cyberdyne || echo "not present"
-            sudo rm -rf /opt/codespartan/platform/kong/cyberdyne
-            docker ps -a --filter "name=kong-cyberdyne"
