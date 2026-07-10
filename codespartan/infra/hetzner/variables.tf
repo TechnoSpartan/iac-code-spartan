@@ -4,12 +4,6 @@ variable "hcloud_token" {
   default     = ""
 }
 
-variable "hetzner_dns_token" {
-  description = "Hetzner DNS API token (para provider hetznerdns)."
-  type        = string
-  default     = ""
-}
-
 variable "server_name" {
   description = "Nombre del servidor VPS."
   type        = string
@@ -34,6 +28,30 @@ variable "location" {
   default     = "nbg1"
 }
 
+variable "server2_name" {
+  description = "Nombre del segundo servidor (tier APIs/BBDD, x86)."
+  type        = string
+  default     = "CodeSpartan-apis"
+}
+
+variable "server2_type" {
+  description = "Tipo de servidor del segundo VPS (x86: cx23, cx33, ...)."
+  type        = string
+  default     = "cx33"
+}
+
+variable "server2_image" {
+  description = "Imagen del sistema para el segundo servidor. Ej: alma-9"
+  type        = string
+  default     = "alma-9"
+}
+
+variable "server2_location" {
+  description = "Ubicación del segundo servidor: nbg1, fsn1, hel1"
+  type        = string
+  default     = "nbg1"
+}
+
 variable "ssh_key_name" {
   description = "Nombre del recurso de clave SSH en Hetzner."
   type        = string
@@ -48,6 +66,12 @@ variable "ssh_public_key_path" {
 
 variable "ssh_public_key_content" {
   description = "Contenido directo de la clave SSH pública (alternativa a ssh_public_key_path)."
+  type        = string
+  default     = ""
+}
+
+variable "apis_deploy_ssh_public_key_content" {
+  description = "Clave pública SSH del usuario 'deploy' (no-root) del VPS de APIs/BBDD, aislada de ssh_public_key_content."
   type        = string
   default     = ""
 }

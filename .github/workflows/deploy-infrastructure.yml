@@ -37,7 +37,6 @@ jobs:
         run: terraform init
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
 
       - name: Import existing resources (if not already imported)
         run: |
@@ -45,28 +44,35 @@ jobs:
           ./import-existing-resources.sh
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
+          TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
 
+      # TEMPORARY: -target scopes plan/apply to just the apis server/key, bypassing DNS.
+      # The hcloud_zone/hcloud_zone_rrset code is correct (see main.tf), but the
+      # Hetzner Cloud API reports these zones as not found - they were never
+      # migrated from the old DNS Console to the new Hetzner Console DNS system,
+      # which requires a manual, account-level migration step (not something
+      # Terraform/CI can do). Remove -target once that migration is confirmed
+      # done and a plan shows 0 changes for the existing DNS resources.
       - name: Terraform Plan
-        run: terraform plan -no-color
+        run: terraform plan -no-color -target=hcloud_server.vps_apis -target=hcloud_ssh_key.apis_deploy
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
+          TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
 
       - name: Terraform Apply
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -target=hcloud_server.vps_apis -target=hcloud_ssh_key.apis_deploy
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
+          TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
 
       - name: Terraform Destroy
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
         run: terraform destroy -auto-approve
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-          TF_VAR_hetzner_dns_token: ${{ secrets.HETZNER_DNS_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
+          TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
