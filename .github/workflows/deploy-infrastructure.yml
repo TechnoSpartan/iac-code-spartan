@@ -55,7 +55,7 @@ jobs:
       # Terraform/CI can do). Remove -target once that migration is confirmed
       # done and a plan shows 0 changes for the existing DNS resources.
       - name: Terraform Plan
-        run: terraform plan -no-color -target=hcloud_server.vps_apis -target=hcloud_ssh_key.apis_deploy
+        run: terraform plan -no-color -target=hcloud_server.vps_apis -target=hcloud_ssh_key.apis_deploy -target=hcloud_ssh_key.main
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
@@ -63,7 +63,7 @@ jobs:
 
       - name: Terraform Apply
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
-        run: terraform apply -auto-approve -target=hcloud_server.vps_apis -target=hcloud_ssh_key.apis_deploy
+        run: terraform apply -auto-approve -target=hcloud_server.vps_apis -target=hcloud_ssh_key.apis_deploy -target=hcloud_ssh_key.main
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
