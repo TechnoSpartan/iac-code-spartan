@@ -1,0 +1,38 @@
+name: Debug Redmine Crash
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get redmine-app crash logs
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== ALL redmine containers (including stopped) ==="
+            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | grep redmine
+
+            echo ""
+            echo "=== redmine-app logs (last 100 lines) ==="
+            docker logs redmine-app --tail 100 2>&1 || echo "Cannot get logs"
+
+            echo ""
+            echo "=== redmine-db logs (last 30 lines) ==="
+            docker logs redmine-db --tail 30 2>&1 || echo "Cannot get logs"
+
+            echo ""
+            echo "=== docker compose ps ==="
+            cd /opt/codespartan/apps/codespartan-cloud/redmine && docker compose ps -a 2>&1
+
+            echo ""
+            echo "=== Memory usage ==="
+            free -h
+
+            echo ""
+            echo "=== Docker disk usage ==="
+            docker system df
