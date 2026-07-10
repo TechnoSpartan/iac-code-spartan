@@ -47,10 +47,10 @@ ANTES (❌ Inseguro)
 └─────────┘
 
 DESPUÉS (✅ Seguro)
-┌─────────┐       ┌──────────────────┐
-│ Traefik │──────►│docker-socket-proxy│──► /var/run/docker.sock:ro
-└─────────┘   TCP  │   (HAProxy filter)│     (READ-ONLY)
-         2375     └──────────────────┘
+┌─────────┐        ┌────────────────────┐
+│ Traefik │──────► │docker-socket-proxy │──► /var/run/docker.sock:ro
+└─────────┘   TCP  │   (HAProxy filter) │     (READ-ONLY)
+             2375  └────────────────────┘
                    │
                    ├─ GET ✅ Allow
                    ├─ POST ❌ Deny
@@ -173,6 +173,7 @@ docker exec traefik sh -c "
 ### Scoring de Seguridad
 
 **Antes de docker-socket-proxy**:
+
 - CVSS Base Score: **9.8 (Critical)**
 - Attack Complexity: Low
 - Privileges Required: Low (solo compromiso de Traefik)
@@ -180,6 +181,7 @@ docker exec traefik sh -c "
 - Impact: Complete system compromise
 
 **Después de docker-socket-proxy**:
+
 - CVSS Base Score: **3.1 (Low)**
 - Attack Complexity: High
 - Privileges Required: High
@@ -355,4 +357,3 @@ docker compose restart
 **Verificado**: 2025-12-02
 **Estado**: ✅ Producción (2+ días stable)
 **Documentación**: [SECURITY_VERIFICATION.md](../../codespartan/platform/docker-socket-proxy/SECURITY_VERIFICATION.md)
-
