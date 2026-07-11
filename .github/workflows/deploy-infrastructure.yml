@@ -12,6 +12,7 @@ on:
           - plan
           - apply
           - destroy
+          - teardown-trackworks-frontend
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -69,3 +70,24 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
+
+      # TEMPORAL: retira el contenedor viejo de trackworks (cyberdyne-frontend),
+      # ya sustituido por cyberdyne-social-posts. Ambos routers reclaman el
+      # mismo Host(www.cyberdyne-systems.es); social_posts ya se sirve pero
+      # el conflicto de routers queda hasta borrar este. Borrar tras usarlo.
+      - name: Teardown trackworks frontend container
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'teardown-trackworks-frontend'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            docker ps -a --filter "name=cyberdyne-frontend"
+            docker stop cyberdyne-frontend-blue cyberdyne-frontend-green 2>/dev/null || true
+            docker rm cyberdyne-frontend-blue cyberdyne-frontend-green 2>/dev/null || true
+            echo "-- remaining cyberdyne-frontend containers --"
+            docker ps -a --filter "name=cyberdyne-frontend"
+            echo "-- verify social_posts still serving www.cyberdyne-systems.es --"
+            sleep 3
+            curl -sS https://www.cyberdyne-systems.es/ | grep -o '<title>[^<]*</title>' || echo "no title found"
