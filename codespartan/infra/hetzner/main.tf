@@ -134,6 +134,18 @@ locals {
       fi
       docker network create web || true
 
+      # firewalld picks the FORWARD-chain zone by a packet's source IP /
+      # ingress interface, not its egress interface. Traffic forwarded from
+      # containers on the 'web' bridge (172.18.0.0/16) to the private
+      # Hetzner network (codespartan-internal, 10.0.0.0/24) ingresses via
+      # the bridge, not eth0/eth1, so without this it falls through to the
+      # public zone's default and gets rejected even though Docker's own
+      # FORWARD rules already allow it unconditionally for this bridge.
+      if command -v firewall-cmd >/dev/null 2>&1; then
+        firewall-cmd --permanent --zone=trusted --add-source=172.18.0.0/16 || true
+        firewall-cmd --reload || true
+      fi
+
       # Install and configure Fail2ban for SSH protection
       if ! command -v fail2ban-server >/dev/null 2>&1; then
         dnf -y install epel-release
