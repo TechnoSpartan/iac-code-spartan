@@ -172,4 +172,15 @@ jobs:
             echo ""
             echo "-- re-test: public endpoint --"
             curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://api.cyberdyne-systems.es/auth/v1/health || echo "public curl failed"
+            echo ""
+            echo "-- packet capture on eth1 during a container->kong attempt --"
+            (command -v tcpdump >/dev/null && sudo timeout 8 tcpdump -ni eth1 host 10.0.0.3 -c 20 > /tmp/tcpdump.out 2>&1 &)
+            sleep 1
+            docker exec traefik wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "attempt failed (expected)"
+            sleep 4
+            echo "--- tcpdump output ---"
+            cat /tmp/tcpdump.out 2>/dev/null || echo "no tcpdump available/output"
+            echo ""
+            echo "-- conntrack entries for 10.0.0.3 --"
+            (command -v conntrack >/dev/null && sudo conntrack -L 2>/dev/null | grep "10.0.0.3") || echo "no conntrack tool or no entries"
 
