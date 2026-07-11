@@ -12,7 +12,6 @@ on:
           - plan
           - apply
           - destroy
-          - create-admin-user
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -70,52 +69,3 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
-
-      # TEMPORAL: crea el usuario admin real via la API de GoTrue y verifica
-      # login + llamada a una Edge Function end-to-end. Borrar tras usarlo.
-      - name: Create admin user and verify end-to-end
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'create-admin-user'
-        uses: appleboy/ssh-action@v1
-        env:
-          ADMIN_BOOTSTRAP_PASSWORD: ${{ secrets.ADMIN_BOOTSTRAP_PASSWORD }}
-        with:
-          host: ${{ secrets.APIS_VPS_SSH_HOST }}
-          username: ${{ secrets.APIS_VPS_SSH_USER }}
-          key: ${{ secrets.APIS_VPS_SSH_KEY }}
-          envs: ADMIN_BOOTSTRAP_PASSWORD
-          script: |
-            set -euo pipefail
-            ANON_KEY=$(grep '^ANON_KEY=' /home/deploy/platform/supabase/.env | cut -d= -f2-)
-            SERVICE_ROLE_KEY=$(grep '^SERVICE_ROLE_KEY=' /home/deploy/platform/supabase/.env | cut -d= -f2-)
-
-            echo "-- creating user via GoTrue admin API --"
-            CREATE_RESP=$(curl -sS -X POST http://10.0.0.3:8000/auth/v1/admin/users \
-              -H "apikey: ${SERVICE_ROLE_KEY}" \
-              -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"jcarballo@codespartan.es\",\"password\":\"${ADMIN_BOOTSTRAP_PASSWORD}\",\"email_confirm\":true}")
-            echo "$CREATE_RESP" | grep -o '"id":"[^"]*"\|"email":"[^"]*"\|"msg":"[^"]*"\|"error_code":"[^"]*"' || echo "$CREATE_RESP"
-
-            echo ""
-            echo "-- logging in with the new credentials --"
-            LOGIN_RESP=$(curl -sS -X POST "http://10.0.0.3:8000/auth/v1/token?grant_type=password" \
-              -H "apikey: ${ANON_KEY}" \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"jcarballo@codespartan.es\",\"password\":\"${ADMIN_BOOTSTRAP_PASSWORD}\"}")
-            ACCESS_TOKEN=$(echo "$LOGIN_RESP" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
-            if [ -n "$ACCESS_TOKEN" ]; then
-              echo "OK: login succeeded, got access_token (len=${#ACCESS_TOKEN})"
-            else
-              echo "FAIL: login response: $LOGIN_RESP"
-              exit 1
-            fi
-
-            echo ""
-            echo "-- calling generate-article edge function with the real session --"
-            FUNC_RESP=$(curl -sS -w "\nHTTP %{http_code}\n" -X POST http://10.0.0.3:8000/functions/v1/generate-article \
-              -H "apikey: ${ANON_KEY}" \
-              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d '{"topic":"Por que las pymes deberian automatizar su backoffice","audience":"business","keywords":["automatizacion","pymes"]}')
-            echo "$FUNC_RESP" | head -c 2000
-            echo ""
