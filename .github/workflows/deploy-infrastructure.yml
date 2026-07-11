@@ -141,4 +141,13 @@ jobs:
             echo ""
             echo "-- host: ping 10.0.0.3 from web bridge namespace via nsenter-free test (host curl for comparison) --"
             curl -sS -o /dev/null -w "host curl: HTTP %{http_code}\n" http://10.0.0.3:8000/auth/v1/health || echo "host curl failed"
+            echo ""
+            echo "-- host: DOCKER-USER chain (processed before Docker's own FORWARD rules) --"
+            sudo iptables -L DOCKER-USER -n -v
+            echo ""
+            echo "-- traefik container: ping + gateway reachability --"
+            docker exec traefik sh -c 'ping -c2 -W3 172.18.0.1 2>&1; echo "---"; ping -c2 -W3 10.0.0.3 2>&1' || true
+            echo ""
+            echo "-- traefik container: nc test to kong port --"
+            docker exec traefik sh -c 'command -v nc >/dev/null && nc -zvw3 10.0.0.3 8000 2>&1 || echo "no nc"'
 
