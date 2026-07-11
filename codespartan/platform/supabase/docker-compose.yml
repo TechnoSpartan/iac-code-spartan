@@ -442,6 +442,8 @@ services:
       # Secrets de negocio de las Edge Functions (no forman parte del stack
       # oficial de Supabase; los añade el workflow de despliegue).
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      # requireUser() en _shared/auth.ts solo deja pasar a estos emails.
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
     command: ["start", "--main-service", "/home/deno/functions/main"]
     deploy:
       resources:

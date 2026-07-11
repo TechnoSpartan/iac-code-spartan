@@ -43,6 +43,7 @@ jobs:
           SUPABASE_SMTP_ADMIN_EMAIL: ${{ secrets.SUPABASE_SMTP_ADMIN_EMAIL }}
           SUPABASE_SMTP_SENDER_NAME: ${{ secrets.SUPABASE_SMTP_SENDER_NAME }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SUPABASE_ADMIN_EMAILS: ${{ secrets.SUPABASE_ADMIN_EMAILS }}
         run: |
           set -euo pipefail
 
