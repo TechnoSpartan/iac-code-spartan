@@ -1,0 +1,164 @@
+name: Deploy Supabase (self-hosted)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'codespartan/platform/supabase/**'
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout IaC repository
+        uses: actions/checkout@v4
+        with:
+          path: iac-repo
+
+      - name: Checkout ft-rc-bko-social_posts repository
+        uses: actions/checkout@v4
+        with:
+          repository: TechnoSpartan/ft-rc-bko-social_posts
+          path: app-repo
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Prepare Supabase files
+        env:
+          SUPABASE_POSTGRES_PASSWORD: ${{ secrets.SUPABASE_POSTGRES_PASSWORD }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_DASHBOARD_USERNAME: ${{ secrets.SUPABASE_DASHBOARD_USERNAME }}
+          SUPABASE_DASHBOARD_PASSWORD: ${{ secrets.SUPABASE_DASHBOARD_PASSWORD }}
+          SUPABASE_SECRET_KEY_BASE: ${{ secrets.SUPABASE_SECRET_KEY_BASE }}
+          SUPABASE_VAULT_ENC_KEY: ${{ secrets.SUPABASE_VAULT_ENC_KEY }}
+          SUPABASE_PG_META_CRYPTO_KEY: ${{ secrets.SUPABASE_PG_META_CRYPTO_KEY }}
+          SUPABASE_REALTIME_DB_ENC_KEY: ${{ secrets.SUPABASE_REALTIME_DB_ENC_KEY }}
+          SUPABASE_SMTP_HOST: ${{ secrets.SUPABASE_SMTP_HOST }}
+          SUPABASE_SMTP_PORT: ${{ secrets.SUPABASE_SMTP_PORT }}
+          SUPABASE_SMTP_USER: ${{ secrets.SUPABASE_SMTP_USER }}
+          SUPABASE_SMTP_PASS: ${{ secrets.SUPABASE_SMTP_PASS }}
+          SUPABASE_SMTP_ADMIN_EMAIL: ${{ secrets.SUPABASE_SMTP_ADMIN_EMAIL }}
+          SUPABASE_SMTP_SENDER_NAME: ${{ secrets.SUPABASE_SMTP_SENDER_NAME }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p artifacts/supabase
+          cp -r iac-repo/codespartan/platform/supabase/docker-compose.yml artifacts/supabase/
+          cp -r iac-repo/codespartan/platform/supabase/volumes artifacts/supabase/
+
+          echo "Generating .env from .env.example with secrets..."
+          envsubst < iac-repo/codespartan/platform/supabase/.env.example > artifacts/supabase/.env
+
+          if grep -q '\${' artifacts/supabase/.env; then
+            echo "WARNING: template variables still present in .env"
+            grep '\${' artifacts/supabase/.env
+            exit 1
+          fi
+          echo "generated .env ($(wc -l < artifacts/supabase/.env) lines)"
+
+          echo "Staging Edge Functions..."
+          mkdir -p artifacts/supabase/volumes/functions
+          cp -r app-repo/supabase/functions/* artifacts/supabase/volumes/functions/
+
+          echo "Staging SQL migrations..."
+          mkdir -p artifacts/supabase/migrations
+          cp app-repo/supabase/migrations/*.sql artifacts/supabase/migrations/
+          ls artifacts/supabase/migrations/
+
+      - name: Prepare remote directory
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          script: |
+            mkdir -p /home/deploy/platform/supabase
+
+      - name: Copy Supabase files to APIs VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          source: "artifacts/supabase/*"
+          target: "/home/deploy/platform/supabase/"
+          strip_components: 2
+
+      - name: Deploy Supabase stack on APIs VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          command_timeout: 30m
+          script: |
+            set -euo pipefail
+            cd /home/deploy/platform/supabase
+
+            echo "Pulling images (11 services, first run can take a while)..."
+            docker compose pull
+
+            echo "Starting stack..."
+            docker compose up -d
+
+            wait_ready() {
+              local name="$1"
+              local max=60
+              local i=0
+              while [ $i -lt $max ]; do
+                has_hc=$(docker inspect --format='{{if .State.Health}}yes{{else}}no{{end}}' "$name" 2>/dev/null || echo "no")
+                if [ "$has_hc" = "yes" ]; then
+                  status=$(docker inspect --format='{{.State.Health.Status}}' "$name" 2>/dev/null || echo "unknown")
+                  if [ "$status" = "healthy" ]; then
+                    echo "OK: $name healthy"
+                    return 0
+                  fi
+                else
+                  running=$(docker inspect --format='{{.State.Running}}' "$name" 2>/dev/null || echo "false")
+                  if [ "$running" = "true" ]; then
+                    echo "OK: $name running (no healthcheck defined)"
+                    return 0
+                  fi
+                fi
+                sleep 3
+                i=$((i + 1))
+              done
+              echo "FAIL: $name not ready after $((max * 3))s"
+              docker logs "$name" --tail 50 || true
+              return 1
+            }
+
+            for c in supabase-db supabase-studio supabase-kong supabase-auth supabase-rest \
+                     realtime-dev.supabase-realtime supabase-storage supabase-imgproxy \
+                     supabase-meta supabase-edge-functions supabase-pooler; do
+              wait_ready "$c"
+            done
+
+            echo ""
+            echo "Applying SQL migrations..."
+            for f in /home/deploy/platform/supabase/migrations/*.sql; do
+              echo "-- applying $(basename "$f")"
+              docker exec -i supabase-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$f"
+            done
+
+            echo ""
+            echo "All 11 containers:"
+            docker compose ps
+
+      - name: Verify Kong is answering on the private network
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            source /home/deploy/platform/supabase/.env
+            echo "curl http://10.0.0.3:8000/rest/v1/ (expect 200/401, not connection refused)"
+            curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
+              -H "apikey: ${ANON_KEY}" \
+              http://10.0.0.3:8000/rest/v1/
