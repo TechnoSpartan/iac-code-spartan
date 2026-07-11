@@ -150,4 +150,13 @@ jobs:
             echo ""
             echo "-- traefik container: nc test to kong port --"
             docker exec traefik sh -c 'command -v nc >/dev/null && nc -zvw3 10.0.0.3 8000 2>&1 || echo "no nc"'
+            echo ""
+            echo "-- traefik container: TCP reachability to a public IP (isolates general vs private-net specific) --"
+            docker exec traefik wget -qO- --timeout=5 http://1.1.1.1 2>&1 | head -c 200 || echo "public TCP also unreachable"
+            echo ""
+            echo "-- traefik container: full route table + arp cache --"
+            docker exec traefik sh -c 'ip route; echo "---arp---"; ip neigh 2>&1 || cat /proc/net/arp'
+            echo ""
+            echo "-- another web-network container (cyberdyne-frontend-green): can IT reach 10.0.0.3? --"
+            docker exec cyberdyne-frontend-green sh -c 'command -v wget >/dev/null && wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "no wget in this image"' || echo "exec failed"
 
