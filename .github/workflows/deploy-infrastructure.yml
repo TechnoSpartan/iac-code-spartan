@@ -162,4 +162,14 @@ jobs:
             echo ""
             echo "-- host: rp_filter settings (suspected culprit: strict RPF drops forwarded traffic on a newly added interface) --"
             sysctl net.ipv4.conf.all.rp_filter net.ipv4.conf.default.rp_filter net.ipv4.conf.eth1.rp_filter net.ipv4.conf.eth0.rp_filter 2>&1
+            echo ""
+            echo "-- applying fix: loose RPF (2) on eth1, persisted --"
+            sudo sysctl -w net.ipv4.conf.eth1.rp_filter=2
+            echo 'net.ipv4.conf.eth1.rp_filter=2' | sudo tee /etc/sysctl.d/99-codespartan-private-network.conf
+            echo ""
+            echo "-- re-test: traefik container -> Kong over private net --"
+            docker exec traefik wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "still unreachable"
+            echo ""
+            echo "-- re-test: public endpoint --"
+            curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://api.cyberdyne-systems.es/auth/v1/health || echo "public curl failed"
 
