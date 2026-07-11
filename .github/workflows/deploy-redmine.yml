@@ -111,10 +111,16 @@ jobs:
             docker compose up -d
 
             echo "=== Waiting for containers to start ==="
-            sleep 10
+            sleep 15
 
             echo "=== Verifying containers are running ==="
             docker ps | grep redmine || (echo "ERROR: Redmine containers not running" && exit 1)
+
+            echo "=== Running plugin migrations ==="
+            docker exec redmine-app bash -c 'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && bundle exec rake redmine:plugins:migrate RAILS_ENV=production' 2>&1 || echo "Warning: plugin migration failed (may already be applied)"
+
+            echo "=== Restarting redmine-app after migrations ==="
+            docker restart redmine-app
 
             echo "=== Checking container resource limits ==="
             docker inspect redmine-app --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
