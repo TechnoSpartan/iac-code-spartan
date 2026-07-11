@@ -195,6 +195,13 @@ jobs:
             sudo firewall-cmd --reload
             sudo firewall-cmd --get-active-zones
             echo ""
+            echo "-- real fix: trust the 'web' docker bridge subnet as a FORWARD source --"
+            echo "-- (firewalld picks the FORWARD zone by the packet's source/ingress iface, not egress iface --"
+            echo "-- our traffic ingresses via the docker bridge, not eth0/eth1, so it fell through to public) --"
+            sudo firewall-cmd --permanent --zone=trusted --add-source=172.18.0.0/16
+            sudo firewall-cmd --reload
+            sudo firewall-cmd --zone=trusted --list-all
+            echo ""
             echo "-- re-test: traefik container -> Kong over private net --"
             docker exec traefik wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "still unreachable"
             echo ""
