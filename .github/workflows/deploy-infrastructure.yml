@@ -118,11 +118,6 @@ jobs:
             echo "-- try Traefik internal API via docker exec --"
             docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>&1 | head -c 3000 || echo "wget failed/unavailable in traefik image"
             echo ""
-            echo "-- restarting traefik to force a fresh file-provider load --"
-            docker restart traefik
-            sleep 5
-            docker ps --filter name=traefik --format "{{.Names}}: {{.Status}}"
-            echo ""
             echo "-- can the traefik CONTAINER itself reach Kong on the private network? --"
             docker exec traefik wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "unreachable from inside traefik container"
             echo ""
