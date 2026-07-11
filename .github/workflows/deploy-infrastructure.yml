@@ -187,9 +187,17 @@ jobs:
             echo "-- firewalld: which zone is eth1 actually bound to? --"
             sudo firewall-cmd --get-active-zones
             echo ""
-            echo "-- firewalld: policies (zone-to-zone forwarding rules, if any) --"
-            sudo firewall-cmd --list-policies 2>&1
+            echo "-- firewalld: public zone target (permanent) --"
+            sudo firewall-cmd --permanent --zone=public --get-target
             echo ""
-            echo "-- firewalld: public zone target (default target often means REJECT for unmatched forwarded traffic) --"
-            sudo firewall-cmd --zone=public --get-target
+            echo "-- fix: bind eth1 itself to the trusted zone (covers FORWARD, not just INPUT) --"
+            sudo firewall-cmd --permanent --zone=trusted --change-interface=eth1
+            sudo firewall-cmd --reload
+            sudo firewall-cmd --get-active-zones
+            echo ""
+            echo "-- re-test: traefik container -> Kong over private net --"
+            docker exec traefik wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "still unreachable"
+            echo ""
+            echo "-- re-test: public endpoint --"
+            curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://api.cyberdyne-systems.es/auth/v1/health || echo "public curl failed"
 
