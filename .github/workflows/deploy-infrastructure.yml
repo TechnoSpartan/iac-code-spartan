@@ -122,4 +122,13 @@ jobs:
             docker restart traefik
             sleep 5
             docker ps --filter name=traefik --format "{{.Names}}: {{.Status}}"
+            echo ""
+            echo "-- can the traefik CONTAINER itself reach Kong on the private network? --"
+            docker exec traefik wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "unreachable from inside traefik container"
+            echo ""
+            echo "-- traefik container network interfaces/routes --"
+            docker exec traefik sh -c 'command -v ip >/dev/null && ip route || echo "no ip command"' 2>&1
+            echo ""
+            echo "-- traefik container networks (docker inspect) --"
+            docker inspect traefik --format '{{json .NetworkSettings.Networks}}' 2>&1
 
