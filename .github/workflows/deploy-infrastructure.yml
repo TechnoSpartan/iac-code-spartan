@@ -159,4 +159,7 @@ jobs:
             echo ""
             echo "-- another web-network container (cyberdyne-frontend-green): can IT reach 10.0.0.3? --"
             docker exec cyberdyne-frontend-green sh -c 'command -v wget >/dev/null && wget -qO- --timeout=5 http://10.0.0.3:8000/auth/v1/health 2>&1 || echo "no wget in this image"' || echo "exec failed"
+            echo ""
+            echo "-- host: rp_filter settings (suspected culprit: strict RPF drops forwarded traffic on a newly added interface) --"
+            sysctl net.ipv4.conf.all.rp_filter net.ipv4.conf.default.rp_filter net.ipv4.conf.eth1.rp_filter net.ipv4.conf.eth0.rp_filter 2>&1
 
