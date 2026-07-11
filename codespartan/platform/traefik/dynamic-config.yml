@@ -95,6 +95,18 @@ http:
         - security-headers
         - compression
 
+    # api.cyberdyne-systems.es -> Kong (Supabase self-hosted) on the APIs VPS,
+    # reached over the codespartan-internal private network (10.0.0.0/24).
+    # Pure HTTP passthrough: Traefik only terminates TLS here. No middlewares -
+    # Kong owns all API-level auth/routing/rate-limiting on its own.
+    cyberdyne-api:
+      rule: "Host(`api.cyberdyne-systems.es`)"
+      entrypoints:
+        - websecure
+      service: cyberdyne-api-service
+      tls:
+        certResolver: le
+
   services:
     # CodeSpartan Cloud - www service
     codespartan-www-service:
@@ -107,6 +119,12 @@ http:
       loadBalancer:
         servers:
           - url: "http://codespartan-ui:80"
+
+    # Kong (Supabase self-hosted) on the APIs VPS, private network
+    cyberdyne-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.3:8000"
 
 # TLS configuration (if needed)
 tls:
