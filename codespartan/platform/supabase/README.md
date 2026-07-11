@@ -23,9 +23,11 @@ Internet -> Traefik (VPS ARM, TLS) -> [red privada 10.0.0.0/24] -> Kong:8000 (VP
 
 Via `.github/workflows/deploy-supabase.yml`: hace `envsubst` de `.env.example`
 con los GitHub Secrets `SUPABASE_*` + `OPENROUTER_API_KEY`, copia todo a
-`/opt/codespartan/platform/supabase/` en el VPS de APIs, `docker compose up -d`,
-espera a que los 11 contenedores esten `healthy`, aplica las migraciones SQL de
-`ft-rc-bko-social_posts/supabase/migrations/` y despliega las Edge Functions.
+`/home/deploy/platform/supabase/` en el VPS de APIs (el usuario `deploy` no
+tiene sudo por diseño, asi que vive en su propio home en vez de `/opt`),
+`docker compose up -d`, espera a que los 11 contenedores esten `healthy`,
+aplica las migraciones SQL de `ft-rc-bko-social_posts/supabase/migrations/`
+y despliega las Edge Functions.
 
 ## Acceso admin (Studio)
 
