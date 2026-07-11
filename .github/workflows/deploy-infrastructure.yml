@@ -12,6 +12,7 @@ on:
           - plan
           - apply
           - destroy
+          - debug-public-api
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -69,3 +70,42 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
+
+      # TEMPORAL: depura por que api.cyberdyne-systems.es publico devuelve 404
+      # en vez de pasar por Kong. Borrar tras usarlo.
+      - name: Debug public API routing
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'debug-public-api'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            ANON_KEY=$(grep '^ANON_KEY=' /home/deploy/platform/supabase/.env | cut -d= -f2-)
+            echo "-- public, no apikey (expect 401 from Kong if routed correctly)"
+            curl -sS -w "\nHTTP %{http_code}\n" https://api.cyberdyne-systems.es/auth/v1/health
+            echo ""
+            echo "-- public, with apikey"
+            curl -sS -w "\nHTTP %{http_code}\n" -H "apikey: ${ANON_KEY}" https://api.cyberdyne-systems.es/auth/v1/health
+            echo ""
+            echo "-- verbose TLS/routing trace"
+            curl -sSv -o /dev/null -H "apikey: ${ANON_KEY}" https://api.cyberdyne-systems.es/auth/v1/health 2>&1 | head -30
+
+      - name: Check Traefik config on ARM box
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'debug-public-api'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "-- dynamic-config.yml on disk (cyberdyne-api section) --"
+            grep -A6 "cyberdyne-api" /opt/codespartan/platform/traefik/dynamic-config.yml || echo "NOT FOUND on disk"
+            echo ""
+            echo "-- curl Kong directly from ARM box over private network --"
+            curl -sS -o /dev/null -w "HTTP %{http_code}\n" http://10.0.0.3:8000/auth/v1/health || echo "connection failed"
+            echo ""
+            echo "-- recent traefik logs mentioning cyberdyne-api or file provider --"
+            docker logs traefik --tail 200 2>&1 | grep -i "cyberdyne-api\|dynamic-config\|file provider" | tail -30 || echo "no matches"
+
