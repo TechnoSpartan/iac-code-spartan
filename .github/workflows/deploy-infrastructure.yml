@@ -183,4 +183,13 @@ jobs:
             echo ""
             echo "-- conntrack entries for 10.0.0.3 --"
             (command -v conntrack >/dev/null && sudo conntrack -L 2>/dev/null | grep "10.0.0.3") || echo "no conntrack tool or no entries"
+            echo ""
+            echo "-- firewalld: which zone is eth1 actually bound to? --"
+            sudo firewall-cmd --get-active-zones
+            echo ""
+            echo "-- firewalld: policies (zone-to-zone forwarding rules, if any) --"
+            sudo firewall-cmd --list-policies 2>&1
+            echo ""
+            echo "-- firewalld: public zone target (default target often means REJECT for unmatched forwarded traffic) --"
+            sudo firewall-cmd --zone=public --get-target
 
