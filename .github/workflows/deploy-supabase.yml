@@ -157,7 +157,7 @@ jobs:
           key: ${{ secrets.APIS_VPS_SSH_KEY }}
           script: |
             set -euo pipefail
-            source /home/deploy/platform/supabase/.env
+            ANON_KEY=$(grep '^ANON_KEY=' /home/deploy/platform/supabase/.env | cut -d= -f2-)
             echo "curl http://10.0.0.3:8000/rest/v1/ (expect 200/401, not connection refused)"
             curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
               -H "apikey: ${ANON_KEY}" \
