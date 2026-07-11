@@ -108,4 +108,13 @@ jobs:
             echo ""
             echo "-- recent traefik logs mentioning cyberdyne-api or file provider --"
             docker logs traefik --tail 200 2>&1 | grep -i "cyberdyne-api\|dynamic-config\|file provider" | tail -30 || echo "no matches"
+            echo ""
+            echo "-- any docker container/label mentioning cyberdyne or api.cyberdyne --"
+            docker ps -a --format '{{.Names}}' | xargs -I{} sh -c 'docker inspect {} --format "{{.Name}}: {{json .Config.Labels}}"' 2>/dev/null | grep -i "cyberdyne" || echo "none found"
+            echo ""
+            echo "-- traefik logs: errors/acme in last 300 lines --"
+            docker logs traefik --tail 300 2>&1 | grep -iE "error|acme|cyberdyne" | tail -40 || echo "no matches"
+            echo ""
+            echo "-- try Traefik internal API via docker exec --"
+            docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>&1 | head -c 3000 || echo "wget failed/unavailable in traefik image"
 
