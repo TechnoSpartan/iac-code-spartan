@@ -84,9 +84,9 @@ if [ -n "$NETWORK_ID" ]; then
   echo "Found network: $NETWORK_ID"
   terraform import 'hcloud_network.internal' "$NETWORK_ID" 2>/dev/null || echo "Network already in state"
   terraform import 'hcloud_network_subnet.internal' "${NETWORK_ID}-10.0.0.0/24" 2>/dev/null || echo "Subnet already in state"
-  terraform import 'hcloud_server_network.vps' "${NETWORK_ID}-${SERVER_ID}" 2>/dev/null || echo "vps network attachment already in state"
+  terraform import 'hcloud_server_network.vps' "${SERVER_ID}-${NETWORK_ID}" 2>/dev/null || echo "vps network attachment already in state"
   if [ -n "$APIS_SERVER_ID" ]; then
-    terraform import 'hcloud_server_network.vps_apis' "${NETWORK_ID}-${APIS_SERVER_ID}" 2>/dev/null || echo "vps_apis network attachment already in state"
+    terraform import 'hcloud_server_network.vps_apis' "${APIS_SERVER_ID}-${NETWORK_ID}" 2>/dev/null || echo "vps_apis network attachment already in state"
   fi
 else
   echo "INFO: Network 'codespartan-internal' not found yet - Terraform will create it"
