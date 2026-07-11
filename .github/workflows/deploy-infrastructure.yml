@@ -12,7 +12,6 @@ on:
           - plan
           - apply
           - destroy
-          - verify-supabase
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -70,24 +69,3 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
-
-      # TEMPORAL: prueba varios endpoints reales de Kong (no solo el root
-      # OpenAPI). Borrar tras usarlo.
-      - name: Verify Supabase endpoints
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'verify-supabase'
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.APIS_VPS_SSH_HOST }}
-          username: ${{ secrets.APIS_VPS_SSH_USER }}
-          key: ${{ secrets.APIS_VPS_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            ANON_KEY=$(grep '^ANON_KEY=' /home/deploy/platform/supabase/.env | cut -d= -f2-)
-            echo "-- /rest/v1/articles (anon, should be 200 with empty array)"
-            curl -sS -w "\nHTTP %{http_code}\n" -H "apikey: ${ANON_KEY}" http://10.0.0.3:8000/rest/v1/articles
-            echo ""
-            echo "-- /auth/v1/health (open route)"
-            curl -sS -w "\nHTTP %{http_code}\n" -H "apikey: ${ANON_KEY}" http://10.0.0.3:8000/auth/v1/health
-            echo ""
-            echo "-- docker compose ps"
-            cd /home/deploy/platform/supabase && docker compose ps --format "table {{.Name}}\t{{.Status}}"
