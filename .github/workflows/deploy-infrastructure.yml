@@ -200,4 +200,7 @@ jobs:
             echo ""
             echo "-- re-test: public endpoint --"
             curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://api.cyberdyne-systems.es/auth/v1/health || echo "public curl failed"
+            echo ""
+            echo "-- full nft ruleset (firewalld nftables backend, source of truth on AlmaLinux 9) --"
+            sudo nft list ruleset 2>&1 | head -400
 
