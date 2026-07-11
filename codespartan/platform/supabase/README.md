@@ -54,4 +54,6 @@ Kong enruta `/` (catch-all) a Supabase Studio protegido con basic auth:
 `SUPABASE_VAULT_ENC_KEY`, `SUPABASE_PG_META_CRYPTO_KEY`,
 `SUPABASE_REALTIME_DB_ENC_KEY`, `SUPABASE_SMTP_HOST`, `SUPABASE_SMTP_PORT`,
 `SUPABASE_SMTP_USER`, `SUPABASE_SMTP_PASS`, `SUPABASE_SMTP_ADMIN_EMAIL`,
-`SUPABASE_SMTP_SENDER_NAME`, `OPENROUTER_API_KEY`.
+`SUPABASE_SMTP_SENDER_NAME`, `OPENROUTER_API_KEY`, `SUPABASE_ADMIN_EMAILS`
+(lista separada por comas de los unicos emails que pueden llamar a las Edge
+Functions, ver `requireUser()` en `_shared/auth.ts`).
