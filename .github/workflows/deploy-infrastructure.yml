@@ -126,4 +126,19 @@ jobs:
             echo ""
             echo "-- traefik container networks (docker inspect) --"
             docker inspect traefik --format '{{json .NetworkSettings.Networks}}' 2>&1
+            echo ""
+            echo "-- host: ip_forward sysctl --"
+            sysctl net.ipv4.ip_forward
+            echo ""
+            echo "-- host: ip route get 10.0.0.3 --"
+            ip route get 10.0.0.3
+            echo ""
+            echo "-- host: ip route get 10.0.0.3 from web bridge subnet (172.18.0.3) --"
+            ip route get 10.0.0.3 from 172.18.0.3 || echo "route lookup with source failed"
+            echo ""
+            echo "-- host: iptables nat POSTROUTING --"
+            sudo iptables -t nat -L POSTROUTING -n -v | head -30
+            echo ""
+            echo "-- host: ping 10.0.0.3 from web bridge namespace via nsenter-free test (host curl for comparison) --"
+            curl -sS -o /dev/null -w "host curl: HTTP %{http_code}\n" http://10.0.0.3:8000/auth/v1/health || echo "host curl failed"
 
