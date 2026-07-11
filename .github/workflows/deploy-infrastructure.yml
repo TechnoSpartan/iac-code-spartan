@@ -117,4 +117,9 @@ jobs:
             echo ""
             echo "-- try Traefik internal API via docker exec --"
             docker exec traefik wget -qO- http://localhost:8080/api/http/routers 2>&1 | head -c 3000 || echo "wget failed/unavailable in traefik image"
+            echo ""
+            echo "-- restarting traefik to force a fresh file-provider load --"
+            docker restart traefik
+            sleep 5
+            docker ps --filter name=traefik --format "{{.Names}}: {{.Status}}"
 
