@@ -60,6 +60,13 @@ http:
         scheme: https
         permanent: true
 
+    # Redirect codespartan.cloud apex -> www.codespartan.cloud
+    codespartan-apex-redirect:
+      redirectRegex:
+        regex: "^https://codespartan\\.cloud/(.*)"
+        replacement: "https://www.codespartan.cloud/${1}"
+        permanent: true
+
   routers:
     # Global HTTP to HTTPS redirect (applies to all HTTP traffic)
     http-catchall:
@@ -71,29 +78,16 @@ http:
       service: noop@internal
       priority: 1
 
-    # CodeSpartan Cloud - www.codespartan.cloud
-    codespartan-www:
-      rule: "Host(`www.codespartan.cloud`)"
+    # Redirect apex codespartan.cloud -> www.codespartan.cloud
+    codespartan-apex:
+      rule: "Host(`codespartan.cloud`)"
       entrypoints:
         - websecure
-      service: codespartan-www-service
+      middlewares:
+        - codespartan-apex-redirect
+      service: noop@internal
       tls:
         certResolver: le
-      middlewares:
-        - security-headers
-        - compression
-
-    # CodeSpartan Cloud - ui.codespartan.cloud
-    codespartan-ui:
-      rule: "Host(`ui.codespartan.cloud`)"
-      entrypoints:
-        - websecure
-      service: codespartan-ui-service
-      tls:
-        certResolver: le
-      middlewares:
-        - security-headers
-        - compression
 
     # api.cyberdyne-systems.es -> Kong (Supabase self-hosted) on the APIs VPS,
     # reached over the codespartan-internal private network (10.0.0.0/24).
@@ -108,18 +102,6 @@ http:
         certResolver: le
 
   services:
-    # CodeSpartan Cloud - www service
-    codespartan-www-service:
-      loadBalancer:
-        servers:
-          - url: "http://codespartan-www:3000"
-
-    # CodeSpartan Cloud - ui service
-    codespartan-ui-service:
-      loadBalancer:
-        servers:
-          - url: "http://codespartan-ui:80"
-
     # Kong (Supabase self-hosted) on the APIs VPS, private network
     cyberdyne-api-service:
       loadBalancer:

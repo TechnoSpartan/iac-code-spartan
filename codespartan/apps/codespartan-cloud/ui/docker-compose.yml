@@ -32,6 +32,7 @@ services:
       - traefik.http.routers.codespartan-ui.entrypoints=websecure
       - traefik.http.routers.codespartan-ui.tls=true
       - traefik.http.routers.codespartan-ui.tls.certresolver=le
+      - traefik.http.routers.codespartan-ui.middlewares=security-headers@file,compression@file
       - traefik.http.services.codespartan-ui.loadbalancer.server.port=80
       - traefik.docker.network=web
 

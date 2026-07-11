@@ -117,7 +117,9 @@ jobs:
             docker ps | grep redmine || (echo "ERROR: Redmine containers not running" && exit 1)
 
             echo "=== Running plugin migrations ==="
-            docker exec redmine-app bash -c 'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && bundle exec rake redmine:plugins:migrate RAILS_ENV=production' 2>&1 || echo "Warning: plugin migration failed (may already be applied)"
+            docker exec redmine-app bash -c \
+              'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && bundle exec rake redmine:plugins:migrate RAILS_ENV=production' \
+              2>&1 || echo "Warning: plugin migration failed (may already be applied)"
 
             echo "=== Restarting redmine-app after migrations ==="
             docker restart redmine-app
