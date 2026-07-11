@@ -1,0 +1,48 @@
+name: Start Codespartan WWW
+
+on:
+  workflow_dispatch:
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start codespartan-www container
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_PAT }}
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_TOKEN
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            echo "=== Login to GHCR ==="
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            echo "=== Navigate to codespartan-www directory ==="
+            cd /opt/codespartan/apps/codespartan-cloud/www
+
+            echo "=== Pull latest image ==="
+            docker compose pull
+
+            echo "=== Start container ==="
+            docker compose up -d
+
+            echo "=== Wait for startup ==="
+            sleep 10
+
+            echo "=== Container status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}" | grep codespartan
+
+            echo "=== Test local HTTP ==="
+            docker exec codespartan-www wget -qO- --timeout=5 http://localhost:3000/api/health 2>&1 | head -5 || echo "Health endpoint not ready yet"
+
+            echo "=== Test from Traefik ==="
+            docker exec traefik wget -qO- --timeout=5 http://codespartan-www:3000/api/health 2>&1 | head -5 || echo "Cannot connect from Traefik"
+
+            echo "=== External test ==="
+            curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" -k https://www.codespartan.cloud/ 2>&1
