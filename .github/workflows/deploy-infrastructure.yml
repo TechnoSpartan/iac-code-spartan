@@ -12,7 +12,6 @@ on:
           - plan
           - apply
           - destroy
-          - health-check-all
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -70,39 +69,3 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
-
-      # TEMPORAL: chequeo de salud completo tras una alerta reportada por el
-      # usuario. Solo lectura. Borrar tras usarlo.
-      - name: Health check ARM box
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'health-check-all'
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            echo "-- containers not healthy/running --"
-            docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -viE "\bUp\b.*\(healthy\)|Up [0-9]+ (second|minute|hour|day)s? *$" || echo "(none found matching filter, showing all instead)"
-            echo ""
-            echo "-- full docker ps --"
-            docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
-            echo ""
-            echo "-- active alertmanager alerts --"
-            curl -s http://localhost:9093/api/v2/alerts 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); [print(a['labels'].get('alertname'), '-', a['labels'].get('instance', a['labels'].get('job','?')), '-', a['status']['state']) for a in d]" 2>/dev/null || echo "could not query alertmanager"
-            echo ""
-            echo "-- traefik recent errors --"
-            docker logs traefik --tail 100 2>&1 | grep -iE "error|502|503|504" | tail -20 || echo "no recent errors in traefik logs"
-
-      - name: Health check APIs box
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'health-check-all'
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.APIS_VPS_SSH_HOST }}
-          username: ${{ secrets.APIS_VPS_SSH_USER }}
-          key: ${{ secrets.APIS_VPS_SSH_KEY }}
-          script: |
-            echo "-- supabase stack status --"
-            cd /home/deploy/platform/supabase && docker compose ps --format 'table {{.Name}}\t{{.Status}}'
-            echo ""
-            echo "-- any container not healthy --"
-            docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -v "healthy" || echo "all healthy"
