@@ -82,22 +82,19 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -uo pipefail
-            echo "-- are alertmanager/vmalert containers even running? --"
-            docker ps -a --filter "name=alertmanager" --filter "name=vmalert" --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+            echo "-- last reboot history --"
+            last reboot -F 2>&1 | head -5
             echo ""
-            echo "-- alertmanager logs (last 60 lines) --"
-            docker logs alertmanager --tail 60 2>&1
+            echo "-- why did it reboot? dmesg / journal around boot time --"
+            journalctl --list-boots 2>&1 | tail -5
             echo ""
-            echo "-- vmalert logs (last 60 lines) --"
-            docker logs vmalert --tail 60 2>&1
+            journalctl -b -1 -n 40 --no-pager 2>&1 | tail -40
             echo ""
-            echo "-- full docker ps -a (unfiltered) --"
-            docker ps -a --format 'table {{.Names}}\t{{.Status}}'
+            echo "-- OOM kills ever recorded --"
+            journalctl -k --no-pager 2>&1 | grep -i "out of memory\|oom-kill\|killed process" | tail -20 || echo "no OOM events found"
             echo ""
-            echo "-- disk/mem/cpu right now --"
-            df -h / 2>&1
-            free -h 2>&1
-            uptime 2>&1
+            echo "-- ntfy-forwarder logs around the reboot window (23:00-23:59 yesterday) --"
+            docker logs ntfy-forwarder --since "2026-07-11T23:00:00" --until "2026-07-12T00:10:00" 2>&1 | tail -60
             echo ""
-            echo "-- ntfy-forwarder logs (what it actually sent) --"
-            docker logs ntfy-forwarder --since 30m 2>&1 | tail -40
+            echo "-- ntfy-forwarder logs, last 2 hours (anything recent?) --"
+            docker logs ntfy-forwarder --since 2h 2>&1 | tail -40
