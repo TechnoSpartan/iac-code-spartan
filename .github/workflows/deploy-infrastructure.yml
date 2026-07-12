@@ -82,24 +82,22 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -uo pipefail
-            echo "-- alertmanager: raw active alerts --"
-            curl -sS http://localhost:9093/api/v2/alerts 2>&1
+            echo "-- are alertmanager/vmalert containers even running? --"
+            docker ps -a --filter "name=alertmanager" --filter "name=vmalert" --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
             echo ""
+            echo "-- alertmanager logs (last 60 lines) --"
+            docker logs alertmanager --tail 60 2>&1
             echo ""
-            echo "-- vmalert: firing/pending alerts --"
-            curl -sS http://localhost:8880/api/v1/alerts 2>&1 | head -c 4000
+            echo "-- vmalert logs (last 60 lines) --"
+            docker logs vmalert --tail 60 2>&1
             echo ""
+            echo "-- full docker ps -a (unfiltered) --"
+            docker ps -a --format 'table {{.Names}}\t{{.Status}}'
             echo ""
             echo "-- disk/mem/cpu right now --"
             df -h / 2>&1
             free -h 2>&1
             uptime 2>&1
-            echo ""
-            echo "-- any container that restarted recently or is unhealthy --"
-            docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -viE "\(healthy\)|^[a-zA-Z0-9_-]+\tUp"
-            echo ""
-            echo "-- docker events in the last 30 minutes (restarts, deaths, oom) --"
-            docker events --since 30m --until now --filter event=die --filter event=oom --filter event=restart 2>&1 | head -50
             echo ""
             echo "-- ntfy-forwarder logs (what it actually sent) --"
             docker logs ntfy-forwarder --since 30m 2>&1 | tail -40
