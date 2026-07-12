@@ -12,6 +12,7 @@ on:
           - plan
           - apply
           - destroy
+          - debug-authelia-middleware
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -69,3 +70,29 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
+
+      # TEMPORAL: diagnostica por que backoffice/portainer no encuentran el
+      # middleware authelia@docker. Solo lectura. Borrar tras usarlo.
+      - name: Debug authelia middleware
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'debug-authelia-middleware'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "-- authelia container status --"
+            docker ps -a --filter "name=^authelia$" --format "{{.Names}}: {{.Status}}"
+            echo ""
+            echo "-- authelia container LIVE labels (traefik.*) --"
+            docker inspect authelia --format '{{json .Config.Labels}}' | python3 -m json.tool | grep -i traefik
+            echo ""
+            echo "-- is this authelia@docker error recent, or only during startup? --"
+            docker logs traefik --since 5m 2>&1 | grep -i "authelia@docker does not exist" || echo "no occurrences in the last 5 minutes"
+            echo ""
+            echo "-- last occurrence timestamp --"
+            docker logs traefik 2>&1 | grep -i "authelia@docker does not exist" | tail -3
+            echo ""
+            echo "-- current live status of backoffice/portainer routes --"
+            curl -sS -o /dev/null -w "backoffice: HTTP %{http_code}\n" https://backoffice.mambo-cloud.com/ || echo "backoffice curl failed"
+            curl -sS -o /dev/null -w "portainer: HTTP %{http_code}\n" https://portainer.mambo-cloud.com/ || echo "portainer curl failed"
