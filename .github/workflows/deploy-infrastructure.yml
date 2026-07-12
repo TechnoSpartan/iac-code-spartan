@@ -12,6 +12,7 @@ on:
           - plan
           - apply
           - destroy
+          - check-alerts
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -69,3 +70,36 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
+
+      # TEMPORAL: consulta las alertas activas reales (alertmanager + vmalert)
+      # tras un segundo aviso del usuario. Solo lectura. Borrar tras usarlo.
+      - name: Check active alerts
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'check-alerts'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -uo pipefail
+            echo "-- alertmanager: raw active alerts --"
+            curl -sS http://localhost:9093/api/v2/alerts 2>&1
+            echo ""
+            echo ""
+            echo "-- vmalert: firing/pending alerts --"
+            curl -sS http://localhost:8880/api/v1/alerts 2>&1 | head -c 4000
+            echo ""
+            echo ""
+            echo "-- disk/mem/cpu right now --"
+            df -h / 2>&1
+            free -h 2>&1
+            uptime 2>&1
+            echo ""
+            echo "-- any container that restarted recently or is unhealthy --"
+            docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -viE "\(healthy\)|^[a-zA-Z0-9_-]+\tUp"
+            echo ""
+            echo "-- docker events in the last 30 minutes (restarts, deaths, oom) --"
+            docker events --since 30m --until now --filter event=die --filter event=oom --filter event=restart 2>&1 | head -50
+            echo ""
+            echo "-- ntfy-forwarder logs (what it actually sent) --"
+            docker logs ntfy-forwarder --since 30m 2>&1 | tail -40
