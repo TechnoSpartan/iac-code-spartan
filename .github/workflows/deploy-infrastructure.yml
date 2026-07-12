@@ -12,7 +12,6 @@ on:
           - plan
           - apply
           - destroy
-          - check-alerts
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -70,34 +69,3 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
-
-      # TEMPORAL: consulta las alertas activas reales (alertmanager + vmalert)
-      # tras un segundo aviso del usuario. Solo lectura. Borrar tras usarlo.
-      - name: Check active alerts
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'check-alerts'
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -uo pipefail
-            echo "-- last reboot history --"
-            last reboot -F 2>&1 | head -5
-            echo ""
-            echo "-- why did it reboot? dmesg / journal around boot time --"
-            sudo journalctl --list-boots 2>&1 | tail -5
-            echo ""
-            sudo journalctl -b -1 -n 60 --no-pager 2>&1 | tail -60
-            echo ""
-            echo "-- OOM kills ever recorded --"
-            sudo journalctl -k --no-pager 2>&1 | grep -i "out of memory\|oom-kill\|killed process" | tail -20 || echo "no OOM events found"
-            echo ""
-            echo "-- hetzner metadata: any scheduled maintenance? --"
-            curl -sS -m 5 http://169.254.169.254/hetzner/v1/metadata 2>&1 | head -c 1000 || echo "metadata service unreachable"
-            echo ""
-            echo "-- ntfy-forwarder logs around the reboot window (23:00-23:59 yesterday) --"
-            docker logs ntfy-forwarder --since "2026-07-11T23:00:00" --until "2026-07-12T00:10:00" 2>&1 | tail -60
-            echo ""
-            echo "-- ntfy-forwarder logs, last 2 hours (anything recent?) --"
-            docker logs ntfy-forwarder --since 2h 2>&1 | tail -40
