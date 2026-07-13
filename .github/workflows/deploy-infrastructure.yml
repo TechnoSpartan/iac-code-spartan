@@ -12,6 +12,7 @@ on:
           - plan
           - apply
           - destroy
+          - check-job-hunter
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -69,3 +70,22 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
+
+      # TEMPORAL: diagnostica el estado real de job-hunter-bot tras el ultimo
+      # intento de despliegue. Solo lectura. Borrar tras usarlo.
+      - name: Check job-hunter status
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'check-job-hunter'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "-- docker ps -a for job-hunter --"
+            docker ps -a --filter "name=job-hunter" --format 'table {{.Names}}\t{{.Status}}'
+            echo ""
+            echo "-- job-hunter-bot full logs --"
+            docker logs job-hunter-bot --tail 80 2>&1
+            echo ""
+            echo "-- job-hunter-dashboard full logs --"
+            docker logs job-hunter-dashboard --tail 40 2>&1
