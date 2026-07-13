@@ -31,7 +31,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "codespartan/apps/codespartan-cloud/job-hunter/docker-compose.yml"
           target: "/opt/codespartan/apps/codespartan-cloud/job-hunter/"
-          strip_components: 5
+          strip_components: 4
           overwrite: true
 
       - name: Deploy on VPS
