@@ -12,6 +12,7 @@ on:
           - plan
           - apply
           - destroy
+          - test-job-hunter
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -69,3 +70,37 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
+
+      # TEMPORAL: fuerza un ciclo real del pipeline (scrape + clasificacion LLM)
+      # para verificar que job-hunter-bot funciona de extremo a extremo. Borrar tras usarlo.
+      - name: Test job-hunter pipeline
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'test-job-hunter'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 8m
+          script: |
+            echo "-- offers/platform_status counts BEFORE run --"
+            docker exec job-hunter-bot node -e "
+              const Database = require('better-sqlite3');
+              const db = new Database('/app/data/job-hunter.db', { readonly: true });
+              console.log('offers total:', db.prepare('SELECT COUNT(*) c FROM offers').get().c);
+              console.log(JSON.stringify(db.prepare('SELECT platform, total_offers_scraped, consecutive_failures, last_success_at FROM platform_status').all(), null, 2));
+            " 2>&1 || echo "(no data yet / table missing, expected on first run)"
+            echo ""
+            echo "-- running pipeline NOW (node dist/index.js --now) --"
+            docker exec job-hunter-bot node dist/index.js --now 2>&1 | tail -200
+            echo ""
+            echo "-- offers/platform_status counts AFTER run --"
+            docker exec job-hunter-bot node -e "
+              const Database = require('better-sqlite3');
+              const db = new Database('/app/data/job-hunter.db', { readonly: true });
+              console.log('offers total:', db.prepare('SELECT COUNT(*) c FROM offers').get().c);
+              console.log('by classification:', JSON.stringify(db.prepare('SELECT classification, COUNT(*) c FROM offers GROUP BY classification').all()));
+              console.log(JSON.stringify(db.prepare('SELECT platform, total_offers_scraped, consecutive_failures, last_success_at FROM platform_status ORDER BY platform').all(), null, 2));
+            " 2>&1
+            echo ""
+            echo "-- container still healthy after manual run? --"
+            docker ps --filter "name=job-hunter" --format 'table {{.Names}}\t{{.Status}}'
