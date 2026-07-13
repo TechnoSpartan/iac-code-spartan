@@ -108,3 +108,14 @@ jobs:
             echo "-- disk/mem right now --"
             df -h / 2>&1
             free -h 2>&1
+            echo ""
+            echo "-- deployed prometheus.yml on disk: does kong-cyberdyne still appear? --"
+            grep -c "kong-cyberdyne" /opt/codespartan/platform/stacks/monitoring/victoriametrics/prometheus.yml || echo "0 (removed)"
+            echo ""
+            echo "-- vmagent: does it still know about kong-cyberdyne as a target? --"
+            docker exec vmagent wget -qO- http://localhost:8429/api/v1/targets 2>&1 | grep -o '"job":"kong-cyberdyne"' | head -3 || echo "not found in vmagent's active targets"
+            echo ""
+            echo "-- restarting vmagent + vmalert to force a fresh config/rule read --"
+            docker restart vmagent vmalert
+            sleep 8
+            docker exec vmagent wget -qO- http://localhost:8429/api/v1/targets 2>&1 | grep -o '"job":"kong-cyberdyne"' | head -3 || echo "confirmed: kong-cyberdyne no longer a target after restart"
