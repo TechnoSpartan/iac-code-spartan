@@ -12,7 +12,6 @@ on:
           - plan
           - apply
           - destroy
-          - check-alerts-v2
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -70,52 +69,3 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
-
-      # TEMPORAL: tercera alerta reportada por el usuario. Consulta
-      # alertmanager/vmalert desde dentro de sus propios contenedores (sus
-      # puertos no estan publicados al host) + estado actual. Solo lectura.
-      # Borrar tras usarlo.
-      - name: Check active alerts v2
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'check-alerts-v2'
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -uo pipefail
-            echo "-- alertmanager: active alerts (queried from inside its own container) --"
-            docker exec alertmanager wget -qO- http://localhost:9093/api/v2/alerts 2>&1
-            echo ""
-            echo ""
-            echo "-- vmalert: firing/pending alerts (from inside its own container) --"
-            docker exec vmalert wget -qO- http://localhost:8880/api/v1/alerts 2>&1 | head -c 6000
-            echo ""
-            echo ""
-            echo "-- uptime / any new reboot? --"
-            uptime
-            last reboot -F | head -3
-            echo ""
-            echo "-- full docker ps -a right now --"
-            docker ps -a --format 'table {{.Names}}\t{{.Status}}'
-            echo ""
-            echo "-- ntfy-forwarder logs, last 3 hours --"
-            docker logs ntfy-forwarder --since 3h 2>&1 | tail -60
-            echo ""
-            echo "-- traefik errors in the last hour --"
-            docker logs traefik --since 1h 2>&1 | grep -iE "error|502|503|504" | tail -30 || echo "no errors in the last hour"
-            echo ""
-            echo "-- disk/mem right now --"
-            df -h / 2>&1
-            free -h 2>&1
-            echo ""
-            echo "-- deployed prometheus.yml on disk: does kong-cyberdyne still appear? --"
-            grep -c "kong-cyberdyne" /opt/codespartan/platform/stacks/monitoring/victoriametrics/prometheus.yml || echo "0 (removed)"
-            echo ""
-            echo "-- vmagent: does it still know about kong-cyberdyne as a target? --"
-            docker exec vmagent wget -qO- http://localhost:8429/api/v1/targets 2>&1 | grep -o '"job":"kong-cyberdyne"' | head -3 || echo "not found in vmagent's active targets"
-            echo ""
-            echo "-- restarting vmagent + vmalert to force a fresh config/rule read --"
-            docker restart vmagent vmalert
-            sleep 8
-            docker exec vmagent wget -qO- http://localhost:8429/api/v1/targets 2>&1 | grep -o '"job":"kong-cyberdyne"' | head -3 || echo "confirmed: kong-cyberdyne no longer a target after restart"
