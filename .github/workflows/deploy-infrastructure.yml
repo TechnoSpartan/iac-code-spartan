@@ -83,18 +83,18 @@ jobs:
           command_timeout: 8m
           script: |
             echo "-- offers/platform_status counts BEFORE run --"
-            docker exec job-hunter-bot node -e "
+            docker exec -w /app/apps/bot job-hunter-bot node -e "
               const Database = require('better-sqlite3');
               const db = new Database('/app/data/job-hunter.db', { readonly: true });
               console.log('offers total:', db.prepare('SELECT COUNT(*) c FROM offers').get().c);
               console.log(JSON.stringify(db.prepare('SELECT platform, total_offers_scraped, consecutive_failures, last_success_at FROM platform_status').all(), null, 2));
             " 2>&1 || echo "(no data yet / table missing, expected on first run)"
             echo ""
-            echo "-- running pipeline NOW (node dist/index.js --now) --"
-            docker exec job-hunter-bot node dist/index.js --now 2>&1 | tail -200
+            echo "-- running pipeline NOW (node apps/bot/dist/index.js --now) --"
+            docker exec job-hunter-bot node apps/bot/dist/index.js --now 2>&1 | tail -200
             echo ""
             echo "-- offers/platform_status counts AFTER run --"
-            docker exec job-hunter-bot node -e "
+            docker exec -w /app/apps/bot job-hunter-bot node -e "
               const Database = require('better-sqlite3');
               const db = new Database('/app/data/job-hunter.db', { readonly: true });
               console.log('offers total:', db.prepare('SELECT COUNT(*) c FROM offers').get().c);
