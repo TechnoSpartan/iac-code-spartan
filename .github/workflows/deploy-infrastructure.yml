@@ -12,6 +12,7 @@ on:
           - plan
           - apply
           - destroy
+          - check-job-hunter-cron
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -69,3 +70,31 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
+
+      # TEMPORAL: solo lectura, revisa si el cron de las 8:00 de hoy corrio
+      # y que tal le fue. Borrar tras usarlo.
+      - name: Check job-hunter cron run
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'check-job-hunter-cron'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "-- container status --"
+            docker ps --filter "name=job-hunter" --format 'table {{.Names}}\t{{.Status}}'
+            echo ""
+            echo "-- logs since today 05:30 UTC (cron was 8:00 Europe/Madrid = 06:00 UTC) --"
+            docker logs job-hunter-bot --since "2026-07-14T05:30:00Z" 2>&1 | grep -Ev "\[MultiLLM\] Consensus for|OpenAI\] Error|openai: FAILED" | tail -150
+            echo ""
+            echo "-- OpenAI failure count since cron window (collapsed) --"
+            docker logs job-hunter-bot --since "2026-07-14T05:30:00Z" 2>&1 | grep -c "insufficient permissions" || echo "0"
+            echo ""
+            echo "-- current DB state --"
+            docker exec -w /app/apps/bot job-hunter-bot node -e "
+              const Database = require('better-sqlite3');
+              const db = new Database('/app/data/job-hunter.db', { readonly: true });
+              console.log('offers total:', db.prepare('SELECT COUNT(*) c FROM offers').get().c);
+              console.log('by classification:', JSON.stringify(db.prepare('SELECT classification, COUNT(*) c FROM offers GROUP BY classification').all()));
+              console.log('scrape_runs today:', JSON.stringify(db.prepare(\"SELECT id, started_at, completed_at, status, offers_found, offers_new, offers_classified_green, offers_classified_yellow, offers_classified_red, error_message FROM scrape_runs WHERE started_at >= '2026-07-14' ORDER BY id DESC\").all(), null, 2));
+            " 2>&1
