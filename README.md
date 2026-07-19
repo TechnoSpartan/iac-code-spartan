@@ -25,6 +25,8 @@ Plataforma de infraestructura completamente containerizada que proporciona:
 - `staging.mambo-cloud.com` - Entorno de pruebas
 - `lab.mambo-cloud.com` - Entorno de desarrollo
 
+**Otros dominios gestionados**: `cyberdyne-systems.es`, `codespartan.cloud`, `dental-io.com` (`codespartan.es`, la web corporativa, vive aparte en Hostinger/WordPress y no la gestiona este repo).
+
 ## 🏗️ Arquitectura
 
 **Plataforma replicable** diseñada con arquitectura Zero Trust para despliegue en múltiples VPS.
@@ -35,26 +37,28 @@ Plataforma de infraestructura completamente containerizada que proporciona:
 graph TB
     Internet[🌍 Internet] --> Traefik[🚪 Traefik<br/>SSL + Routing]
 
-    Traefik --> Apps[📱 Aplicaciones<br/>Cyberdyne, Dental-IO, TrackWorks]
+    Traefik --> Apps[📱 Apps VPS principal<br/>Cyberdyne, Dental-IO, Redmine, Twenty CRM, job-hunter]
     Traefik --> Mon[📊 Monitoring<br/>Grafana, VictoriaMetrics, Loki]
     Traefik --> Back[🏢 Backoffice]
+    Traefik -.->|red privada Hetzner| Apis[🗄️ VPS secundario<br/>Supabase self-hosted]
 
-    DNS[Hetzner DNS] -.-> Traefik
+    DNS[Hetzner DNS nativo] -.-> Traefik
     LE[Let's Encrypt] -.-> Traefik
 
-    CI[GitHub Actions] --> VPS[Hetzner VPS ARM64]
+    CI[GitHub Actions] --> VPS[VPS principal ARM64]
+    CI --> Apis
     VPS --> Traefik
 ```
 
-### Arquitectura Objetivo (Zero Trust)
+### Arquitectura Zero Trust (Estado Actual)
 
-**🎯 Roadmap de Seguridad:**
 - ✅ Traefik Edge con SSL automático
-- 🔄 docker-socket-proxy (en implementación)
-- 🔄 Kong API Gateway por dominio
-- 🔄 Authelia SSO + MFA
-- 🔄 Portainer read-only
-- 🔄 Aislamiento completo por red
+- ✅ docker-socket-proxy (proxy de solo lectura al socket Docker)
+- ✅ Authelia SSO + MFA (protege Traefik, Grafana, Backoffice, Portainer)
+- ✅ Portainer read-only, protegido por Authelia
+- ✅ Aislamiento de red por producto (Redmine, Supabase, Twenty CRM)
+- ✅ Kong API Gateway para Supabase (incluido en su propio stack)
+- 🔄 Kong API Gateway pendiente para otros dominios (dental-io, mambo-cloud) — plantilla en `platform/kong/_TEMPLATE/`
 
 **📖 Para ver la arquitectura completa, diagramas técnicos y roadmap detallado:**
 - **[Arquitectura Completa](docs/02-architecture/ARCHITECTURE.md)** - Arquitectura completa con diagramas de alto y bajo nivel
@@ -63,8 +67,7 @@ graph TB
 
 ### Pre-requisitos
 
-- [ ] Cuenta Hetzner Cloud + Token API
-- [ ] Cuenta Hetzner DNS + Token API
+- [ ] Cuenta Hetzner Cloud + Token API (cubre Cloud + DNS nativo, `hcloud_zone`)
 - [ ] Repositorio GitHub
 - [ ] Dominio `mambo-cloud.com` con NS apuntando a Hetzner
 
@@ -73,10 +76,11 @@ graph TB
 Ve a: **Settings → Secrets and variables → Actions**
 
 ```bash
-HCLOUD_TOKEN=tu_token_hetzner_cloud
-HETZNER_DNS_TOKEN=tu_token_hetzner_dns
+HCLOUD_TOKEN=tu_token_hetzner_cloud              # Cubre Cloud + DNS (hcloud_zone)
+VPS_SSH_PUBLIC_KEY=tu_clave_publica_ssh          # Provisionada en el VPS principal
+APIS_DEPLOY_SSH_PUBLIC_KEY=tu_clave_publica_ssh  # Usuario deploy del VPS secundario
 VPS_SSH_HOST=91.98.137.217
-VPS_SSH_USER=root
+VPS_SSH_USER=leonidas
 VPS_SSH_KEY=tu_clave_privada_ssh_completa
 ```
 
@@ -105,7 +109,7 @@ Ejecutar workflows en este orden:
 ```
 codespartan/
 ├── infra/
-│   ├── hetzner/                    # 🏗️ Terraform (VPS + DNS)
+│   ├── hetzner/                    # 🏗️ Terraform (2 VPS + DNS nativo hcloud)
 │   │   ├── main.tf                 # Recursos principales
 │   │   ├── variables.tf            # Variables configurables
 │   │   ├── terraform.tfvars        # Valores del proyecto
@@ -115,21 +119,26 @@ codespartan/
 │
 ├── platform/
 │   ├── traefik/                    # 🚪 Reverse Proxy
-│   │   ├── docker-compose.yml      # Configuración Traefik
-│   │   └── .env                    # Variables específicas
+│   ├── authelia/                   # 🔐 SSO + MFA
+│   ├── docker-socket-proxy/        # 🛡️ Proxy read-only al socket Docker
+│   ├── portainer/                  # 📦 Gestión de contenedores (tras Authelia)
+│   ├── watchtower/                 # 🔄 Auto-actualización de imágenes
+│   ├── kong/_TEMPLATE/             # 🌉 Plantilla API Gateway (por dominio)
+│   ├── supabase/                   # 🗄️ Supabase self-hosted (VPS secundario)
 │   └── stacks/
 │       ├── monitoring/             # 📊 VictoriaMetrics + Grafana + Loki + Promtail
 │       └── backoffice/             # 🏢 Panel de control
 │
 ├── apps/
-│   ├── mambo-cloud/                # 🌐 Aplicación principal
-│   ├── cyberdyne/                  # 🤖 App Cyberdyne Systems
-│   └── dental-io/                  # 🦷 App Dental-IO
+│   ├── codespartan-cloud/          # 🌐 www, ui, redmine, crm (Twenty), job-hunter
+│   ├── cyberdyne-systems-es/       # 🤖 App Cyberdyne Systems (sobre Supabase)
+│   ├── dental-io-com/              # 🦷 App Dental-IO
+│   └── mambo-cloud-com/            # ☁️ Aplicación principal mambo-cloud
 │
 └── docs/
-    ├── RUNBOOK.md                  # 📚 Guía operativa completa
-    ├── BEGINNER.md                 # 👶 Guía para principiantes
-    └── GITHUB.md                   # 🐙 Documentación GitHub Actions
+    ├── README.md                   # 📚 Índice completo de documentación
+    ├── 03-operations/RUNBOOK.md    # 📚 Guía operativa completa
+    └── 01-getting-started/BEGINNER.md  # 👶 Guía para principiantes
 ```
 
 ## 🔧 Configuración
@@ -164,7 +173,7 @@ Password: codespartan123
 ### Conectar al VPS
 
 ```bash
-ssh root@91.98.137.217
+ssh leonidas@91.98.137.217
 ```
 
 ### Verificar servicios
@@ -252,7 +261,7 @@ git push origin main
 
 ```bash
 # 1. Verificar contenedor
-ssh root@91.98.137.217
+ssh leonidas@91.98.137.217
 docker ps | grep nombre_servicio
 
 # 2. Ver logs
@@ -315,28 +324,26 @@ Toda la documentación está organizada en [docs/](docs/). Ver el [índice compl
 ### Estado Actual
 - ✅ **Firewall**: Hetzner Cloud Firewall (22, 80, 443)
 - ✅ **SSL**: Certificados automáticos Let's Encrypt
-- ✅ **Auth**: Autenticación básica en servicios de gestión
-- ✅ **SSH**: Acceso solo por clave pública
-- ⚠️ **Docker**: Red compartida (mejora en roadmap)
+- ✅ **SSH**: Acceso solo por clave pública, usuario no-root (`leonidas`)
 - ✅ **Fail2ban**: Protección SSH contra ataques
+- ✅ **docker-socket-proxy**: Traefik y Portainer acceden a Docker vía proxy de solo lectura
+- ✅ **Authelia**: SSO con MFA para todos los dashboards de administración
+- ✅ **Portainer**: Dashboard read-only, protegido por Authelia
+- ✅ **Redes aisladas**: bases de datos aisladas por producto (Redmine, Supabase, Twenty CRM)
 
-### Mejoras de Seguridad (Roadmap)
-- 🔄 **docker-socket-proxy**: Filtro de seguridad para API de Docker (elimina acceso directo de Traefik)
-- 🔄 **Redes aisladas**: Cada dominio en su red interna (sin comunicación cruzada)
-- 🔄 **Kong API Gateway**: Rate limiting, auth y logging por dominio
-- 🔄 **Authelia**: SSO con MFA para todos los dashboards
-- 🔄 **Portainer**: Dashboard read-only protegido por Authelia
+### Pendiente
+- 🔄 **Kong API Gateway**: solo pendiente para dominios distintos de Cyberdyne/Supabase (dental-io, mambo-cloud) — plantilla en `platform/kong/_TEMPLATE/`
 
 **Ver arquitectura de seguridad completa:** [docs/02-architecture/ARCHITECTURE.md](docs/02-architecture/ARCHITECTURE.md)
 
 ## 🎯 Roadmap
 
-### Seguridad (Prioridad Alta 🔴)
-- [ ] **docker-socket-proxy** - Filtro de seguridad para Docker API
-- [ ] **Aislamiento de redes** - Redes internas por dominio
-- [ ] **Kong API Gateway** - Rate limiting y auth por dominio
-- [ ] **Authelia** - SSO con MFA para dashboards
-- [ ] **Portainer read-only** - Dashboard seguro de contenedores
+### Seguridad
+- [x] **docker-socket-proxy** - Filtro de seguridad para Docker API
+- [x] **Aislamiento de redes** - Redes internas por dominio/producto
+- [x] **Authelia** - SSO con MFA para dashboards
+- [x] **Portainer read-only** - Dashboard seguro de contenedores
+- [ ] **Kong API Gateway** - Pendiente para dominios distintos de Cyberdyne/Supabase (dental-io, mambo-cloud)
 
 ### Infraestructura
 - [ ] **Backups automáticos** (S3-compatible)
@@ -355,16 +362,16 @@ Toda la documentación está organizada en [docs/](docs/). Ver el [índice compl
 ## 📞 Soporte
 
 - **Email**: infra@mambo-cloud.com
-- **Repositorio**: https://github.com/CodeSpartan/iac-core-hetzner
+- **Repositorio**: https://github.com/TechnoSpartan/iac-code-spartan
 - **Documentación**: [docs/](docs/)
 
 ---
 
 ## 🏷️ Status Badges
 
-![Infrastructure](https://github.com/CodeSpartan/iac-core-hetzner/actions/workflows/deploy-infrastructure.yml/badge.svg)
-![Traefik](https://github.com/CodeSpartan/iac-core-hetzner/actions/workflows/deploy-traefik.yml/badge.svg)
-![Monitoring](https://github.com/CodeSpartan/iac-core-hetzner/actions/workflows/deploy-monitoring.yml/badge.svg)
+![Infrastructure](https://github.com/TechnoSpartan/iac-code-spartan/actions/workflows/deploy-infrastructure.yml/badge.svg)
+![Traefik](https://github.com/TechnoSpartan/iac-code-spartan/actions/workflows/deploy-traefik.yml/badge.svg)
+![Monitoring](https://github.com/TechnoSpartan/iac-code-spartan/actions/workflows/deploy-monitoring.yml/badge.svg)
 
 **Licencia**: MIT  
 **Mantenido por**: CodeSpartan Team  
