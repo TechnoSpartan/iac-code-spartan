@@ -1,273 +1,67 @@
-# 🌐 Inventario de URLs - CodeSpartan Mambo Cloud Platform
+# 🌐 Inventario de URLs - CodeSpartan Platform
 
-**Última actualización:** 2025-12-13
-**VPS:** 91.98.137.217 (Hetzner ARM64)
-**Dominios principales:** mambo-cloud.com, cyberdyne-systems.es, codespartan.cloud
-
----
-
-## 📊 Resumen
-
-| Categoría                | Cantidad        | Estado                     |
-| ------------------------ | --------------- | -------------------------- |
-| **Plataforma**           | 6 URLs          | ✅ Operacionales            |
-| **Aplicaciones**         | 8 URLs          | ⚠️ Parcialmente desplegadas |
-| **Total URLs**           | 14 URLs         | -                          |
-| **Contenedores activos** | 21 contenedores | ✅ Running                  |
+**Última actualización:** 2026-07-13
+**VPS principal:** 91.98.137.217 (Hetzner ARM64, `cax11`)
+**VPS secundario:** IP privada `10.0.0.3` (Hetzner x86, `cx33`, tier APIs/BBDD)
+**Dominios:** mambo-cloud.com, cyberdyne-systems.es, codespartan.cloud, dental-io.com (`codespartan.es` se gestiona aparte en Hostinger/WordPress)
 
 ---
 
 ## 🔧 Plataforma (Infraestructura)
 
-### Traefik - Reverse Proxy
+| Servicio | URL | Autenticación | Contenedor(es) |
+|----------|-----|----------------|-----------------|
+| Traefik Dashboard | https://traefik.mambo-cloud.com | Authelia SSO + MFA | `traefik` |
+| Grafana | https://grafana.mambo-cloud.com | Authelia SSO + MFA | `grafana` |
+| Authelia | https://auth.mambo-cloud.com | Login + TOTP | `authelia`, `authelia-redis` |
+| Backoffice | https://backoffice.mambo-cloud.com | Authelia SSO + MFA | `backoffice` |
+| Portainer | https://portainer.mambo-cloud.com | Authelia SSO + MFA | `portainer` (vía `docker-socket-proxy`) |
 
-- **URL:** <https://traefik.mambo-cloud.com>
-- **Servicio:** Dashboard de Traefik
-- **Credenciales:** admin / codespartan123
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `traefik`
+Credenciales por defecto: `admin` / `codespartan123` + TOTP vía Authelia (https://auth.mambo-cloud.com).
 
-### Grafana - Observabilidad
+## 🚀 Aplicaciones
 
-- **URL:** <https://grafana.mambo-cloud.com>
-- **Servicio:** Dashboards de métricas y logs
-- **Autenticación:** ✅ Authelia SSO + 2FA (Auth Proxy)
-- **Credenciales:** Via Authelia (https://auth.mambo-cloud.com)
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `grafana`
-- **Datasources:**
-  - VictoriaMetrics (métricas)
-  - Loki (logs)
-- **Dashboards:** 5 importados
-- **Acceso:**
-  1. Visitar https://grafana.mambo-cloud.com
-  2. Redirige automáticamente a Authelia
-  3. Login: admin / codespartan123 + TOTP
+| Aplicación | URL | Estado | Contenedor(es) | Notas |
+|-----------|-----|--------|-----------------|-------|
+| CodeSpartan WWW | https://www.codespartan.cloud | ✅ Operacional | `codespartan-www` | Next.js SSR, incluye chatbot (OpenAI) |
+| CodeSpartan UI | https://ui.codespartan.cloud | ✅ Operacional | `codespartan-ui` | Storybook estático |
+| Redmine | https://project.codespartan.cloud | ✅ Operacional | `redmine-app`, `redmine-db` | Reemplaza a OpenProject; PostgreSQL propio |
+| Twenty CRM | https://crm.codespartan.cloud | 🔄 Código listo, pendiente de desplegar | `twenty-server`, `twenty-worker`, `twenty-db`, `twenty-redis` | Ver `docs/06-implementation/PIPELINE_COMERCIAL.md` |
+| job-hunter (bot) | vía `JOB_HUNTER_API_HOST` (variable propia, no gestionado por Terraform) | ✅ Operacional | `job-hunter-bot` | |
+| job-hunter (dashboard) | vía `TRAEFIK_HOSTNAME` propio | ✅ Operacional, protegido por Authelia | `job-hunter-dashboard` | |
+| Cyberdyne Systems | https://www.cyberdyne-systems.es | ✅ Operacional | `cyberdyne-social-posts` | Reemplaza a TrackWorks (app de publicación de posts con IA); backend en Supabase |
+| Cyberdyne API | https://api.cyberdyne-systems.es | ✅ Operacional | (reenvía a `supabase-kong` en el VPS secundario, IP privada `10.0.0.3:8000`) | Ya no hay Kong local para Cyberdyne — retirado, redundante con el Kong propio de Supabase |
+| Dental IO | https://www.dental-io.com | ✅ Operacional | `dental-io-web` | Sitio estático (nginx) |
+| Mambo Cloud | https://www.mambo-cloud.com | ✅ Operacional | `mambo-cloud-app` | Sitio estático (nginx) |
+| Staging/Lab (mambo-cloud, cyberdyne, dental-io) | `staging.*` / `lab.*` / `*-staging.*` | ❌ No desplegado | — | Subdominios reservados en Terraform, sin contenedor activo |
 
-### Authelia - SSO (Single Sign-On)
+## 🖥️ VPS secundario — Supabase self-hosted (`CodeSpartan-apis`, IP privada `10.0.0.3`)
 
-- **URL:** <https://auth.mambo-cloud.com>
-- **Servicio:** Portal de autenticación con MFA
-- **Credenciales:** admin / codespartan123
-- **Estado:** ✅ OPERACIONAL
-- **Contenedores:** `authelia`, `authelia-redis`
-- **Funcionalidades:**
-  - ✅ Login
-  - ✅ 2FA (TOTP)
-  - ✅ API Health: <https://auth.mambo-cloud.com/api/health>
+| Servicio | Acceso | Contenedor |
+|----------|--------|------------|
+| Kong (API Gateway propio de Supabase) | Solo IP privada `10.0.0.3:8000`, expuesto públicamente vía Traefik → `api.cyberdyne-systems.es` | `supabase-kong` |
+| Studio | Interno (no expuesto públicamente) | `supabase-studio` |
+| Auth, REST, Realtime, Storage, imgproxy, Meta, Edge Functions, Postgres, Supavisor | Internos, solo accesibles entre sí y vía Kong | `supabase-auth`, `supabase-rest`, `realtime-dev.supabase-realtime`, `supabase-storage`, `supabase-imgproxy`, `supabase-meta`, `supabase-edge-functions`, `supabase-db`, `supabase-pooler` |
 
-### Backoffice - Panel de Gestión
+## 🔒 Servicios Internos del VPS principal (No Expuestos Públicamente)
 
-- **URL:** <https://backoffice.mambo-cloud.com>
-- **Servicio:** Panel de administración
-- **Autenticación:** ✅ Authelia SSO + 2FA
-- **Credenciales:** Via Authelia (https://auth.mambo-cloud.com)
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `backoffice`
-
-### Portainer CE - Container Management
-
-- **URL:** <https://portainer.mambo-cloud.com>
-- **Servicio:** Gestión visual de contenedores Docker
-- **Autenticación:** ✅ Authelia SSO + 2FA
-- **Credenciales:** Via Authelia (https://auth.mambo-cloud.com)
-- **Estado:** ✅ OPERACIONAL (FASE 3.2)
-- **Contenedor:** `portainer`
-- **Funcionalidades:**
-  - 📊 Dashboard visual de todos los contenedores
-  - 📝 Logs en tiempo real
-  - 💻 Console/exec en contenedores
-  - 🚀 Deploy stacks (docker-compose via UI)
-  - 📈 Resource monitoring (CPU, RAM, Network)
-  - 🔐 User management con RBAC
-- **Arquitectura:**
-  - Conecta vía `docker-socket-proxy` (seguro, read-only)
-  - Protegido por Authelia (SSO + MFA obligatorio)
-  - Solo usuarios en grupo `admins` pueden acceder
-- **Initial Setup:**
-  1. Visitar https://portainer.mambo-cloud.com
-  2. Redirige automáticamente a Authelia
-  3. Login: admin / codespartan123 + TOTP
-  4. Primera vez: Crear password de admin de Portainer
-  5. Docker environment ya pre-configurado vía socket proxy
-
-### VictoriaMetrics - Métricas
-
-- **URL:** <http://91.98.137.217:8428> (No expuesto públicamente)
-- **Servicio:** Time-series database para métricas
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `victoriametrics`
-- **UI interna:** <http://localhost:8428/vmui>
-
-### Alertmanager - Gestión de Alertas
-
-- **URL:** <http://91.98.137.217:9093> (No expuesto públicamente)
-- **Servicio:** Gestión y routing de alertas
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `alertmanager`
-
----
-
-## 🚀 Aplicaciones Desplegadas
-
-### TruckWorks API (Cyberdyne Systems)
-
-- **URL:** <https://api.cyberdyne-systems.es/api/v1/health>
-- **Servicio:** Backend API REST para TruckWorks
-- **Estado:** ✅ OPERACIONAL
-- **Contenedores:** `trackworks-api`, `trackworks-mongodb`
-- **Base de datos:** MongoDB 8.0
-- **Endpoints:**
-  - Health: <https://api.cyberdyne-systems.es/api/v1/health>
-  - API Base: <https://api.cyberdyne-systems.es/api/v1/>
-
-### Cyberdyne Systems - Frontend (Producción)
-
-- **URL:** <https://www.cyberdyne-systems.es>
-- **URL alternativa:** <https://cyberdyne-systems.es>
-- **Servicio:** Frontend de TruckWorks (React/Next.js)
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `cyberdyne-frontend-web`
-
-### Cyberdyne Systems - Staging
-
-- **URL:** <https://staging.cyberdyne-systems.es>
-- **Servicio:** Frontend staging para pruebas
-- **Estado:** ❌ NO DESPLEGADO
-- **Notas:** Configuración existe, contenedor no activo
-
-### Cyberdyne Systems - Lab
-
-- **URL:** <https://lab.cyberdyne-systems.es>
-- **Servicio:** Ambiente de desarrollo/experimentación
-- **Estado:** ❌ NO DESPLEGADO
-- **Notas:** Configuración existe, contenedor no activo
-
-### TruckWorks API Staging
-
-- **URL:** <https://api-staging.cyberdyne-systems.es>
-- **Servicio:** Backend staging para pruebas
-- **Estado:** ❌ NO DESPLEGADO
-- **Notas:** Configuración existe, contenedor no activo
-
-### CodeSpartan UI
-
-- **URL:** <https://ui.codespartan.cloud>
-- **Servicio:** Dashboard de CodeSpartan
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `codespartan-ui`
-
-### CodeSpartan WWW
-
-- **URL:** <https://www.codespartan.cloud>
-- **Servicio:** Sitio web corporativo CodeSpartan
-- **Estado:** ⚠️ CONFIGURADO (verificar estado)
-- **Notas:** Configuración existe, verificar contenedor
-
-### Mambo Cloud WWW
-
-- **URL:** <https://www.mambo-cloud.com>
-- **Servicio:** Landing page Mambo Cloud
-- **Estado:** ⚠️ CONFIGURADO (verificar estado)
-- **Notas:** Configuración existe, verificar contenedor
-
-### Redmine - Project Management
-
-- **URL:** <https://redmine.codespartan.cloud> (estimada)
-- **Servicio:** Gestión de proyectos
-- **Estado:** ✅ CONTENEDORES ACTIVOS
-- **Contenedores:** `redmine-app`, `redmine-db`
-- **Notas:** Contenedores corriendo, verificar URL pública
-
-### Dental.io
-
-- **URL:** <https://www.dental-io.com> (estimada)
-- **Servicio:** Aplicación dental
-- **Estado:** ⚠️ CONFIGURADO (verificar estado)
-- **Notas:** Configuración existe, verificar contenedor
-
-### Mambo Cloud Staging
-
-- **URL:** <https://staging.mambo-cloud.com>
-- **Servicio:** Ambiente staging
-- **Estado:** ❌ NO DESPLEGADO
-- **Notas:** Configuración existe, contenedor no activo
-
-### Mambo Cloud Lab
-
-- **URL:** <https://lab.mambo-cloud.com>
-- **Servicio:** Ambiente de laboratorio
-- **Estado:** ❌ NO DESPLEGADO
-- **Notas:** Configuración existe, contenedor no activo
-
----
-
-## 🔒 Servicios Internos (No Expuestos Públicamente)
-
-### Docker Socket Proxy
-
-- **Puerto:** N/A (solo interno)
-- **Servicio:** Proxy de seguridad para Docker socket
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `docker-socket-proxy`
-
-### Loki - Log Aggregation
-
-- **Puerto:** 3100 (interno)
-- **Servicio:** Agregación y almacenamiento de logs
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `loki`
-- **Acceso:** Vía Grafana
-
-### Promtail - Log Shipper
-
-- **Puerto:** N/A (solo interno)
-- **Servicio:** Recolector de logs Docker → Loki
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `promtail`
-
-### vmagent - Metrics Collector
-
-- **Puerto:** 8429 (interno)
-- **Servicio:** Recolector de métricas Prometheus
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `vmagent`
-
-### vmalert - Alerting Rules
-
-- **Puerto:** 8880 (interno)
-- **Servicio:** Evaluación de reglas de alertas
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `vmalert`
-- **Reglas activas:** 14 alertas configuradas
-
-### cAdvisor - Container Metrics
-
-- **Puerto:** 8080 (interno)
-- **Servicio:** Métricas de contenedores Docker
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `cadvisor`
-
-### Node Exporter - Host Metrics
-
-- **Puerto:** 9100 (interno)
-- **Servicio:** Métricas del host (CPU, RAM, Disk, Network)
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `node-exporter`
-
-### ntfy-forwarder - Alert Notifications
-
-- **Puerto:** N/A (webhook)
-- **Servicio:** Forward de alertas a ntfy.sh
-- **Estado:** ✅ OPERACIONAL
-- **Contenedor:** `ntfy-forwarder`
-- **Topic:** codespartan-mambo-alerts
+| Servicio | Contenedor | Función |
+|----------|-----------|---------|
+| docker-socket-proxy | `docker-socket-proxy` | Proxy de solo lectura al socket Docker |
+| Watchtower | `watchtower` | Auto-actualización de imágenes etiquetadas |
+| VictoriaMetrics | `victoriametrics` | Time-series database (puerto 8428, interno) |
+| Loki | `loki` | Agregación de logs (puerto 3100, interno), vía Grafana |
+| Promtail | `promtail` | Recolector de logs Docker → Loki |
+| vmagent | `vmagent` | Recolector de métricas Prometheus |
+| vmalert | `vmalert` | Evaluación de reglas de alertas (14 reglas activas) |
+| Alertmanager | `alertmanager` | Gestión y routing de alertas |
+| ntfy-forwarder | `ntfy-forwarder` | Reenvío de alertas a ntfy.sh (topic `codespartan-mambo-alerts`) |
+| cAdvisor | `cadvisor` | Métricas de contenedores Docker |
+| Node Exporter | `node-exporter` | Métricas del host |
 
 ---
 
 ## 🧪 Verificación Rápida
-
-### Test de Endpoints Públicos
 
 ```bash
 # Plataforma
@@ -275,91 +69,40 @@ curl -I https://traefik.mambo-cloud.com
 curl -I https://grafana.mambo-cloud.com
 curl -I https://auth.mambo-cloud.com
 curl -I https://backoffice.mambo-cloud.com
+curl -I https://portainer.mambo-cloud.com
 
 # Aplicaciones
-curl -I https://api.cyberdyne-systems.es/api/v1/health
-curl -I https://www.cyberdyne-systems.es
+curl -I https://www.codespartan.cloud
 curl -I https://ui.codespartan.cloud
+curl -I https://project.codespartan.cloud
+curl -I https://www.cyberdyne-systems.es
+curl -I https://api.cyberdyne-systems.es
+curl -I https://www.dental-io.com
+curl -I https://www.mambo-cloud.com
 ```
 
-### Verificar Contenedores Activos
-
 ```bash
+# Contenedores activos en el VPS principal
 ssh leonidas@91.98.137.217 "docker ps --format 'table {{.Names}}\t{{.Status}}'"
-```
-
-### Ver Rutas en Traefik
-
-```bash
-ssh leonidas@91.98.137.217 "docker exec traefik wget -qO- http://localhost:8080/api/http/routers | jq '.[] | select(.status == \"enabled\") | {name: .name, rule: .rule, service: .service}'"
 ```
 
 ---
 
 ## 📝 Notas Importantes
 
-### Credenciales Predeterminadas
-
-- **Usuario:** admin
-- **Password:** codespartan123
-- **MFA (TOTP):** Requerido para dashboards protegidos
-- **Aplica a:** Authelia portal (protege: Traefik, Grafana, Backoffice)
-
-**Nota:** Grafana, Traefik y Backoffice ahora usan Authelia SSO. Login una sola vez en https://auth.mambo-cloud.com
-
-### SSL/TLS
-
-- **Proveedor:** Let's Encrypt
-- **Renovación:** Automática vía Traefik
-- **Wildcard:** No (certificados individuales por subdomain)
-
-### Dominios DNS (Hetzner)
-
-Los siguientes dominios están configurados en Hetzner DNS:
-
-**mambo-cloud.com:**
-
-- traefik.mambo-cloud.com → 91.98.137.217
-- grafana.mambo-cloud.com → 91.98.137.217
-- auth.mambo-cloud.com → 91.98.137.217
-- backoffice.mambo-cloud.com → 91.98.137.217
-- <www.mambo-cloud.com> → 91.98.137.217
-- staging.mambo-cloud.com → 91.98.137.217
-- lab.mambo-cloud.com → 91.98.137.217
-
-**cyberdyne-systems.es:**
-
-- api.cyberdyne-systems.es → 91.98.137.217
-- api-staging.cyberdyne-systems.es → 91.98.137.217
-- <www.cyberdyne-systems.es> → 91.98.137.217
-- staging.cyberdyne-systems.es → 91.98.137.217
-- lab.cyberdyne-systems.es → 91.98.137.217
-- cyberdyne-systems.es → 91.98.137.217
-
-**codespartan.cloud:**
-
-- ui.codespartan.cloud → 91.98.137.217
-- <www.codespartan.cloud> → 91.98.137.217
-
-### Próximos Pasos
-
-Para completar el inventario, verificar:
-
-1. ❓ Estado real de Redmine (URL pública)
-2. ❓ Estado de <www.codespartan.cloud>
-3. ❓ Estado de <www.mambo-cloud.com>
-4. ❓ Estado de dental-io.com
+- **Credenciales predeterminadas**: `admin` / `codespartan123` + TOTP vía Authelia (protege Traefik, Grafana, Backoffice, Portainer).
+- **SSL/TLS**: Let's Encrypt, renovación automática vía Traefik, certificados individuales por subdominio (sin wildcard).
+- **DNS**: gestionado con Terraform (`codespartan/infra/hetzner/`) usando `hcloud_zone`/`hcloud_zone_rrset` (el antiguo proveedor `timohirt/hetznerdns` está retirado).
+- **job-hunter** y **Redmine** usan hostnames vía variables de entorno propias (`.env` de cada app), no están en la lista `subdomains` de Terraform.
 
 ---
 
 ## 🔗 Referencias
 
-- **Traefik Dashboard:** Ver todas las rutas activas
-- **Grafana Dashboards:** Ver métricas de todos los servicios
-- **Documentación:** `docs/03-operations/RUNBOOK.md`
 - **Arquitectura:** `docs/02-architecture/ARCHITECTURE.md`
+- **Aislamiento de red:** `docs/02-architecture/NETWORK_ISOLATION_CURRENT.md`
+- **Recursos:** `docs/02-architecture/RESOURCES.md`
 
 ---
 
-**Última verificación:** 2025-12-13
-**Documentado por:** Claude Code
+**Última verificación:** 2026-07-13

@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Twenty CRM: `docker-compose.yml` (server, worker, PostgreSQL propio, redis), workflow `deploy-crm.yml`, subdominio `crm` y registros DNS de Brevo en Terraform. Ver `docs/06-implementation/PIPELINE_COMERCIAL.md`.
+- ADR de decisión: PostgreSQL dedicado por producto (no se consolida con Redmine — el ahorro estimado era de solo ~54 MB, no compensaba el riesgo de migración).
+
+### Changed
+- `CLAUDE.md`, `docs/02-architecture/RESOURCES.md`, `docs/URL_INVENTORY.md` y `docs/02-architecture/NETWORK_ISOLATION_CURRENT.md` actualizados para reflejar la infraestructura real (segundo VPS, Supabase, servicios retirados, proveedor DNS actual).
+
+## [1.19.0] - 2026-07-12
+
+### Added
+- Segundo VPS (`CodeSpartan-apis`, `cx33`, tier APIs/BBDD) con red privada Hetzner hacia el VPS principal.
+- Stack Supabase self-hosted desplegado en el segundo VPS (Studio, Kong, Auth, PostgREST, Realtime, Storage, Edge Functions, Postgres, Supavisor).
+- Cyberdyne Systems migra su frontend de TrackWorks a `cyberdyne-social-posts` (`ft-rc-bko-social_posts`), con backend real en Supabase.
+- `api.cyberdyne-systems.es` enruta vía Traefik hacia el Kong propio de Supabase (IP privada).
+
+### Changed
+- SMTP migrado de Hostinger a Brevo (`smtp-relay.brevo.com:587`) para Redmine y Authelia.
+- DNS migrado del proveedor retirado `timohirt/hetznerdns` a los recursos nativos `hcloud_zone`/`hcloud_zone_rrset` del provider `hetznercloud/hcloud`.
+
+### Removed
+- Kong dedicado a Cyberdyne (`kong-cyberdyne`) retirado — redundante con el Kong propio de Supabase.
+- OpenProject decomisionado definitivamente (ya venía reemplazado por Redmine desde noviembre 2025).
+
+## [1.18.0] - 2026-05-28
+
+### Added
+- App **job-hunter** (bot + dashboard) desplegada, con monitorización propia integrada en la red `monitoring`.
+- Sistema de plugins en Redmine vía `Dockerfile` (notificaciones a Discord, overrides de CSS/JS para branding).
+
+## [1.17.0] - 2026-02-16
+
+### Changed
+- CodeSpartan WWW reconfigurado para despliegue Next.js con SSR.
+
+## [1.16.0] - 2026-01-16
+
+### Added
+- Soporte de despliegue blue-green sin downtime (`platform/blue-green/`).
+- Kong API Gateway para Cyberdyne (rate limiting 50/100 req/s, CORS, métricas Prometheus) + plantilla reutilizable para otros dominios (`platform/kong/_TEMPLATE/`). *(Nota: el Kong de Cyberdyne fue retirado posteriormente en 1.19.0, ver arriba.)*
+
+## [1.15.0] - 2025-12-19
+
+### Added
+- Portainer CE para gestión de contenedores, protegido por Authelia (FASE 3.2).
+- Aislamiento de red reforzado con subredes explícitas en todas las redes internas.
+- Solución propia de métricas de Fail2ban.
+- Workflow automatizado de comprobaciones de calidad (`quality-checks.yml`).
+
+### Changed
+- Authelia: clave RSA para JWKS en la configuración OIDC, 2FA obligatorio en todos los dashboards protegidos, credenciales de admin parametrizadas vía GitHub Secrets.
+- Grafana migrado de OAuth a Auth Proxy para integrarse con Authelia.
+- Backoffice migrado de Basic Auth a Authelia SSO.
+- Redmine reemplaza a OpenProject (55% menos uso de recursos).
+
 ## [1.14.0] - 2025-11-20
 
 ### Changed
