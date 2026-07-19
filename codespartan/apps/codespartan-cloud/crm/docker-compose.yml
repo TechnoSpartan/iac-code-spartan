@@ -128,7 +128,6 @@ networks:
   crm_internal:
     name: crm_internal
     driver: bridge
-    internal: true
     ipam:
       config:
         - subnet: 172.34.0.0/24
