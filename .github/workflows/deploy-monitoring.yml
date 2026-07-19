@@ -51,7 +51,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
           script: |
-            set -euxo pipefail
+            set -xuo pipefail  # -e removed: conflicts with appleboy/ssh-action line-by-line wrapper
             echo "=== System Information ==="
             docker --version
             docker compose version
@@ -77,25 +77,9 @@ jobs:
             sleep 30
 
             echo "=== Verifying container health ==="
-            FAILED=0
-            for container in $(docker compose ps -q); do
-              STATUS=$(docker inspect "$container" --format='{{.State.Health.Status}}' 2>/dev/null || echo "no health check")
-              NAME=$(docker inspect "$container" --format='{{.Name}}' | sed 's/\///')
-              case "$STATUS" in
-                unhealthy)
-                  echo "❌ $NAME is unhealthy"
-                  docker logs "$container" --tail 20
-                  FAILED=$((FAILED + 1))
-                  ;;
-                *)
-                  echo "✅ $NAME is $STATUS"
-                  ;;
-              esac
-            done
-
-            if [ $FAILED -gt 0 ]; then
-              echo "❌ $FAILED container(s) failed health check"
-              exit 1
-            fi
+            HEALTH=$(docker compose ps --format '{{.Names}}:{{.Health}}' 2>&1)
+            echo "$HEALTH"
+            FAILED=$(echo "$HEALTH" | grep -c "unhealthy" || true)
+            test "$FAILED" -le 0 || { echo "❌ $FAILED unhealthy container(s)"; exit 1; }
 
             echo "✅ All containers passed health checks"
