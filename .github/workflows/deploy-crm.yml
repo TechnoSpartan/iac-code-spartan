@@ -1,0 +1,102 @@
+name: Deploy Twenty CRM
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "codespartan/apps/codespartan-cloud/crm/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p artifacts/crm
+          cp -r codespartan/apps/codespartan-cloud/crm/* artifacts/crm/
+
+      - name: Create .env file from secrets
+        run: |
+          cat > artifacts/crm/.env << 'EOF'
+          TAG=latest
+          SERVER_URL=${{ secrets.CRM_HOSTNAME || 'https://crm.codespartan.cloud' }}
+          PG_USER=${{ secrets.CRM_PG_USER || 'twenty' }}
+          PG_PASSWORD=${{ secrets.CRM_PG_PASSWORD }}
+          ENCRYPTION_KEY=${{ secrets.CRM_ENCRYPTION_KEY }}
+          STORAGE_TYPE=local
+          EOF
+
+      - name: Create remote directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mkdir -p /opt/codespartan/apps/codespartan-cloud/crm
+
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "artifacts/crm/*"
+          target: "/opt/codespartan/apps/codespartan-cloud/crm"
+          strip_components: 2
+
+      - name: Deploy Twenty CRM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euxo pipefail
+
+            echo "=== Asegurando redes ==="
+            docker network create web 2>/dev/null || true
+
+            echo "=== Navegando al directorio CRM ==="
+            cd /opt/codespartan/apps/codespartan-cloud/crm
+
+            echo "=== Verificando .env ==="
+            if [ ! -f .env ]; then
+              echo "ERROR: .env file not found."
+              exit 1
+            fi
+
+            echo "=== Desplegando Twenty CRM ==="
+            docker compose pull
+            docker compose up -d --wait
+
+            echo "=== Verificando ==="
+            docker ps --format 'table {{.Names}}\t{{.Status}}' | grep twenty
+            echo "Twenty CRM desplegado: https://crm.codespartan.cloud"
+
+      - name: Verify deployment health
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Waiting for health checks ==="
+            sleep 60
+
+            echo "=== Checking container health status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}" | grep twenty
+
+            echo "=== Checking Twenty server logs (last 30 lines) ==="
+            docker logs twenty-server --tail 30 || echo "Warning: Could not read logs"
+
+            echo "=== Testing HTTP endpoint ==="
+            curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:3000/ || echo "Warning: Could not test endpoint"
