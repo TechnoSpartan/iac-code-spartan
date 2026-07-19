@@ -6,8 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **CodeSpartan Mambo Cloud Platform** - Complete Infrastructure as Code (IaC) for automated deployment on Hetzner Cloud ARM64 with Docker, Traefik reverse proxy, and full monitoring stack.
 
-Primary domain: `mambo-cloud.com` (DNS managed in Hetzner)
-VPS: `91.98.137.217` (IPv4), `2a01:4f8:1c1a:7d21::1` (IPv6)
+Primary domain: `mambo-cloud.com` (DNS managed in Hetzner). Also manages `cyberdyne-systems.es`, `codespartan.cloud`, `dental-io.com` (`codespartan.es` is managed separately in Hostinger/WordPress).
+
+**Two VPS:**
+- `CodeSpartan-alma` (cax11, ARM64, `91.98.137.217` / `2a01:4f8:1c1a:7d21::1`) — main VPS: Traefik, apps, monitoring, Authelia, Redmine, job-hunter.
+- `CodeSpartan-apis` (cx33, x86) — secondary VPS for the APIs/DB tier, currently running self-hosted Supabase. Connected to the main VPS via a private Hetzner network (`10.0.0.0/24`); its Kong only listens on the private IP, proxied through the main VPS's Traefik.
 
 ## Architecture
 
@@ -18,31 +21,36 @@ VPS: `91.98.137.217` (IPv4), `2a01:4f8:1c1a:7d21::1` (IPv6)
 The platform consists of three main layers:
 
 1. **Infrastructure Layer** (`codespartan/infra/`)
-   - Terraform manages Hetzner Cloud VPS (ARM64 cax11 server type) and DNS
-   - Providers: `hetznercloud/hcloud` and `timohirt/hetznerdns`
+   - Terraform manages both Hetzner Cloud VPS (main ARM64 `cax11` + secondary x86 `cx33`) and DNS
+   - Provider: `hetznercloud/hcloud` only — DNS uses the native `hcloud_zone`/`hcloud_zone_rrset` resources (Cloud API). The old `timohirt/hetznerdns` provider is retired (Hetzner shut down `dns.hetzner.com`)
    - Automatic Docker installation via cloud-init in `main.tf`
-   - Firewall configured for ports 22 (SSH), 80 (HTTP), 443 (HTTPS)
+   - Firewall configured for ports 22 (SSH), 80 (HTTP), 443 (HTTPS); private network between both VPS for internal traffic
 
 2. **Platform Layer** (`codespartan/platform/`)
    - **Traefik** (`platform/traefik/`): Reverse proxy with automatic Let's Encrypt SSL certificates
-   - **Kong API Gateway** (`platform/kong/`): Rate limiting, CORS, logging for APIs (DB-less mode)
-   - **Monitoring Stack** (`platform/stacks/monitoring/`): VictoriaMetrics, vmagent, Grafana, Loki, Promtail, cAdvisor, Node Exporter (7-day retention)
+   - **Authelia** (`platform/authelia/`): SSO with MFA protecting admin dashboards
+   - **docker-socket-proxy** (`platform/docker-socket-proxy/`): Read-only proxy to the Docker API
+   - **Portainer** (`platform/portainer/`): Docker management UI, behind Authelia
+   - **Watchtower** (`platform/watchtower/`): Automatic image updates for labeled containers
+   - **Kong API Gateway** (`platform/kong/`): only a `_TEMPLATE/` for new domains today — the Cyberdyne Kong instance was retired (redundant with Supabase's own Kong, see below)
+   - **Monitoring Stack** (`platform/stacks/monitoring/`): VictoriaMetrics, vmagent, vmalert, Alertmanager, ntfy-forwarder, Grafana, Loki, Promtail, cAdvisor, Node Exporter
    - **Backoffice** (`platform/stacks/backoffice/`): Management dashboard
+   - **Supabase** (`platform/supabase/`): self-hosted stack (Studio, Kong, Auth, PostgREST, Realtime, Storage, Postgres...) deployed on the secondary VPS (`CodeSpartan-apis`)
 
 3. **Application Layer** (`codespartan/apps/`)
    - Multiple web applications with automatic subdomain routing
-   - Examples: mambo-cloud, cyberdyne, dental-io
-   - Each app has its own `docker-compose.yml` with Traefik labels for routing
+   - Real apps today: `codespartan-cloud/www` (corporate site), `codespartan-cloud/ui` (Storybook), `codespartan-cloud/redmine` (project management, replaced OpenProject), `codespartan-cloud/job-hunter` (bot + dashboard), `cyberdyne-systems-es/www` (social posts app, backed by Supabase), `dental-io-com/www`, `mambo-cloud-com/www`
+   - Each app has its own `docker-compose.yml` with Traefik labels for routing; many other subfolders under `apps/` are empty placeholders (`README.md` only) for future use
 
 ### Target State (Zero Trust Security - In Progress)
 
 **Security Roadmap:**
-- 🔄 **docker-socket-proxy**: Filter for Docker API (eliminates Traefik direct access to socket)
-- ✅ **Kong API Gateway** (Cyberdyne): Rate limiting 50/100 req/s, CORS, Prometheus metrics
-- 🔄 **Kong API Gateway** (Otros dominios): Pendiente para dental-io, mambo-cloud
+- ✅ **docker-socket-proxy**: Filter for Docker API (eliminates Traefik direct access to socket)
+- ⚠️ **Kong API Gateway** (Cyberdyne): retirado — Cyberdyne ahora se sirve desde Supabase self-hosted (2º VPS), que trae su propio Kong interno
+- 🔄 **Kong API Gateway** (Otros dominios): Pendiente para dental-io, mambo-cloud (plantilla en `platform/kong/_TEMPLATE/`)
 - ✅ **Authelia**: SSO con MFA implementado
-- 🔄 **Portainer**: Read-only dashboard behind Authelia
-- ✅ **Network Isolation**: Cyberdyne con red interna kong_cyberdyne
+- ✅ **Portainer**: Read-only dashboard behind Authelia
+- ✅ **Network Isolation**: bases de datos aisladas por producto (Redmine, Supabase); ver `docs/02-architecture/NETWORK_ISOLATION_CURRENT.md`
 
 **Key Concepts:**
 - **docker-socket-proxy**: Security proxy that only allows GET operations to Docker API
@@ -128,34 +136,47 @@ Workflows must be executed in this order for initial deployment:
 ### Required GitHub Secrets
 
 ```
-HCLOUD_TOKEN - Hetzner Cloud API token
-HETZNER_DNS_TOKEN - Hetzner DNS API token
+HCLOUD_TOKEN - Hetzner Cloud API token (covers both VPS + DNS, hcloud_zone)
+VPS_SSH_PUBLIC_KEY - SSH public key provisioned on the main VPS (TF_VAR_ssh_public_key_content)
+APIS_DEPLOY_SSH_PUBLIC_KEY - SSH public key for the non-root 'deploy' user on the secondary VPS
 VPS_SSH_HOST - 91.98.137.217
 VPS_SSH_USER - leonidas
 VPS_SSH_KEY - Complete private SSH key content
 ```
+(Note: `HETZNER_DNS_TOKEN` is obsolete — DNS now goes through the same `HCLOUD_TOKEN`/`hcloud` provider.)
 
 ### Automatic Deployment
 
-Push to specific paths triggers automatic deployment:
-- `codespartan/infra/hetzner/**` → Deploy Infrastructure
+Push to specific paths triggers automatic deployment (21 `deploy-*` workflows in total; see `.github/workflows/`):
+- `codespartan/infra/hetzner/**` → Deploy Infrastructure (both VPS + DNS)
 - `codespartan/platform/traefik/**` → Deploy Traefik
 - `codespartan/platform/stacks/monitoring/**` → Deploy Monitoring
-- `codespartan/apps/mambo-cloud/**` → Deploy Mambo Cloud App
+- `codespartan/platform/supabase/**` → Deploy Supabase (secondary VPS)
+- `codespartan/apps/codespartan-cloud/redmine/**` → Deploy Redmine
+- `codespartan/apps/codespartan-cloud/crm/**` → Deploy Twenty CRM
+- `codespartan/apps/mambo-cloud-com/**` → Deploy Mambo Cloud App
+- Each app/platform folder under `codespartan/` follows the same pattern — one `deploy-*.yml` per path prefix
 
 ## Configuration Files
 
 ### Terraform Variables (`codespartan/infra/hetzner/terraform.tfvars`)
 
 ```hcl
-server_name = "codespartan-vps"
-server_type = "cax11"  # ARM64 instance
+server_name = "CodeSpartan-alma"
+server_type = "cax11"  # ARM64 instance (main VPS)
 location = "nbg1"      # Nuremberg
-domains = ["mambo-cloud.com"]
-subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab"]
+
+server2_name = "CodeSpartan-apis"
+server2_type = "cx33"  # x86 instance (secondary VPS: APIs/DB tier, Supabase)
+server2_location = "nbg1"
+
+domains = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud", "dental-io.com"]
+subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo", "portainer"]
 manual_ipv4_address = "91.98.137.217"
 manual_ipv6_address = "2a01:4f8:1c1a:7d21::1"
 ```
+
+(`codespartan.es` — the corporate identity site — is hosted on Hostinger/WordPress and is **not** managed by this Terraform.)
 
 ### Docker Networks
 
@@ -193,15 +214,18 @@ networks:
 **Reserved subnets:**
 - `172.20.0.0/16` - web (Traefik routing)
 - `172.21.0.0/24` - authelia_internal
-- `172.22.0.0/24` - api_trackworks (Cyberdyne API + MongoDB, internal)
+- `172.22.0.0/24` - api_trackworks (RETIRED — Cyberdyne now runs on Supabase self-hosted, secondary VPS)
 - `172.24.0.0/24` - monitoring stack
 - `172.25.0.0/24` - docker_api (socket proxy, internal)
-- `172.26.0.0/24` - kong_cyberdyne (Kong <-> API internal)
+- `172.26.0.0/24` - kong_cyberdyne (RETIRED — redundant with Supabase's own Kong)
 - `172.27.0.0/24` - reserved for kong_dental (future)
 - `172.28.0.0/24` - reserved for kong_mambo (future)
 - `172.29.0.0/24` - mambo_internal
 - `172.30.0.0/24` - dental_internal
-- `172.31.0.0/24` - redmine_internal
+- `172.31.0.0/24` - redmine_internal (permanent — each product keeps its own dedicated PostgreSQL, no shared instance)
+- `172.34.0.0/24` - crm_internal (Twenty CRM: server/worker/db/redis, own dedicated PostgreSQL)
+
+Note: the secondary VPS (`CodeSpartan-apis`) has its own separate subnet ranges for Supabase, managed within `platform/supabase/`; it is not part of this `172.x` range used on the main VPS.
 
 **Why this matters:**
 - Without network isolation, `cyberdyne-frontend` can directly communicate with `dental-io-db`
@@ -255,8 +279,8 @@ services:
 - Health checks enable automatic container restart on failure
 
 **Current Resource Allocation:**
-- See `codespartan/docs/RESOURCES.md` for complete breakdown
-- Total allocated: ~4.4GB RAM (safe because of diverse workloads)
+- See `docs/02-architecture/RESOURCES.md` for complete breakdown (covers both VPS)
+- Overcommitted by design (safe because of diverse workloads that rarely peak simultaneously)
 
 ### Traefik Labels Pattern
 
@@ -388,24 +412,16 @@ Services:
 ### Security Considerations (Current State)
 
 ✅ **Implemented Security Features:**
-1. **Kong API Gateway** (Cyberdyne): Rate limiting 50/100 req/s, CORS, Prometheus metrics
-   - Arquitectura: `Traefik (SSL) → Kong (8000) → API (3001)`
-   - Red aislada: `kong_cyberdyne` (172.26.0.0/24)
-   - Docs: `docs/02-architecture/KONG.md`
-
+1. **docker-socket-proxy**: Traefik and Portainer access Docker only through a read-only proxy, not the raw socket
 2. **Authelia SSO**: MFA habilitado para dashboards administrativos
-   - Protege: Traefik dashboard, Grafana, etc.
-
-3. **Network Isolation** (Cyberdyne): API solo accesible via Kong
+   - Protege: Traefik dashboard, Grafana, Backoffice, Portainer
+3. **Network Isolation**: bases de datos aisladas por producto — Redmine (`redmine_internal`), Supabase (su propia red en el 2º VPS), Twenty CRM (`crm_internal`, cuando se despliegue)
+4. **Kong API Gateway** (Supabase): el propio stack de Supabase self-hosted trae su Kong, escuchando solo en la IP privada del 2º VPS — el antiguo Kong dedicado a Cyberdyne fue retirado por redundante
 
 ⚠️ **Known Security Gaps (Being Addressed):**
-1. **Traefik has direct Docker socket access** (line 42 in `platform/traefik/docker-compose.yml`)
-   - Risk: If Traefik is compromised, attacker has full Docker control
-   - Solution: Implement docker-socket-proxy (see `docs/ARCHITECTURE.md`)
-
-2. **Kong pending for other domains**
+1. **Kong pending for other domains**
    - Risk: dental-io, mambo-cloud sin rate limiting
-   - Solution: Replicar patron Kong para otros dominios
+   - Solution: Replicar patrón Kong para otros dominios (plantilla en `platform/kong/_TEMPLATE/`)
 
 **When making changes to the architecture, consult `docs/ARCHITECTURE.md` for the target state and migration plan.**
 
@@ -443,6 +459,9 @@ This project is designed as a **replicable template**:
 - `docs/05-security/FAIL2BAN.md` - Fail2ban protection
 - `docs/apps/_TEMPLATE/NETWORK_ISOLATION.md` - Network isolation patterns
 - `codespartan/platform/traefik/README.md` - Traefik configuration and SSL troubleshooting
+
+### Business & Marketing
+- `docs/06-implementation/PIPELINE_COMERCIAL.md` - Pipeline comercial completo: PostgreSQL compartido, Twenty CRM, Brevo campañas, Redmine branding
 
 ### Complete Documentation Index
 - `docs/README.md` - Complete documentation index

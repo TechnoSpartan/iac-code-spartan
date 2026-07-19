@@ -1,0 +1,137 @@
+services:
+  server:
+    image: twentycrm/twenty:${TAG:-latest}
+    container_name: twenty-server
+    volumes:
+      - twenty-local-data:/app/packages/twenty-server/.local-storage
+    environment:
+      NODE_PORT: 3000
+      SERVER_URL: ${SERVER_URL:-https://crm.codespartan.cloud}
+      PG_DATABASE_URL: postgres://${PG_USER:-twenty}:${PG_PASSWORD}@db:5432/twenty
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS:-}
+    networks:
+      - web
+      - crm_internal
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.crm.rule=Host(`crm.codespartan.cloud`)
+      - traefik.http.routers.crm.entrypoints=websecure
+      - traefik.http.routers.crm.tls=true
+      - traefik.http.routers.crm.tls.certresolver=le
+      - traefik.http.services.crm.loadbalancer.server.port=3000
+      - traefik.docker.network=web
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 256M
+
+  worker:
+    image: twentycrm/twenty:${TAG:-latest}
+    container_name: twenty-worker
+    command: ["yarn", "worker:prod"]
+    volumes:
+      - twenty-local-data:/app/packages/twenty-server/.local-storage
+    environment:
+      SERVER_URL: ${SERVER_URL:-https://crm.codespartan.cloud}
+      PG_DATABASE_URL: postgres://${PG_USER:-twenty}:${PG_PASSWORD}@db:5432/twenty
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+    networks:
+      - crm_internal
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+  db:
+    image: postgres:17-alpine
+    container_name: twenty-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: twenty
+      POSTGRES_USER: ${PG_USER:-twenty}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    volumes:
+      - twenty-db-data:/var/lib/postgresql/data
+    networks:
+      - crm_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-twenty}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    command: ["--maxmemory-policy", "noeviction"]
+    networks:
+      - crm_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
+
+volumes:
+  twenty-local-data:
+    name: twenty_local_data
+  twenty-db-data:
+    name: twenty_db_data
+
+networks:
+  web:
+    external: true
+  crm_internal:
+    name: crm_internal
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.34.0.0/24

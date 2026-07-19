@@ -22,7 +22,7 @@ firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]
 # DNS (Hetzner DNS)
 # Nota: codespartan.es (www en Hostinger/WordPress) no se gestiona aquí.
 domains    = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud", "dental-io.com"]
-subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo", "portainer"]
+subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo", "portainer", "crm"]
 
 # IPv4/IPv6 concretos para los registros A/AAAA
 manual_ipv4_address = "91.98.137.217"
@@ -34,3 +34,8 @@ manual_ipv6_address = "2a01:4f8:1c1a:7d21::1"
 create_apex_a    = true
 create_apex_aaaa = true
 apex_name        = "@"
+
+# Nota: la verificación de dominio Brevo para envío de campañas se hizo sobre
+# codespartan.es (no codespartan.cloud), y ese dominio vive en Hostinger/WordPress,
+# fuera del alcance de este Terraform. Los registros (TXT brevo-code, 2x CNAME
+# DKIM, TXT _dmarc) se añaden manualmente en el panel DNS de Hostinger.
