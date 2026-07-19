@@ -34,37 +34,34 @@ jobs:
       - name: Create remote directory
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
           script: |
-            mkdir -p /opt/codespartan/apps/codespartan-cloud/crm
+            mkdir -p /home/deploy/apps/crm
 
       - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
           source: "artifacts/crm/*"
-          target: "/opt/codespartan/apps/codespartan-cloud/crm"
+          target: "/home/deploy/apps/crm"
           strip_components: 2
 
       - name: Deploy Twenty CRM
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
           script_stop: true
           script: |
             set -euxo pipefail
 
-            echo "=== Asegurando redes ==="
-            docker network create web 2>/dev/null || true
-
             echo "=== Navegando al directorio CRM ==="
-            cd /opt/codespartan/apps/codespartan-cloud/crm
+            cd /home/deploy/apps/crm
 
             echo "=== Verificando .env ==="
             if [ ! -f .env ]; then
@@ -78,14 +75,14 @@ jobs:
 
             echo "=== Verificando ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}' | grep twenty
-            echo "Twenty CRM desplegado: https://crm.codespartan.cloud"
+            echo "Twenty CRM desplegado (backend privado 10.0.0.3:3000, publico https://crm.codespartan.cloud via Traefik)"
 
       - name: Verify deployment health
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
           script: |
             set -euxo pipefail
 
@@ -98,5 +95,5 @@ jobs:
             echo "=== Checking Twenty server logs (last 30 lines) ==="
             docker logs twenty-server --tail 30 || echo "Warning: Could not read logs"
 
-            echo "=== Testing HTTP endpoint ==="
-            curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:3000/ || echo "Warning: Could not test endpoint"
+            echo "=== Testing HTTP endpoint (private IP) ==="
+            curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://10.0.0.3:3000/ || echo "Warning: Could not test endpoint"
