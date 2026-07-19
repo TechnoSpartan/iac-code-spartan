@@ -101,12 +101,29 @@ http:
       tls:
         certResolver: le
 
+    # crm.codespartan.cloud -> Twenty CRM (twenty-server) on the APIs VPS,
+    # reached over the codespartan-internal private network (10.0.0.0/24).
+    # Same pattern as cyberdyne-api: Traefik only terminates TLS here.
+    crm:
+      rule: "Host(`crm.codespartan.cloud`)"
+      entrypoints:
+        - websecure
+      service: crm-service
+      tls:
+        certResolver: le
+
   services:
     # Kong (Supabase self-hosted) on the APIs VPS, private network
     cyberdyne-api-service:
       loadBalancer:
         servers:
           - url: "http://10.0.0.3:8000"
+
+    # Twenty CRM (twenty-server) on the APIs VPS, private network
+    crm-service:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.3:3000"
 
 # TLS configuration (if needed)
 tls:
