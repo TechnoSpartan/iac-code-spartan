@@ -84,14 +84,14 @@ groups:
 
       # Container Down Alert (via cAdvisor)
       - alert: ContainerDown
-        expr: time() - container_last_seen{name=~".+"} > 120
-        for: 0m
+        expr: time() - container_last_seen{name=~".+"} > 300
+        for: 5m
         labels:
-          severity: critical
+          severity: warning
           component: container
         annotations:
           summary: "Container is down"
-          description: "Container {{ $labels.name }} has not been seen for more than 2 minutes"
+          description: "Container {{ $labels.name }} has not been seen for more than 5 minutes"
 
   - name: victoriametrics_alerts
     interval: 30s
