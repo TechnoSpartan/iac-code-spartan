@@ -6,6 +6,7 @@ services:
       - twenty-local-data:/app/packages/twenty-server/.local-storage
     environment:
       NODE_PORT: 3000
+      NODE_OPTIONS: "--max-old-space-size=768"
       SERVER_URL: ${SERVER_URL:-https://crm.codespartan.cloud}
       PG_DATABASE_URL: postgres://${PG_USER:-twenty}:${PG_PASSWORD}@db:5432/twenty
       REDIS_URL: redis://redis:6379
@@ -49,6 +50,7 @@ services:
     volumes:
       - twenty-local-data:/app/packages/twenty-server/.local-storage
     environment:
+      NODE_OPTIONS: "--max-old-space-size=512"
       SERVER_URL: ${SERVER_URL:-https://crm.codespartan.cloud}
       PG_DATABASE_URL: postgres://${PG_USER:-twenty}:${PG_PASSWORD}@db:5432/twenty
       REDIS_URL: redis://redis:6379
