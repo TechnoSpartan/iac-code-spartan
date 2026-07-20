@@ -417,7 +417,7 @@ Services:
    - Protege: Traefik dashboard, Grafana, Backoffice, Portainer
 3. **Network Isolation**: bases de datos aisladas por producto — Redmine (`redmine_internal`, VPS principal), Supabase y Twenty CRM (`crm_internal`, ambos en el 2º VPS con red propia)
 4. **Kong API Gateway** (Supabase): el propio stack de Supabase self-hosted trae su Kong, escuchando solo en la IP privada del 2º VPS — el antiguo Kong dedicado a Cyberdyne fue retirado por redundante
-5. **Twenty CRM** (2º VPS): igual que Kong, `twenty-server` publica su puerto solo en la IP privada (`10.0.0.3:3000`) — Traefik, en el VPS principal, termina TLS y reenvía vía el file provider (`platform/traefik/dynamic-config.yml`, router `crm`)
+5. **Twenty CRM** (2º VPS): igual que Kong, `twenty-server` publica su puerto solo en la IP privada (`10.0.0.3:3000`) — Traefik, en el VPS principal, termina TLS y reenvía vía el file provider (`platform/traefik/dynamic/dynamic-config.yml`, router `crm`)
 
 ⚠️ **Known Security Gaps (Being Addressed):**
 1. **Kong pending for other domains**
