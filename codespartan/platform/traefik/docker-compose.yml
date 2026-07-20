@@ -14,7 +14,7 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
-      - --providers.file.filename=/etc/traefik/dynamic-config.yml
+      - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=true
       - --certificatesresolvers.le.acme.httpchallenge=true
       - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
@@ -43,7 +43,11 @@ services:
       - ./letsencrypt:/letsencrypt
       # FASE 2: Basic Auth replaced by Authelia SSO
       # - ./users.htpasswd:/users.htpasswd:ro
-      - ./dynamic-config.yml:/etc/traefik/dynamic-config.yml:ro
+      # Directorio, no fichero suelto: un bind-mount de un solo fichero se
+      # queda apuntando al inodo viejo si el host lo reemplaza (p.ej. SCP en
+      # el deploy), y --providers.file.watch=true nunca ve el cambio. Con un
+      # directorio no pasa (ver docs/URL_INVENTORY.md, incidente 2026-07-19).
+      - ./dynamic:/etc/traefik/dynamic:ro
     networks:
       - web
       - docker_api

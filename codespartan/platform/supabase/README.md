@@ -5,7 +5,7 @@ Stack completo de Supabase (11 servicios) corriendo en el VPS `CodeSpartan-apis`
 puerto 8000 solo en la IP privada `10.0.0.3` (red `codespartan-internal`,
 `10.0.0.0/24`). Traefik en el VPS ARM termina TLS para `api.cyberdyne-systems.es`
 y reenvia en HTTP plano a esa IP privada — ver
-`codespartan/platform/traefik/dynamic-config.yml`. El Cloud Firewall de Hetzner
+`codespartan/platform/traefik/dynamic/dynamic-config.yml`. El Cloud Firewall de Hetzner
 no permite el puerto 8000 en la IP publica, y las redes privadas de Hetzner no
 pasan por internet.
 
