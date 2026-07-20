@@ -10,7 +10,7 @@ Primary domain: `mambo-cloud.com` (DNS managed in Hetzner). Also manages `cyberd
 
 **Two VPS:**
 - `CodeSpartan-alma` (cax11, ARM64, `91.98.137.217` / `2a01:4f8:1c1a:7d21::1`) — main VPS: Traefik, apps, monitoring, Authelia, Redmine, job-hunter.
-- `CodeSpartan-apis` (cx33, x86) — secondary VPS for the APIs/DB tier, currently running self-hosted Supabase. Connected to the main VPS via a private Hetzner network (`10.0.0.0/24`); its Kong only listens on the private IP, proxied through the main VPS's Traefik.
+- `CodeSpartan-apis` (cx33, x86, 7.3GB RAM) — secondary VPS for the APIs/DB tier, running self-hosted Supabase and Twenty CRM (`twenty-server`). Connected to the main VPS via a private Hetzner network (`10.0.0.0/24`); both services only listen on the private IP, proxied through the main VPS's Traefik.
 
 ## Architecture
 
@@ -39,8 +39,9 @@ The platform consists of three main layers:
 
 3. **Application Layer** (`codespartan/apps/`)
    - Multiple web applications with automatic subdomain routing
-   - Real apps today: `codespartan-cloud/www` (corporate site), `codespartan-cloud/ui` (Storybook), `codespartan-cloud/redmine` (project management, replaced OpenProject), `codespartan-cloud/job-hunter` (bot + dashboard), `cyberdyne-systems-es/www` (social posts app, backed by Supabase), `dental-io-com/www`, `mambo-cloud-com/www`
-   - Each app has its own `docker-compose.yml` with Traefik labels for routing; many other subfolders under `apps/` are empty placeholders (`README.md` only) for future use
+   - Real apps today: `codespartan-cloud/www` (corporate site), `codespartan-cloud/ui` (Storybook), `codespartan-cloud/redmine` (project management, replaced OpenProject), `codespartan-cloud/job-hunter` (bot + dashboard), `codespartan-cloud/crm` (Twenty CRM — server/worker/db/redis, deployed on the secondary VPS `CodeSpartan-apis`, not the main VPS), `cyberdyne-systems-es/www` (social posts app, backed by Supabase), `dental-io-com/www`, `mambo-cloud-com/www`
+   - Each app has its own `docker-compose.yml` with Traefik labels for routing, **except `crm`**: it runs on the secondary VPS where Traefik doesn't run, so it publishes its port directly on the private IP (`10.0.0.3:3000`) instead of using Docker labels — routed via Traefik's file provider (`platform/traefik/dynamic-config.yml`, router `crm`), same pattern as `cyberdyne-api`
+   - Many other subfolders under `apps/` are empty placeholders (`README.md` only) for future use
 
 ### Target State (Zero Trust Security - In Progress)
 
@@ -50,7 +51,7 @@ The platform consists of three main layers:
 - 🔄 **Kong API Gateway** (Otros dominios): Pendiente para dental-io, mambo-cloud (plantilla en `platform/kong/_TEMPLATE/`)
 - ✅ **Authelia**: SSO con MFA implementado
 - ✅ **Portainer**: Read-only dashboard behind Authelia
-- ✅ **Network Isolation**: bases de datos aisladas por producto (Redmine, Supabase); ver `docs/02-architecture/NETWORK_ISOLATION_CURRENT.md`
+- ✅ **Network Isolation**: bases de datos aisladas por producto (Redmine, Supabase, Twenty CRM); ver `docs/02-architecture/NETWORK_ISOLATION_CURRENT.md`
 
 **Key Concepts:**
 - **docker-socket-proxy**: Security proxy that only allows GET operations to Docker API
@@ -153,7 +154,7 @@ Push to specific paths triggers automatic deployment (21 `deploy-*` workflows in
 - `codespartan/platform/stacks/monitoring/**` → Deploy Monitoring
 - `codespartan/platform/supabase/**` → Deploy Supabase (secondary VPS)
 - `codespartan/apps/codespartan-cloud/redmine/**` → Deploy Redmine
-- `codespartan/apps/codespartan-cloud/crm/**` → Deploy Twenty CRM
+- `codespartan/apps/codespartan-cloud/crm/**` → Deploy Twenty CRM (secondary VPS)
 - `codespartan/apps/mambo-cloud-com/**` → Deploy Mambo Cloud App
 - Each app/platform folder under `codespartan/` follows the same pattern — one `deploy-*.yml` per path prefix
 
@@ -171,7 +172,7 @@ server2_type = "cx33"  # x86 instance (secondary VPS: APIs/DB tier, Supabase)
 server2_location = "nbg1"
 
 domains = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud", "dental-io.com"]
-subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo", "portainer"]
+subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo", "portainer", "crm"]
 manual_ipv4_address = "91.98.137.217"
 manual_ipv6_address = "2a01:4f8:1c1a:7d21::1"
 ```
@@ -223,9 +224,8 @@ networks:
 - `172.29.0.0/24` - mambo_internal
 - `172.30.0.0/24` - dental_internal
 - `172.31.0.0/24` - redmine_internal (permanent — each product keeps its own dedicated PostgreSQL, no shared instance)
-- `172.34.0.0/24` - crm_internal (Twenty CRM: server/worker/db/redis, own dedicated PostgreSQL)
 
-Note: the secondary VPS (`CodeSpartan-apis`) has its own separate subnet ranges for Supabase, managed within `platform/supabase/`; it is not part of this `172.x` range used on the main VPS.
+Note: the secondary VPS (`CodeSpartan-apis`) has its own separate subnet ranges, managed independently — Supabase uses `172.20.0.0/24` (`supabase_internal`, within `platform/supabase/`) and Twenty CRM uses `172.34.0.0/24` (`crm_internal`, within `apps/codespartan-cloud/crm/`). Neither is part of this `172.x` range used on the main VPS. Unlike Supabase/Kong and the main VPS's isolated networks, `crm_internal` is a plain bridge network (no `internal: true`) — that flag silently breaks Docker's published-port NAT rules when a container's only network is internal, which is exactly what happened when `crm` was moved here (see git history).
 
 **Why this matters:**
 - Without network isolation, `cyberdyne-frontend` can directly communicate with `dental-io-db`
@@ -415,8 +415,9 @@ Services:
 1. **docker-socket-proxy**: Traefik and Portainer access Docker only through a read-only proxy, not the raw socket
 2. **Authelia SSO**: MFA habilitado para dashboards administrativos
    - Protege: Traefik dashboard, Grafana, Backoffice, Portainer
-3. **Network Isolation**: bases de datos aisladas por producto — Redmine (`redmine_internal`), Supabase (su propia red en el 2º VPS), Twenty CRM (`crm_internal`, cuando se despliegue)
+3. **Network Isolation**: bases de datos aisladas por producto — Redmine (`redmine_internal`, VPS principal), Supabase y Twenty CRM (`crm_internal`, ambos en el 2º VPS con red propia)
 4. **Kong API Gateway** (Supabase): el propio stack de Supabase self-hosted trae su Kong, escuchando solo en la IP privada del 2º VPS — el antiguo Kong dedicado a Cyberdyne fue retirado por redundante
+5. **Twenty CRM** (2º VPS): igual que Kong, `twenty-server` publica su puerto solo en la IP privada (`10.0.0.3:3000`) — Traefik, en el VPS principal, termina TLS y reenvía vía el file provider (`platform/traefik/dynamic-config.yml`, router `crm`)
 
 ⚠️ **Known Security Gaps (Being Addressed):**
 1. **Kong pending for other domains**

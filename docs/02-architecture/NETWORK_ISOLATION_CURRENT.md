@@ -1,6 +1,6 @@
 # 🔒 Network Isolation - Estado Actual
 
-**Fecha:** 2026-07-13
+**Fecha:** 2026-07-20
 **Análisis:** Evaluación del aislamiento de red actual (VPS principal, `cax11`)
 
 ---
@@ -10,14 +10,13 @@
 | Estado | Aplicaciones | Nivel de Aislamiento |
 |--------|--------------|---------------------|
 | ✅ **CORRECTO** | Redmine | Base de datos aislada (`redmine_internal`) |
-| ✅ **CORRECTO** | Twenty CRM (código listo, pendiente desplegar) | Base de datos + redis aislados (`crm_internal`) |
 | ✅ **CORRECTO** | Stack monitoring | Red interna dedicada |
 | ✅ **CORRECTO** | Docker proxy | Red API dedicada, Traefik y Portainer solo acceden vía proxy |
 | ⚠️ **MEJORABLE** | Frontends estáticos (cyberdyne, codespartan-ui, backoffice) | Solo en red pública, sin datos sensibles propios |
 
 ### Veredicto: 🟢 **MAYORMENTE IMPLEMENTADO**
 
-El aislamiento crítico (bases de datos por producto) está correctamente implementado en Redmine y en el código ya preparado de Twenty CRM. Cyberdyne ya no tiene base de datos local (su backend vive en Supabase, en el VPS secundario, fuera del alcance de este documento).
+El aislamiento crítico (bases de datos por producto) está correctamente implementado en Redmine. Cyberdyne y Twenty CRM ya no tienen base de datos local en este VPS (Cyberdyne vive en Supabase; Twenty CRM se movió entero — server, worker, db, redis — al VPS secundario por falta de margen de RAM aquí), ambos fuera del alcance de este documento — ver `docs/URL_INVENTORY.md`, sección "VPS secundario".
 
 ---
 
@@ -74,12 +73,7 @@ redmine_internal (172.31.0.0/24, internal: true)
 ├─ redmine-app                  - Project management
 └─ redmine-db                   - Database, PostgreSQL propio (AISLADO ✅)
 
-crm_internal (172.34.0.0/24, internal: true) — código listo, pendiente de desplegar
-├─ twenty-server                - CRM frontend + API (+ web)
-├─ twenty-worker                - Jobs en background (BullMQ)
-├─ twenty-db                    - Database, PostgreSQL propio (AISLADO ✅)
-└─ twenty-redis                 - Cola de jobs (AISLADO ✅)
-
+# crm_internal - MOVIDA al VPS secundario (CodeSpartan-apis, 10.0.0.3); ver docs/URL_INVENTORY.md
 # api_trackworks - RETIRADA (TrackWorks sustituido por cyberdyne-social-posts + Supabase)
 # kong_cyberdyne - RETIRADA (redundante con el Kong propio de Supabase)
 # openproject_internal - ELIMINADA (OpenProject reemplazado por Redmine)
@@ -105,14 +99,7 @@ crm_internal (172.34.0.0/24, internal: true) — código listo, pendiente de des
 ✅ Solo accesible por authelia
 ```
 
-**PostgreSQL + Redis (Twenty CRM, pendiente de desplegar):**
-```
-✅ twenty-db, twenty-redis: SOLO en crm_internal
-❌ NO están en 'web'
-✅ Solo accesibles por twenty-server / twenty-worker
-```
-
-Cada producto mantiene su propia base de datos dedicada (ver `docs/06-implementation/PIPELINE_COMERCIAL.md`, decisión de no consolidar Postgres entre Redmine y Twenty).
+Cada producto mantiene su propia base de datos dedicada (ver `docs/06-implementation/PIPELINE_COMERCIAL.md`, decisión de no consolidar Postgres entre Redmine y Twenty). Twenty CRM aplica el mismo principio en el VPS secundario (`crm_internal`, ver `docs/URL_INVENTORY.md`) — no se documenta aquí porque no corre en este VPS.
 
 ### 2. Stack de Monitoring Aislado
 
@@ -150,7 +137,7 @@ Cada producto mantiene su propia base de datos dedicada (ver `docs/06-implementa
 - Riesgo: Bajo (sin datos sensibles en el contenedor; backoffice protegido por Authelia)
 - Recomendación: opcional, no aporta seguridad significativa dado que no manejan datos propios
 
-**Análisis de riesgo:** no es necesario aislar frontends estáticos sin base de datos propia — todas las operaciones sensibles van vía servicios ya aislados (Redmine, Twenty, Supabase).
+**Análisis de riesgo:** no es necesario aislar frontends estáticos sin base de datos propia — todas las operaciones sensibles van vía servicios ya aislados (Redmine en este VPS; Twenty y Supabase en el VPS secundario).
 
 ---
 
@@ -187,9 +174,8 @@ docker exec traefik ls /var/run/docker.sock
 | `172.29.0.0/24` | `mambo_internal` | Activa |
 | `172.30.0.0/24` | `dental_internal` | Activa |
 | `172.31.0.0/24` | `redmine_internal` | Activa, `internal: true` |
-| `172.34.0.0/24` | `crm_internal` | Código listo, pendiente de desplegar, `internal: true` |
 
-El VPS secundario (`CodeSpartan-apis`, Supabase) usa su propio rango de subredes, gestionado en `platform/supabase/`, fuera de este esquema `172.x`.
+El VPS secundario (`CodeSpartan-apis`) usa su propio rango de subredes, fuera de este esquema `172.x` del VPS principal: Supabase (`supabase_internal`, `172.20.0.0/24`, gestionado en `platform/supabase/`) y Twenty CRM (`crm_internal`, `172.34.0.0/24`, gestionado en `apps/codespartan-cloud/crm/` — sin `internal: true`, a diferencia de las redes de este VPS; ver nota en `CLAUDE.md`).
 
 ---
 
@@ -197,7 +183,7 @@ El VPS secundario (`CodeSpartan-apis`, Supabase) usa su propio rango de subredes
 
 ### Prioridad Alta: ✅ COMPLETADO
 
-- [x] Aislar bases de datos de la red pública (Redmine, Twenty CRM)
+- [x] Aislar bases de datos de la red pública (Redmine en este VPS; Twenty CRM y Supabase en el VPS secundario)
 - [x] Crear redes internas dedicadas por producto con `internal: true`
 - [x] Proteger Docker socket con proxy
 - [x] Retirar Kong-cyberdyne (redundante con Supabase)
@@ -216,13 +202,13 @@ El VPS secundario (`CodeSpartan-apis`, Supabase) usa su propio rango de subredes
 
 | Métrica | Valor | Estado |
 |---------|-------|--------|
-| **Bases de datos aisladas** | 2/2 activas + 1 lista para desplegar (100%) | ✅ Excelente |
+| **Bases de datos aisladas** | 2/2 activas (100%) | ✅ Excelente |
 | **Subnets explícitas** | 10/10 redes activas | ✅ Completo |
 | **Internal flag activo** | En todas las redes con datos sensibles | ✅ Completo |
 
 ### Puntuación Global: 🟢 **9/10**
 
-**Conclusión:** el aislamiento de red crítico está correctamente implementado y se mantiene como estándar para cada nuevo producto (Redmine, y ahora Twenty CRM). Las mejoras restantes (Kong para dental-io/mambo-cloud) son parte del roadmap de seguridad, no vulnerabilidades activas.
+**Conclusión:** el aislamiento de red crítico está correctamente implementado en este VPS y se mantiene como estándar para cada nuevo producto, dentro y fuera de él (Redmine aquí; Twenty CRM y Supabase en el VPS secundario, mismo principio). Las mejoras restantes (Kong para dental-io/mambo-cloud) son parte del roadmap de seguridad, no vulnerabilidades activas.
 
 ---
 
@@ -231,4 +217,5 @@ El VPS secundario (`CodeSpartan-apis`, Supabase) usa su propio rango de subredes
 - **CLAUDE.md:** sección "Docker Networks" / "Reserved subnets"
 - **Template:** `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md`
 - **Plan Twenty CRM:** `docs/06-implementation/PIPELINE_COMERCIAL.md`
+- **Aislamiento de Twenty CRM (VPS secundario):** `docs/URL_INVENTORY.md`, sección "VPS secundario"
 - **Docker Networks:** https://docs.docker.com/network/
