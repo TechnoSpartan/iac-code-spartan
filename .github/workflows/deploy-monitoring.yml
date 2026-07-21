@@ -82,4 +82,8 @@ jobs:
             FAILED=$(echo "$HEALTH" | grep -c "unhealthy" || true)
             test "$FAILED" -le 0 || { echo "❌ $FAILED unhealthy container(s)"; exit 1; }
 
+            echo "=== Restarting vmagent to pick up config changes ==="
+            docker restart vmagent
+            sleep 5
+
             echo "✅ All containers passed health checks"
