@@ -146,16 +146,16 @@ groups:
   - name: fail2ban_alerts
     interval: 30s
     rules:
-      # Fail2ban Exporter Down
-      - alert: Fail2banExporterDown
-        expr: fail2ban_up == 0
-        for: 2m
+      # Fail2ban Metrics Missing (textfile collector via node-exporter)
+      - alert: Fail2banMetricsMissing
+        expr: absent(f2b_up)
+        for: 10m
         labels:
           severity: warning
           component: fail2ban
         annotations:
-          summary: "Fail2ban exporter está down"
-          description: "El exporter de Fail2ban no está respondiendo desde hace {{ $for }}"
+          summary: "Fail2ban metrics not being collected"
+          description: "No f2b_up metric found. Check cron job and textfile collector."
 
       # High Ban Rate (posible ataque)
       - alert: Fail2banHighBanRate
