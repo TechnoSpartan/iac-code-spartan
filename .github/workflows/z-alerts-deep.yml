@@ -1,0 +1,38 @@
+name: Z Alerts Deep Diag
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deep alert diagnosis
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== Alertmanager alerts (full) ==="
+            curl -s http://localhost:9093/api/v2/alerts 2>&1
+
+            echo ""
+            echo "=== vmalert groups ==="
+            curl -s http://localhost:8880/api/v1/groups 2>&1 | python3 -m json.tool 2>/dev/null | head -80
+
+            echo ""
+            echo "=== vmalert logs (last 50) ==="
+            docker logs vmalert --tail 50 2>&1 | tail -30
+
+            echo ""
+            echo "=== alertmanager logs (last 20) ==="
+            docker logs alertmanager --tail 20 2>&1
+
+            echo ""
+            echo "=== Recent sent alerts (vmalert) ==="
+            docker logs vmalert --tail 200 2>&1 | grep -iE "alert|firing|sending|error" | tail -20
+
+            echo ""
+            echo "=== ntfy-forwarder logs ==="
+            docker logs ntfy-forwarder --tail 20 2>&1
