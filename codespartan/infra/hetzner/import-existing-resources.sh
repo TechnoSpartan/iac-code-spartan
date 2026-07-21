@@ -104,7 +104,7 @@ fi
 echo "Importing DNS zones and records..."
 # Keep these two lists in sync with `domains`/`subdomains` in terraform.tfvars.
 domains=("mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud" "dental-io.com")
-subdomains=("traefik" "grafana" "backoffice" "www" "staging" "lab" "lab-staging" "api" "api-staging" "project" "ui" "mambo" "portainer")
+subdomains=("traefik" "grafana" "backoffice" "www" "staging" "lab" "lab-staging" "api" "api-staging" "project" "ui" "mambo" "portainer" "crm")
 
 for domain in "${domains[@]}"; do
   terraform import "hcloud_zone.zones[\"$domain\"]" "$domain" 2>/dev/null \
