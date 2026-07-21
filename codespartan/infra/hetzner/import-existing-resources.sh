@@ -123,6 +123,24 @@ for domain in "${domains[@]}"; do
     && echo "Imported apex AAAA: $domain" || echo "Apex AAAA $domain: not found yet or already in state"
 done
 
+# Additional records (dns_additional_records / hcloud_zone_rrset.additional).
+# Same "no persistent backend" problem as above: each group (domain, name,
+# type) must be listed here manually, matching terraform.tfvars, or a
+# successful create in one CI run becomes a 409 "already exists" in the next.
+additional_records=(
+  "codespartan.cloud|@|MX"
+  "codespartan.cloud|@|TXT"
+  "codespartan.cloud|mail|TXT"
+  "codespartan.cloud|mail._domainkey.mail|TXT"
+  "codespartan.cloud|_dmarc.mail|TXT"
+)
+
+for entry in "${additional_records[@]}"; do
+  IFS='|' read -r domain name type <<< "$entry"
+  terraform import "hcloud_zone_rrset.additional[\"${domain}_${name}_${type}\"]" "$domain/$name/$type" 2>/dev/null \
+    && echo "Imported additional $type: $domain/$name" || echo "Additional $type $domain/$name: not found yet or already in state"
+done
+
 echo ""
 echo "===== Import Complete ====="
 echo "Run 'terraform plan' to verify state is clean"
