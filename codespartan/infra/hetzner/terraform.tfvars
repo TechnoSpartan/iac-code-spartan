@@ -46,9 +46,9 @@ apex_name        = "@"
 #     Sustituir OBTENER_DE_BREVO_DASHBOARD por valores reales del dashboard Brevo.
 dns_additional_records = {
   "codespartan.cloud" = [
-    # ImprovMX — forwarding gratuito
-    { name = "@", type = "MX", value = "mx1.improvmx.com", ttl = 300 },
-    { name = "@", type = "MX", value = "mx2.improvmx.com", ttl = 300 },
+    # ImprovMX — forwarding gratuito (Hetzner exige "<prioridad> <destino>" en el value)
+    { name = "@", type = "MX", value = "10 mx1.improvmx.com", ttl = 300 },
+    { name = "@", type = "MX", value = "20 mx2.improvmx.com", ttl = 300 },
     { name = "@", type = "TXT", value = "v=spf1 include:spf.improvmx.com ~all" },
 
     # Brevo — mail.codespartan.cloud (sustituir placeholders)
