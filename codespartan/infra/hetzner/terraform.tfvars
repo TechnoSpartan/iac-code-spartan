@@ -39,3 +39,22 @@ apex_name        = "@"
 # codespartan.es (no codespartan.cloud), y ese dominio vive en Hostinger/WordPress,
 # fuera del alcance de este Terraform. Los registros (TXT brevo-code, 2x CNAME
 # DKIM, TXT _dmarc) se añaden manualmente en el panel DNS de Hostinger.
+#
+# DNS adicionales para codespartan.cloud (gestionado en Hetzner):
+#   - ImprovMX: forwarding gratuito para recibir emails (verificación Brevo)
+#   - Brevo mail.codespartan.cloud: subdominio de envío de campañas (PLACEHOLDERS)
+#     Sustituir OBTENER_DE_BREVO_DASHBOARD por valores reales del dashboard Brevo.
+dns_additional_records = {
+  "codespartan.cloud" = [
+    # ImprovMX — forwarding gratuito
+    { name = "@", type = "MX", value = "mx1.improvmx.com", ttl = 300 },
+    { name = "@", type = "MX", value = "mx2.improvmx.com", ttl = 300 },
+    { name = "@", type = "TXT", value = "v=spf1 include:spf.improvmx.com ~all" },
+
+    # Brevo — mail.codespartan.cloud (sustituir placeholders)
+    { name = "mail", type = "TXT", value = "brevo-code=OBTENER_DE_BREVO_DASHBOARD" },
+    { name = "mail", type = "TXT", value = "v=spf1 include:spf.brevo.com ~all" },
+    { name = "mail._domainkey.mail", type = "TXT", value = "OBTENER_DE_BREVO_DASHBOARD" },
+    { name = "_dmarc.mail", type = "TXT", value = "v=DMARC1; p=none; rua=mailto:postmaster@codespartan.cloud" },
+  ]
+}
