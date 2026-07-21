@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     hcloud = {
-      source  = "hetznercloud/hcloud"
+      source = "hetznercloud/hcloud"
       # DNS (hcloud_zone / hcloud_zone_rrset) requiere >= 1.54; el antiguo
       # provider timohirt/hetznerdns dejó de funcionar cuando Hetzner cerró
       # dns.hetzner.com (mayo 2026) y movió DNS a la API de Cloud.
@@ -412,12 +412,19 @@ locals {
   additional_grouped = {
     for key, items in {
       for item in local.additional_flat : "${item.domain}_${item.name}_${item.type}" => item...
-    } : key => {
-      domain  = items[0].domain
-      name    = items[0].name
-      type    = items[0].type
-      ttl     = try(items[0].ttl, 300)
-      records = [for it in items : { value = it.value }]
+      } : key => {
+      domain = items[0].domain
+      name   = items[0].name
+      type   = items[0].type
+      ttl    = try(items[0].ttl, 300)
+      # Hetzner's API requires TXT record values fully wrapped in escaped
+      # double quotes (standard DNS zone-file convention); other record
+      # types (MX, CNAME...) must stay unquoted.
+      records = [
+        for it in items : {
+          value = it.type == "TXT" ? "\"${replace(it.value, "\"", "\\\"")}\"" : it.value
+        }
+      ]
     }
   }
 }
