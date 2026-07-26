@@ -1,37 +1,6 @@
-services:
-  web:
-    image: ghcr.io/technospartan/ft-rc-bko-social_posts:latest
-    container_name: cyberdyne-social-posts
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.cyberdyne-social-posts.rule=Host(`www.cyberdyne-systems.es`)
-      - traefik.http.routers.cyberdyne-social-posts.entrypoints=websecure
-      - traefik.http.routers.cyberdyne-social-posts.tls=true
-      - traefik.http.routers.cyberdyne-social-posts.tls.certresolver=le
-      - traefik.http.services.cyberdyne-social-posts.loadbalancer.server.port=80
-      - traefik.docker.network=web
-    networks:
-      - web
-networks:
-  web:
-    external: true
+# RETIRED on main VPS (2026-07-26).
+# Frontend + API now run on CodeSpartan-apis (10.0.0.3:3080 / :3081)
+# and are routed by Traefik file provider (platform/traefik/dynamic/dynamic-config.yml).
+#
+# Keep this file only as a stub so old deploy workflows fail safely if re-run.
+services: {}
