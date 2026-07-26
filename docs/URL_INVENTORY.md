@@ -1,6 +1,6 @@
 # 🌐 Inventario de URLs - CodeSpartan Platform
 
-**Última actualización:** 2026-07-20
+**Última actualización:** 2026-07-26
 **VPS principal:** 91.98.137.217 (Hetzner ARM64, `cax11`, 3.4GB RAM)
 **VPS secundario:** IP privada `10.0.0.3` / pública `46.224.195.174` (Hetzner x86, `cx33`, tier APIs/BBDD, 7.3GB RAM)
 **Dominios:** mambo-cloud.com, cyberdyne-systems.es, codespartan.cloud, dental-io.com (`codespartan.es` se gestiona aparte en Hostinger/WordPress)
@@ -29,23 +29,25 @@ Credenciales por defecto: `admin` / `codespartan123` + TOTP vía Authelia (https
 | Twenty CRM | https://crm.codespartan.cloud | ✅ Operacional | (reenvía a `twenty-server` en el VPS secundario, IP privada `10.0.0.3:3000`) | Corre en `CodeSpartan-apis`, no en el VPS principal — no tenía sitio cómodo aquí junto a Redmine/monitoring/job-hunter. Ver `docs/06-implementation/PIPELINE_COMERCIAL.md` |
 | job-hunter (bot) | vía `JOB_HUNTER_API_HOST` (variable propia, no gestionado por Terraform) | ✅ Operacional | `job-hunter-bot` | |
 | job-hunter (dashboard) | vía `TRAEFIK_HOSTNAME` propio | ✅ Operacional, protegido por Authelia | `job-hunter-dashboard` | |
-| Cyberdyne Systems | https://www.cyberdyne-systems.es | ✅ Operacional | `cyberdyne-social-posts` | Reemplaza a TrackWorks (app de publicación de posts con IA); backend en Supabase |
-| Cyberdyne API | https://api.cyberdyne-systems.es | ✅ Operacional | (reenvía a `supabase-kong` en el VPS secundario, IP privada `10.0.0.3:8000`) | Ya no hay Kong local para Cyberdyne — retirado, redundante con el Kong propio de Supabase |
+| Cyberdyne Systems | https://www.cyberdyne-systems.es (y apex) | ✅ Operacional | (reenvía a `codespartan-frontend` en VPS secundario `10.0.0.3:3080`) | Stack completo en APIs VPS; Traefik file provider |
+| Cyberdyne API | https://api.cyberdyne-systems.es | ✅ Operacional | (reenvía a `codespartan-api` en VPS secundario `10.0.0.3:3081`) | NestJS; ya no Supabase/Kong |
 | Dental IO | https://www.dental-io.com | ✅ Operacional | `dental-io-web` | Sitio estático (nginx) |
 | Mambo Cloud | https://www.mambo-cloud.com | ✅ Operacional | `mambo-cloud-app` | Sitio estático (nginx) |
 | Staging/Lab (mambo-cloud, cyberdyne, dental-io) | `staging.*` / `lab.*` / `*-staging.*` | ❌ No desplegado | — | Subdominios reservados en Terraform, sin contenedor activo |
 
-## 🖥️ VPS secundario — Supabase + Twenty CRM (`CodeSpartan-apis`, IP privada `10.0.0.3`)
+## 🖥️ VPS secundario — Social Posts + Twenty CRM (`CodeSpartan-apis`, IP privada `10.0.0.3`)
 
 | Servicio | Acceso | Contenedor |
 |----------|--------|------------|
-| Kong (API Gateway propio de Supabase) | Solo IP privada `10.0.0.3:8000`, expuesto públicamente vía Traefik → `api.cyberdyne-systems.es` | `supabase-kong` |
-| Studio | Interno (no expuesto públicamente) | `supabase-studio` |
-| Auth, REST, Realtime, Storage, imgproxy, Meta, Edge Functions, Postgres, Supavisor | Internos, solo accesibles entre sí y vía Kong | `supabase-auth`, `supabase-rest`, `realtime-dev.supabase-realtime`, `supabase-storage`, `supabase-imgproxy`, `supabase-meta`, `supabase-edge-functions`, `supabase-db`, `supabase-pooler` |
-| Twenty CRM (server) | Solo IP privada `10.0.0.3:3000`, expuesto públicamente vía Traefik (file provider) → `crm.codespartan.cloud` | `twenty-server` |
-| Twenty CRM (worker, db, redis) | Internos, solo accesibles entre sí y por `twenty-server` (red `crm_internal`) | `twenty-worker`, `twenty-db`, `twenty-redis` |
+| Cyberdyne frontend | Solo IP privada `10.0.0.3:3080` → Traefik `www/apex.cyberdyne-systems.es` | `codespartan-frontend` |
+| Cyberdyne API (Nest) | Solo IP privada `10.0.0.3:3081` → Traefik `api.cyberdyne-systems.es` | `codespartan-api` |
+| Postgres / Redis / MinIO (social posts) | Internos (red `social_internal`) | `codespartan-db`, `codespartan-redis`, `codespartan-minio` |
+| Twenty CRM (server) | Solo IP privada `10.0.0.3:3000` → Traefik `crm.codespartan.cloud` | `twenty-server` |
+| Twenty CRM (worker, db, redis) | Internos (red `crm_internal`) | `twenty-worker`, `twenty-db`, `twenty-redis` |
 
-Ambos backends siguen el mismo patrón: el contenedor publica su puerto solo en la IP privada (nunca en `0.0.0.0`), y el Traefik del VPS principal hace de terminador TLS reenviando en HTTP plano sobre la red privada Hetzner (`codespartan/platform/traefik/dynamic-config.yml`). No hay Traefik en este VPS.
+**Supabase retirado** de este VPS (2026-07-25).
+
+Patrón: contenedores publican solo en IP privada; Traefik en el VPS principal termina TLS (`codespartan/platform/traefik/dynamic/dynamic-config.yml`). No hay Traefik en este VPS.
 
 ## 🔒 Servicios Internos del VPS principal (No Expuestos Públicamente)
 

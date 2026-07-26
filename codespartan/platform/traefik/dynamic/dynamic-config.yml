@@ -89,15 +89,22 @@ http:
       tls:
         certResolver: le
 
-    # api.cyberdyne-systems.es -> Kong (Supabase self-hosted) on the APIs VPS,
-    # reached over the codespartan-internal private network (10.0.0.0/24).
-    # Pure HTTP passthrough: Traefik only terminates TLS here. No middlewares -
-    # Kong owns all API-level auth/routing/rate-limiting on its own.
+    # api.cyberdyne-systems.es -> Nest API (codespartan-api) on the APIs VPS,
+    # private network 10.0.0.0/24. Traefik only terminates TLS.
     cyberdyne-api:
       rule: "Host(`api.cyberdyne-systems.es`)"
       entrypoints:
         - websecure
       service: cyberdyne-api-service
+      tls:
+        certResolver: le
+
+    # www + apex cyberdyne-systems.es -> frontend (codespartan-frontend) on APIs VPS
+    cyberdyne-www:
+      rule: "Host(`www.cyberdyne-systems.es`) || Host(`cyberdyne-systems.es`)"
+      entrypoints:
+        - websecure
+      service: cyberdyne-www-service
       tls:
         certResolver: le
 
@@ -113,11 +120,17 @@ http:
         certResolver: le
 
   services:
-    # Kong (Supabase self-hosted) on the APIs VPS, private network
+    # Nest API (ft-rc-bko-social_posts backend) on the APIs VPS
     cyberdyne-api-service:
       loadBalancer:
         servers:
-          - url: "http://10.0.0.3:8000"
+          - url: "http://10.0.0.3:3081"
+
+    # Frontend (ft-rc-bko-social_posts) on the APIs VPS
+    cyberdyne-www-service:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.3:3080"
 
     # Twenty CRM (twenty-server) on the APIs VPS, private network
     crm-service:
