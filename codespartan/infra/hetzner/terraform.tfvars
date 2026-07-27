@@ -21,7 +21,7 @@ firewall_allowed_ssh_cidrs = ["0.0.0.0/0", "::/0"]
 
 # DNS (Hetzner DNS)
 # Nota: codespartan.es (www en Hostinger/WordPress) no se gestiona aquí.
-domains    = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud", "dental-io.com"]
+domains    = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud", "dental-ia.es"]
 subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo", "portainer", "crm"]
 
 # IPv4/IPv6 concretos para los registros A/AAAA
@@ -46,17 +46,19 @@ apex_name        = "@"
 #     Sustituir OBTENER_DE_BREVO_DASHBOARD por valores reales del dashboard Brevo.
 dns_additional_records = {
   "codespartan.cloud" = [
-    # ImprovMX — forwarding gratuito (Hetzner exige "<prioridad> <destino>" en el
-    # value, y el destino necesita el punto final o Hetzner lo trata como
-    # nombre relativo y le pega el dominio de la zona detrás)
+    # ImprovMX — forwarding gratuito
     { name = "@", type = "MX", value = "10 mx1.improvmx.com.", ttl = 300 },
     { name = "@", type = "MX", value = "20 mx2.improvmx.com.", ttl = 300 },
     { name = "@", type = "TXT", value = "v=spf1 include:spf.improvmx.com ~all" },
+    # Brevo — verificación del dominio apex codespartan.cloud
+    { name = "@", type = "TXT", value = "brevo-code:c7e0b4779e7e17ee0c0bf8c0e5decf0a" },
+    # Brevo — DKIM (CNAME)
+    { name = "brevo1._domainkey", type = "CNAME", value = "b1.codespartan-cloud.dkim.brevo.com." },
+    { name = "brevo2._domainkey", type = "CNAME", value = "b2.codespartan-cloud.dkim.brevo.com." },
+    # Brevo — DMARC apex
+    { name = "_dmarc", type = "TXT", value = "v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com" },
 
-    # Brevo — mail.codespartan.cloud (sustituir placeholders)
-    { name = "mail", type = "TXT", value = "brevo-code=OBTENER_DE_BREVO_DASHBOARD" },
+    # Brevo — subdominio mail.codespartan.cloud (envío de campañas)
     { name = "mail", type = "TXT", value = "v=spf1 include:spf.brevo.com ~all" },
-    { name = "mail._domainkey.mail", type = "TXT", value = "OBTENER_DE_BREVO_DASHBOARD" },
-    { name = "_dmarc.mail", type = "TXT", value = "v=DMARC1; p=none; rua=mailto:postmaster@codespartan.cloud" },
   ]
 }
