@@ -1,53 +1,76 @@
+name: dental-ia
+
 services:
   web:
-    image: nginx:stable-alpine
+    image: ghcr.io/technospartan/dental-ia:latest
     container_name: dental-ia-web
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.dental-www.rule=Host(`www.${BASE_DOMAIN}`)
-      - traefik.http.routers.dental-staging.rule=Host(`staging.${BASE_DOMAIN}`)
-      - traefik.http.routers.dental-lab.rule=Host(`lab.${BASE_DOMAIN}`)
-      - traefik.http.routers.dental-www.entrypoints=websecure
-      - traefik.http.routers.dental-staging.entrypoints=websecure
-      - traefik.http.routers.dental-lab.entrypoints=websecure
-      - traefik.http.routers.dental-www.tls=true
-      - traefik.http.routers.dental-staging.tls=true
-      - traefik.http.routers.dental-lab.tls=true
-      - traefik.http.routers.dental-www.tls.certresolver=le
-      - traefik.http.routers.dental-staging.tls.certresolver=le
-      - traefik.http.routers.dental-lab.tls.certresolver=le
-      - traefik.http.routers.dental-www.service=dental-web
-      - traefik.http.routers.dental-staging.service=dental-web
-      - traefik.http.routers.dental-lab.service=dental-web
-      - traefik.http.services.dental-web.loadbalancer.server.port=80
-      - traefik.docker.network=web
-    volumes:
-      - ./html:/usr/share/nginx/html:ro
-    networks:
-      - web
-      - dental_net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
+
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+
+      # Apex + www (landing pública)
+      - traefik.http.routers.dental-www.rule=Host(`dental-ia.es`) || Host(`www.dental-ia.es`)
+      - traefik.http.routers.dental-www.entrypoints=websecure
+      - traefik.http.routers.dental-www.tls=true
+      - traefik.http.routers.dental-www.tls.certresolver=le
+      - traefik.http.routers.dental-www.middlewares=security-headers@file,compression@file
+      - traefik.http.routers.dental-www.service=dental-web
+
+      # Subdominios reservados (misma imagen hasta que haya staging real)
+      - traefik.http.routers.dental-staging.rule=Host(`staging.dental-ia.es`)
+      - traefik.http.routers.dental-staging.entrypoints=websecure
+      - traefik.http.routers.dental-staging.tls=true
+      - traefik.http.routers.dental-staging.tls.certresolver=le
+      - traefik.http.routers.dental-staging.middlewares=security-headers@file,compression@file
+      - traefik.http.routers.dental-staging.service=dental-web
+
+      - traefik.http.routers.dental-lab.rule=Host(`lab.dental-ia.es`)
+      - traefik.http.routers.dental-lab.entrypoints=websecure
+      - traefik.http.routers.dental-lab.tls=true
+      - traefik.http.routers.dental-lab.tls.certresolver=le
+      - traefik.http.routers.dental-lab.middlewares=security-headers@file,compression@file
+      - traefik.http.routers.dental-lab.service=dental-web
+
+      - traefik.http.services.dental-web.loadbalancer.server.port=3000
+
+    networks:
+      - web
+
 networks:
   web:
     external: true
-  dental_net:
-    name: dental_internal
-    driver: bridge
-    internal: false
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24

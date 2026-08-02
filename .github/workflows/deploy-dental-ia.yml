@@ -4,64 +4,163 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'codespartan/apps/dental-ia-es/www/**'
+      - "codespartan/apps/dental-ia-es/www/**"
+    branches:
+      - main
+  repository_dispatch:
+    types: [dental-ia-deploy]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout IaC repository
         uses: actions/checkout@v4
-
-      - name: Prepare files
-        run: |
-          mkdir -p artifacts/dental-ia
-          cp -r codespartan/apps/dental-ia-es/www/* artifacts/dental-ia/
-
-      - name: Prepare remote dir
-        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            mkdir -p /opt/codespartan/apps/dental-ia-es/www
+          path: iac-repo
 
-      - name: Copy files to VPS
+      - name: Checkout dental-ia.es repository
+        uses: actions/checkout@v4
+        with:
+          repository: TechnoSpartan/dental-ia.es
+          path: app-repo
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: technospartan
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/technospartan/dental-ia
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app-repo
+          file: ./app-repo/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Copy docker-compose to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "artifacts/dental-ia/*"
-          target: "/opt/codespartan/apps/dental-ia-es/www"
-          strip_components: 2
+          source: "iac-repo/codespartan/apps/dental-ia-es/www/docker-compose.yml"
+          target: "/opt/codespartan/apps/dental-ia-es/www/"
+          strip_components: 5
+          overwrite: true
 
-      - name: Deploy stack
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_PAT }}
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
+          envs: GHCR_TOKEN
           script: |
-            set -euxo pipefail
-            docker network create web 2>/dev/null || true
-            if [ -d /opt/codespartan/apps/dental-io-com/www ]; then
-              docker compose --env-file /opt/codespartan/apps/dental-io-com/www/.env \
-                -f /opt/codespartan/apps/dental-io-com/www/docker-compose.yml down || true
-            fi
-            docker rm -f dental-io-web 2>/dev/null || true
+            set -euo pipefail
 
-            cat > /opt/codespartan/apps/dental-ia-es/www/.env <<EOF
-            BASE_DOMAIN=dental-ia.es
-            EOF
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚀 DEPLOYING DENTAL IA (DentalFlow)"
+            echo "════════════════════════════════════════════════════════════"
+
             cd /opt/codespartan/apps/dental-ia-es/www
-            docker compose --env-file .env pull
-            docker compose --env-file .env down
-            docker compose --env-file .env up -d
+            DEPLOY_START=$(date +%s)
 
-            echo "=== Verifying container is running ==="
-            docker ps | grep dental-ia-web || (echo "ERROR: dental-ia-web not running" && exit 1)
+            docker network create web 2>/dev/null || echo "Network 'web' already exists"
 
-            echo "Dental IA deployment completed successfully"
+            echo "🔐 Logging in to GitHub Container Registry..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            # Cleanup legacy nginx static mount leftovers if present
+            rm -rf ./html 2>/dev/null || true
+
+            cat > .env <<EOF
+            NODE_ENV=production
+            EOF
+
+            echo "📦 Pulling latest Docker image..."
+            docker compose pull
+
+            echo "🚀 Starting container..."
+            docker compose up -d
+
+            echo "🔍 Running health checks..."
+            sleep 5
+
+            if docker ps | grep -q dental-ia-web; then
+              echo "✅ Container is running"
+
+              ATTEMPTS=0
+              MAX_ATTEMPTS=20
+
+              while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' dental-ia-web 2>/dev/null || echo "unknown")
+
+                if [ "$HEALTH" = "healthy" ]; then
+                  DEPLOY_END=$(date +%s)
+                  DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+                  echo "✅ Health check passed!"
+                  docker image prune -f
+
+                  echo ""
+                  echo "════════════════════════════════════════════════════════════"
+                  echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
+                  echo "════════════════════════════════════════════════════════════"
+                  docker ps --filter "name=dental-ia-web" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                  echo ""
+                  echo "🌐 URL: https://dental-ia.es"
+                  echo "🌐 URL: https://www.dental-ia.es"
+                  exit 0
+                fi
+
+                echo "⏳ Health: $HEALTH - waiting... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+                ATTEMPTS=$((ATTEMPTS + 1))
+                sleep 3
+              done
+
+              echo "❌ Health check timeout"
+              docker logs --tail 50 dental-ia-web
+              exit 1
+            else
+              echo "❌ Container failed to start"
+              docker logs dental-ia-web 2>/dev/null || echo "No logs available"
+              exit 1
+            fi
+
+      - name: Verify production URL
+        if: success()
+        run: |
+          echo "🌐 Verifying production URLs..."
+          sleep 10
+
+          for URL in https://dental-ia.es https://www.dental-ia.es; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "✅ $URL is live (HTTP $HTTP_STATUS)"
+            else
+              echo "⚠️  $URL returned HTTP $HTTP_STATUS (SSL/propagation may need 1-2 min)"
+            fi
+          done
