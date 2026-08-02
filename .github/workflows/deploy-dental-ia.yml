@@ -104,21 +104,30 @@ jobs:
             docker compose pull
 
             echo "🚀 Starting container..."
-            docker compose up -d
+            docker compose up -d --force-recreate --remove-orphans
 
             echo "🔍 Running health checks..."
-            sleep 5
+            sleep 3
 
-            if docker ps | grep -q dental-ia-web; then
-              echo "✅ Container is running"
+            if ! docker inspect dental-ia-web >/dev/null 2>&1; then
+              echo "❌ Container dental-ia-web does not exist"
+              docker compose ps -a || true
+              docker ps -a --filter "name=dental" || true
+              exit 1
+            fi
 
-              ATTEMPTS=0
-              MAX_ATTEMPTS=20
+            ATTEMPTS=0
+            MAX_ATTEMPTS=30
 
-              while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' dental-ia-web 2>/dev/null || echo "unknown")
+            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              RUNNING=$(docker inspect --format='{{.State.Running}}' dental-ia-web 2>/dev/null || echo "false")
+              HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' dental-ia-web 2>/dev/null || echo "unknown")
+              HTTP_CODE=$(docker exec dental-ia-web node -e "require('http').get('http://127.0.0.1:3000/api/health',r=>{process.stdout.write(String(r.statusCode));process.exit(0)}).on('error',()=>{process.stdout.write('000');process.exit(0)})" 2>/dev/null || echo "000")
 
-                if [ "$HEALTH" = "healthy" ]; then
+              echo "⏳ running=$RUNNING health=$HEALTH http=$HTTP_CODE ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+
+              if [ "$RUNNING" = "true" ] && { [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "none" ] || [ "$HTTP_CODE" = "200" ]; }; then
+                if [ "$HTTP_CODE" = "200" ] || [ "$HEALTH" = "healthy" ]; then
                   DEPLOY_END=$(date +%s)
                   DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
 
@@ -129,26 +138,28 @@ jobs:
                   echo "════════════════════════════════════════════════════════════"
                   echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
                   echo "════════════════════════════════════════════════════════════"
-                  docker ps --filter "name=dental-ia-web" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                  docker ps --filter "name=dental-ia-web" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
                   echo ""
                   echo "🌐 URL: https://dental-ia.es"
                   echo "🌐 URL: https://www.dental-ia.es"
                   exit 0
                 fi
+              fi
 
-                echo "⏳ Health: $HEALTH - waiting... ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
-                ATTEMPTS=$((ATTEMPTS + 1))
-                sleep 3
-              done
+              if [ "$RUNNING" != "true" ]; then
+                echo "⚠️  Container not running — logs:"
+                docker logs --tail 80 dental-ia-web || true
+                docker inspect --format='{{json .State}}' dental-ia-web || true
+              fi
 
-              echo "❌ Health check timeout"
-              docker logs --tail 50 dental-ia-web
-              exit 1
-            else
-              echo "❌ Container failed to start"
-              docker logs dental-ia-web 2>/dev/null || echo "No logs available"
-              exit 1
-            fi
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 3
+            done
+
+            echo "❌ Health check timeout"
+            docker ps -a --filter "name=dental-ia-web"
+            docker logs --tail 80 dental-ia-web || true
+            exit 1
 
       - name: Verify production URL
         if: success()
