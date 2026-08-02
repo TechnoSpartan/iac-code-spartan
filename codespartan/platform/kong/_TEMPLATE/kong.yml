@@ -3,16 +3,16 @@
 # ============================================================================
 #
 # VARIABLES A REEMPLAZAR:
-# - {{DOMAIN_NAME}} -> nombre del dominio (ej: dental-io)
-# - {{DOMAIN_HOST}} -> host principal (ej: dental-io.com)
-# - {{API_HOST}} -> host de la API (ej: api.dental-io.com)
-# - {{API_STAGING_HOST}} -> host staging (ej: api-staging.dental-io.com)
+# - {{DOMAIN_NAME}} -> nombre del dominio (ej: dental-ia)
+# - {{DOMAIN_HOST}} -> host principal (ej: dental-ia.es)
+# - {{API_HOST}} -> host de la API (ej: api.dental-ia.es)
+# - {{API_STAGING_HOST}} -> host staging (ej: api-staging.dental-ia.es)
 # - {{API_CONTAINER}} -> nombre del contenedor API (ej: dental-api)
 # - {{API_STAGING_CONTAINER}} -> contenedor staging (ej: dental-api-staging)
 # - {{API_PORT}} -> puerto de la API (ej: 3000)
-# - {{CORS_ORIGIN_PROD}} -> origen CORS produccion (ej: https://dental-io.com)
-# - {{CORS_ORIGIN_WWW}} -> origen CORS www (ej: https://www.dental-io.com)
-# - {{CORS_ORIGIN_STAGING}} -> origen CORS staging (ej: https://staging.dental-io.com)
+# - {{CORS_ORIGIN_PROD}} -> origen CORS produccion (ej: https://dental-ia.es)
+# - {{CORS_ORIGIN_WWW}} -> origen CORS www (ej: https://www.dental-ia.es)
+# - {{CORS_ORIGIN_STAGING}} -> origen CORS staging (ej: https://staging.dental-ia.es)
 #
 # ============================================================================
 

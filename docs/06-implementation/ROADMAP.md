@@ -556,7 +556,7 @@ Workflow de CI/CD que ejecuta automáticamente en:
 - Corregidos 5 workflows de producción:
   - `deploy-cyberdyne-api.yml` - trailing spaces
   - `deploy-cyberdyne.yml` - trailing spaces
-  - `deploy-dental-io.yml` - blank lines
+  - `deploy-dental-ia.yml` - blank lines
   - `deploy-docker-socket-proxy.yml` - blank lines
   - `install-fail2ban.yml` - trailing spaces + blank lines
 - ✅ 0 errores en workflows de producción

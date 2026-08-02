@@ -1,10 +1,10 @@
-name: Deploy Dental IO
+name: Deploy Dental IA
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'codespartan/apps/dental-io-com/www/**'
+      - 'codespartan/apps/dental-ia-es/www/**'
 
 jobs:
   deploy:
@@ -15,8 +15,8 @@ jobs:
 
       - name: Prepare files
         run: |
-          mkdir -p artifacts/dental-io
-          cp -r codespartan/apps/dental-io-com/www/* artifacts/dental-io/
+          mkdir -p artifacts/dental-ia
+          cp -r codespartan/apps/dental-ia-es/www/* artifacts/dental-ia/
 
       - name: Prepare remote dir
         uses: appleboy/ssh-action@v1.0.3
@@ -25,7 +25,7 @@ jobs:
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            mkdir -p /opt/codespartan/apps/dental-io-com/www
+            mkdir -p /opt/codespartan/apps/dental-ia-es/www
 
       - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -33,8 +33,8 @@ jobs:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "artifacts/dental-io/*"
-          target: "/opt/codespartan/apps/dental-io-com/www"
+          source: "artifacts/dental-ia/*"
+          target: "/opt/codespartan/apps/dental-ia-es/www"
           strip_components: 2
 
       - name: Deploy stack
@@ -47,15 +47,21 @@ jobs:
           script: |
             set -euxo pipefail
             docker network create web 2>/dev/null || true
-            cat > /opt/codespartan/apps/dental-io-com/www/.env <<EOF
-            BASE_DOMAIN=${{ secrets.DENTAL_BASE_DOMAIN }}
+            if [ -d /opt/codespartan/apps/dental-io-com/www ]; then
+              docker compose --env-file /opt/codespartan/apps/dental-io-com/www/.env \
+                -f /opt/codespartan/apps/dental-io-com/www/docker-compose.yml down || true
+            fi
+            docker rm -f dental-io-web 2>/dev/null || true
+
+            cat > /opt/codespartan/apps/dental-ia-es/www/.env <<EOF
+            BASE_DOMAIN=dental-ia.es
             EOF
-            cd /opt/codespartan/apps/dental-io-com/www
+            cd /opt/codespartan/apps/dental-ia-es/www
             docker compose --env-file .env pull
             docker compose --env-file .env down
             docker compose --env-file .env up -d
 
             echo "=== Verifying container is running ==="
-            docker ps | grep dental-io-web || (echo "ERROR: dental-io-web not running" && exit 1)
+            docker ps | grep dental-ia-web || (echo "ERROR: dental-ia-web not running" && exit 1)
 
-            echo "✅ Dental IO deployment completed successfully"
+            echo "Dental IA deployment completed successfully"

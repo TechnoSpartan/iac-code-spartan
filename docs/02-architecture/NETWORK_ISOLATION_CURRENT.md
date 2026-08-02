@@ -38,7 +38,7 @@ web (172.20.0.0/16)             - Red pública para Traefik routing
    ├─ cyberdyne-social-posts    - SOLO web (backend real en Supabase, VPS secundario)
    ├─ codespartan-ui            - SOLO web (Storybook estático)
    ├─ codespartan-www           - SOLO web (Next.js, sin BD propia)
-   ├─ dental-io-web             - SOLO web (nginx estático)
+    ├─ dental-ia-web             - SOLO web (nginx estático)
    └─ backoffice                - SOLO web (nginx estático)
 
 authelia_internal (172.21.0.0/24, internal: true)
@@ -67,7 +67,7 @@ mambo_internal (172.29.0.0/24)
 └─ mambo-cloud-app              - Sitio estático (red interna reservada, sin BD)
 
 dental_internal (172.30.0.0/24)
-└─ dental-io-web                - Sitio estático (red interna reservada, sin BD)
+└─ dental-ia-web                - Sitio estático (red interna reservada, sin BD)
 
 redmine_internal (172.31.0.0/24, internal: true)
 ├─ redmine-app                  - Project management

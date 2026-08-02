@@ -1,7 +1,7 @@
 services:
   web:
     image: nginx:stable-alpine
-    container_name: dental-io-web
+    container_name: dental-ia-web
     labels:
       - traefik.enable=true
       - traefik.http.routers.dental-www.rule=Host(`www.${BASE_DOMAIN}`)

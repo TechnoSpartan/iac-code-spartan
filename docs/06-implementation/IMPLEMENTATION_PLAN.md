@@ -532,7 +532,7 @@ Internet → Traefik (SSL/443) → Kong (8000) → API Backend (3001) → MongoD
 **Documentacion:** `docs/02-architecture/KONG.md`
 
 ### 🔜 Pendiente
-- `kong-dental` → api.dental-io.com
+- `kong-dental` → api.dental-ia.es
 - `kong-mambo` → api.mambo-cloud.com (si aplica)
 
 ---

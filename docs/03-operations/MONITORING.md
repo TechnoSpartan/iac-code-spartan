@@ -227,12 +227,12 @@ kill $PID
 
 ```bash
 # Detener un contenedor
-docker stop dental-io-web
+docker stop dental-ia-web
 
 # Esperar 2 minutos para alerta
 
 # Restaurar
-docker start dental-io-web
+docker start dental-ia-web
 ```
 
 ### Enviar Alerta de Prueba

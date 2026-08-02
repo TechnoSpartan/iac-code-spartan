@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **CodeSpartan Mambo Cloud Platform** - Complete Infrastructure as Code (IaC) for automated deployment on Hetzner Cloud ARM64 with Docker, Traefik reverse proxy, and full monitoring stack.
 
-Primary domain: `mambo-cloud.com` (DNS managed in Hetzner). Also manages `cyberdyne-systems.es`, `codespartan.cloud`, `dental-io.com` (`codespartan.es` is managed separately in Hostinger/WordPress).
+Primary domain: `mambo-cloud.com` (DNS managed in Hetzner). Also manages `cyberdyne-systems.es`, `codespartan.cloud`, `dental-ia.es` (`codespartan.es` is managed separately in Hostinger/WordPress).
 
 **Two VPS:**
 - `CodeSpartan-alma` (cax11, ARM64, `91.98.137.217` / `2a01:4f8:1c1a:7d21::1`) — main VPS: Traefik, apps, monitoring, Authelia, Redmine, job-hunter.
@@ -39,7 +39,7 @@ The platform consists of three main layers:
 
 3. **Application Layer** (`codespartan/apps/`)
    - Multiple web applications with automatic subdomain routing
-   - Real apps today: `codespartan-cloud/www` (corporate site), `codespartan-cloud/ui` (Storybook), `codespartan-cloud/redmine` (project management, replaced OpenProject), `codespartan-cloud/job-hunter` (bot + dashboard), `codespartan-cloud/crm` (Twenty CRM — server/worker/db/redis, deployed on the secondary VPS `CodeSpartan-apis`, not the main VPS), `cyberdyne-systems-es/www` (social posts app, backed by Supabase), `dental-io-com/www`, `mambo-cloud-com/www`
+   - Real apps today: `codespartan-cloud/www` (corporate site), `codespartan-cloud/ui` (Storybook), `codespartan-cloud/redmine` (project management, replaced OpenProject), `codespartan-cloud/job-hunter` (bot + dashboard), `codespartan-cloud/crm` (Twenty CRM — server/worker/db/redis, deployed on the secondary VPS `CodeSpartan-apis`, not the main VPS), `cyberdyne-systems-es/www` (social posts app, backed by Supabase), `dental-ia-es/www`, `mambo-cloud-com/www`
    - Each app has its own `docker-compose.yml` with Traefik labels for routing, **except `crm`**: it runs on the secondary VPS where Traefik doesn't run, so it publishes its port directly on the private IP (`10.0.0.3:3000`) instead of using Docker labels — routed via Traefik's file provider (`platform/traefik/dynamic-config.yml`, router `crm`), same pattern as `cyberdyne-api`
    - Many other subfolders under `apps/` are empty placeholders (`README.md` only) for future use
 
@@ -171,7 +171,7 @@ server2_name = "CodeSpartan-apis"
 server2_type = "cx33"  # x86 instance (secondary VPS: APIs/DB tier, Supabase)
 server2_location = "nbg1"
 
-domains = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud", "dental-io.com"]
+domains = ["mambo-cloud.com", "cyberdyne-systems.es", "codespartan.cloud", "dental-ia.es"]
 subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab", "lab-staging", "api", "api-staging", "project", "ui", "mambo", "portainer", "crm"]
 manual_ipv4_address = "91.98.137.217"
 manual_ipv6_address = "2a01:4f8:1c1a:7d21::1"
