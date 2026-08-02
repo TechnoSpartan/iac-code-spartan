@@ -39,7 +39,7 @@ codespartan/apps/
 │   ├── ui/
 │   └── www/              ← docker-compose.yml
 │
-├── dental-io-com/
+├── dental-ia-es/
 │   ├── api/
 │   ├── api-staging/
 │   ├── mambo/
@@ -105,8 +105,8 @@ sudo mkdir -p /opt/codespartan/apps/codespartan-cloud/{api,api-staging,mambo,pro
 # Crear estructura para cyberdyne-systems-es
 sudo mkdir -p /opt/codespartan/apps/cyberdyne-systems-es/{api,api-staging,mambo,staging,traefik,ui,www}
 
-# Crear estructura para dental-io-com
-sudo mkdir -p /opt/codespartan/apps/dental-io-com/{api,api-staging,mambo,staging,traefik,ui,www}
+# Crear estructura para dental-ia-es
+sudo mkdir -p /opt/codespartan/apps/dental-ia-es/{api,api-staging,mambo,staging,traefik,ui,www}
 
 # Crear estructura para mambo-cloud-com
 sudo mkdir -p /opt/codespartan/apps/mambo-cloud-com/{api,api-staging,backoffice,mambo,staging,traefik,ui,www}
@@ -134,7 +134,7 @@ fi
 
 # Si existe /opt/codespartan/apps/dental-io/
 if [ -d "/opt/codespartan/apps/dental-io" ]; then
-  sudo mv /opt/codespartan/apps/dental-io/* /opt/codespartan/apps/dental-io-com/www/ 2>/dev/null || true
+  sudo mv /opt/codespartan/apps/dental-io/* /opt/codespartan/apps/dental-ia-es/www/ 2>/dev/null || true
 fi
 
 # Si existe /opt/codespartan/apps/mambo-cloud/
@@ -181,7 +181,7 @@ Los workflows YA tienen las rutas correctas:
 
 - **deploy-cyberdyne.yml** → `cyberdyne-systems-es/www/**`
 - **deploy-cyberdyne-api.yml** → `cyberdyne-systems-es/api/**`
-- **deploy-dental-io.yml** → `dental-io-com/www/**`
+- **deploy-dental-ia.yml** → `dental-ia-es/www/**`
 - **deploy-mambo-cloud.yml** → `mambo-cloud-com/www/**`
 
 ### Problema: 🚨 SSH AUTH FALLA
@@ -224,7 +224,7 @@ Los workflows no pueden conectar al VPS. Necesitas:
 
 ```bash
 dig api.cyberdyne-systems.es A
-dig www.dental-io.com A
+dig www.dental-ia.es A
 dig backoffice.mambo-cloud.com A
 dig project.codespartan.cloud A
 ```
@@ -248,7 +248,7 @@ Todos deben resolver a: **91.98.137.217**
 1. [ ] **Traefik** (si no está corriendo)
 2. [ ] **Cyberdyne API** (`deploy-cyberdyne-api.yml`)
 3. [ ] **Cyberdyne Frontend** (`deploy-cyberdyne.yml`)
-4. [ ] **Dental-IO** (`deploy-dental-io.yml`)
+4. [ ] **Dental IA** (`deploy-dental-ia.yml`)
 5. [ ] **Mambo Cloud** (`deploy-mambo-cloud.yml`)
 6. [ ] **OpenProject** (crear workflow para `codespartan-cloud/project`)
 
@@ -263,7 +263,7 @@ docker logs <nombre-contenedor> --tail 50
 
 # Test endpoints
 curl -I https://api.cyberdyne-systems.es
-curl -I https://www.dental-io.com
+curl -I https://www.dental-ia.es
 curl -I https://backoffice.mambo-cloud.com
 curl -I https://project.codespartan.cloud
 ```

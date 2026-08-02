@@ -40,7 +40,7 @@ jobs:
             # Create apps structure
             sudo mkdir -p /opt/codespartan/apps/codespartan-cloud/{api,api-staging,mambo,project,staging,traefik,ui,www}
             sudo mkdir -p /opt/codespartan/apps/cyberdyne-systems-es/{api,api-staging,mambo,staging,traefik,ui,www}
-            sudo mkdir -p /opt/codespartan/apps/dental-io-com/{api,api-staging,mambo,staging,traefik,ui,www}
+            sudo mkdir -p /opt/codespartan/apps/dental-ia-es/{api,api-staging,mambo,staging,traefik,ui,www}
             sudo mkdir -p /opt/codespartan/apps/mambo-cloud-com/{api,api-staging,backoffice,mambo,staging,traefik,ui,www}
 
             # Set ownership

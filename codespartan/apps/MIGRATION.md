@@ -41,8 +41,8 @@ codespartan/apps/
 │   ├── www/                     # www.mambo-cloud.com (was: mambo-cloud/)
 │   ├── staging/                 # staging.mambo-cloud.com [placeholder]
 │   └── backoffice/              # backoffice.mambo-cloud.com [placeholder]
-├── dental-io-com/
-│   └── www/                     # www.dental-io.com (was: dental-io/)
+├── dental-ia-es/
+│   └── www/                     # www.dental-ia.es (was: dental-io/)
 └── codespartan-cloud/           # NEW DOMAIN
     ├── www/                     # www.codespartan.cloud [placeholder]
     ├── staging/                 # staging.codespartan.cloud [placeholder]
@@ -71,7 +71,7 @@ codespartan/apps/
 | `cyberdyne/backend-staging/` | `cyberdyne-systems-es/api-staging/` | ✅ Migrated |
 | `openproject/` | ~~`cyberdyne-systems-es/project/`~~ | 🗑️ **Removed** (replaced by Redmine) |
 | `mambo-cloud/` | `mambo-cloud-com/www/` | ✅ Migrated |
-| `dental-io/` | `dental-io-com/www/` | ✅ Migrated |
+| `dental-io/` | `dental-ia-es/www/` | ✅ Migrated |
 | `cyberdyne-api/` | ❌ **Deprecated** (duplicate of cyberdyne/backend/) | To remove |
 | - | `cyberdyne-systems-es/lab/` | 🆕 Placeholder |
 | - | `cyberdyne-systems-es/lab-staging/` | 🆕 Placeholder |
@@ -86,7 +86,7 @@ These directories are deprecated and should be removed after verifying the migra
 codespartan/apps/
 ├── cyberdyne/          # Replaced by cyberdyne-systems-es/
 ├── cyberdyne-api/      # Duplicate - can be removed
-├── dental-io/          # Replaced by dental-io-com/
+├── dental-io/          # Replaced by dental-ia-es/
 ├── mambo-cloud/        # Replaced by mambo-cloud-com/
 └── openproject/        # 🗑️ Removed (replaced by codespartan-cloud/redmine/)
 ```

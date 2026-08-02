@@ -3,7 +3,7 @@
 **Última actualización:** 2026-07-26
 **VPS principal:** 91.98.137.217 (Hetzner ARM64, `cax11`, 3.4GB RAM)
 **VPS secundario:** IP privada `10.0.0.3` / pública `46.224.195.174` (Hetzner x86, `cx33`, tier APIs/BBDD, 7.3GB RAM)
-**Dominios:** mambo-cloud.com, cyberdyne-systems.es, codespartan.cloud, dental-io.com (`codespartan.es` se gestiona aparte en Hostinger/WordPress)
+**Dominios:** mambo-cloud.com, cyberdyne-systems.es, codespartan.cloud, dental-ia.es (`codespartan.es` se gestiona aparte en Hostinger/WordPress)
 
 ---
 
@@ -31,9 +31,9 @@ Credenciales por defecto: `admin` / `codespartan123` + TOTP vía Authelia (https
 | job-hunter (dashboard) | vía `TRAEFIK_HOSTNAME` propio | ✅ Operacional, protegido por Authelia | `job-hunter-dashboard` | |
 | Cyberdyne Systems | https://www.cyberdyne-systems.es (y apex) | ✅ Operacional | (reenvía a `codespartan-frontend` en VPS secundario `10.0.0.3:3080`) | Stack completo en APIs VPS; Traefik file provider |
 | Cyberdyne API | https://api.cyberdyne-systems.es | ✅ Operacional | (reenvía a `codespartan-api` en VPS secundario `10.0.0.3:3081`) | NestJS; ya no Supabase/Kong |
-| Dental IO | https://www.dental-io.com | ✅ Operacional | `dental-io-web` | Sitio estático (nginx) |
+| Dental IA | https://www.dental-ia.es | ✅ Operacional | `dental-ia-web` | Sitio estático (nginx) |
 | Mambo Cloud | https://www.mambo-cloud.com | ✅ Operacional | `mambo-cloud-app` | Sitio estático (nginx) |
-| Staging/Lab (mambo-cloud, cyberdyne, dental-io) | `staging.*` / `lab.*` / `*-staging.*` | ❌ No desplegado | — | Subdominios reservados en Terraform, sin contenedor activo |
+| Staging/Lab (mambo-cloud, cyberdyne, dental-ia) | `staging.*` / `lab.*` / `*-staging.*` | ❌ No desplegado | — | Subdominios reservados en Terraform, sin contenedor activo |
 
 ## 🖥️ VPS secundario — Social Posts + Twenty CRM (`CodeSpartan-apis`, IP privada `10.0.0.3`)
 
@@ -84,7 +84,7 @@ curl -I https://project.codespartan.cloud
 curl -I https://crm.codespartan.cloud
 curl -I https://www.cyberdyne-systems.es
 curl -I https://api.cyberdyne-systems.es
-curl -I https://www.dental-io.com
+curl -I https://www.dental-ia.es
 curl -I https://www.mambo-cloud.com
 ```
 

@@ -103,7 +103,7 @@ fi
 # every other "already in state" fallback in this script.
 echo "Importing DNS zones and records..."
 # Keep these two lists in sync with `domains`/`subdomains` in terraform.tfvars.
-domains=("mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud" "dental-io.com")
+domains=("mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud" "dental-ia.es")
 subdomains=("traefik" "grafana" "backoffice" "www" "staging" "lab" "lab-staging" "api" "api-staging" "project" "ui" "mambo" "portainer" "crm")
 
 for domain in "${domains[@]}"; do

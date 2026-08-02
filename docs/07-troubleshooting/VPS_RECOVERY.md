@@ -299,7 +299,7 @@ gh workflow run deploy-monitoring.yml
 
 # 3. Aplicaciones
 gh workflow run deploy-cyberdyne.yml
-gh workflow run deploy-dental-io.yml
+gh workflow run deploy-dental-ia.yml
 gh workflow run deploy-mambo-cloud.yml
 ```
 

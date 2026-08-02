@@ -6,7 +6,7 @@
 # Uso: ./create-kong-instance.sh <domain-name> <api-host> <api-staging-host>
 #
 # Ejemplo:
-#   ./create-kong-instance.sh dental-io api.dental-io.com api-staging.dental-io.com
+#   ./create-kong-instance.sh dental-ia api.dental-ia.es api-staging.dental-ia.es
 #
 # ============================================================================
 
@@ -25,7 +25,7 @@ if [ $# -lt 3 ]; then
     echo "Uso: $0 <domain-name> <api-host> <api-staging-host>"
     echo ""
     echo "Ejemplo:"
-    echo "  $0 dental-io api.dental-io.com api-staging.dental-io.com"
+    echo "  $0 dental-ia api.dental-ia.es api-staging.dental-ia.es"
     echo ""
     exit 1
 fi

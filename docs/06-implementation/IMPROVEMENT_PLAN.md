@@ -129,7 +129,7 @@ docker logs authelia --tail 30 | grep -i "smtp\|mail"
 - ✅ `cyberdyne-systems-es/api` - Red `trackworks` (MongoDB)
 - ✅ `cyberdyne-systems-es/api-staging` - Red `trackworks-staging`
 - ✅ `codespartan-cloud/redmine` - Red `redmine_internal` (PostgreSQL) [OpenProject eliminado]
-- ✅ `dental-io-com/www` - Red `dental_net` (preparada)
+- ✅ `dental-ia-es/www` - Red `dental_net` (preparada)
 - ✅ `mambo-cloud-com/www` - Red `mambo_net` (preparada)
 
 **Apps SIN network isolation (solo `web`):**
@@ -229,7 +229,7 @@ networks:
 Los siguientes directorios deprecated **YA fueron eliminados**:
 - ~~`cyberdyne/`~~ → `cyberdyne-systems-es/`
 - ~~`cyberdyne-api/`~~ → Duplicate eliminado
-- ~~`dental-io/`~~ → `dental-io-com/`
+- ~~`dental-io/`~~ → `dental-ia-es/`
 - ~~`mambo-cloud/`~~ → `mambo-cloud-com/`
 - ~~`openproject/`~~ → ~~`cyberdyne-systems-es/project/`~~ → 🗑️ **ELIMINADO** (reemplazado por Redmine)
 
@@ -238,7 +238,7 @@ Directorios actuales:
 codespartan/apps/
 ├── codespartan-cloud/
 ├── cyberdyne-systems-es/
-├── dental-io-com/
+├── dental-ia-es/
 └── mambo-cloud-com/
 ```
 

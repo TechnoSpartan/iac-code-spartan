@@ -25,7 +25,7 @@ Plataforma de infraestructura completamente containerizada que proporciona:
 - `staging.mambo-cloud.com` - Entorno de pruebas
 - `lab.mambo-cloud.com` - Entorno de desarrollo
 
-**Otros dominios gestionados**: `cyberdyne-systems.es`, `codespartan.cloud`, `dental-io.com` (`codespartan.es`, la web corporativa, vive aparte en Hostinger/WordPress y no la gestiona este repo).
+**Otros dominios gestionados**: `cyberdyne-systems.es`, `codespartan.cloud`, `dental-ia.es` (`codespartan.es`, la web corporativa, vive aparte en Hostinger/WordPress y no la gestiona este repo).
 
 ## 🏗️ Arquitectura
 
@@ -132,7 +132,7 @@ codespartan/
 ├── apps/
 │   ├── codespartan-cloud/          # 🌐 www, ui, redmine, crm (Twenty), job-hunter
 │   ├── cyberdyne-systems-es/       # 🤖 App Cyberdyne Systems (sobre Supabase)
-│   ├── dental-io-com/              # 🦷 App Dental-IO
+│   ├── dental-ia-es/                # 🦷 App Dental IA
 │   └── mambo-cloud-com/            # ☁️ Aplicación principal mambo-cloud
 │
 └── docs/

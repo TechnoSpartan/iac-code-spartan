@@ -69,7 +69,7 @@ Todos los contenedores en la plataforma tienen límites de recursos configurados
 | CodeSpartan UI | `codespartan-ui` | 256 MB | 0.5 | Storybook estático |
 | CodeSpartan WWW | `codespartan-www` | 512 MB | 0.5 | Web corporativa Next.js (SSR) |
 | Cyberdyne social posts | `cyberdyne-social-posts` | 128 MB | 0.25 | App de publicación de posts con IA (reemplaza TrackWorks), backend en Supabase |
-| Dental IO | `dental-io-web` | 128 MB | 0.25 | Sitio estático (nginx) |
+| Dental IA | `dental-ia-web` | 128 MB | 0.25 | Sitio estático (nginx) |
 | Mambo Cloud | `mambo-cloud-app` | 128 MB | 0.25 | Sitio estático (nginx) |
 
 **Subtotal Applications**: ~3.4 GB límite (9 contenedores)
