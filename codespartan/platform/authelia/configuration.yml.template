@@ -108,6 +108,7 @@ access_control:
         - lab.mambo-cloud.com
         - www.cyberdyne-systems.es
         - staging.cyberdyne-systems.es
+        - dental-ia.es
         - www.dental-ia.es
         - staging.dental-ia.es
         - lab.dental-ia.es
