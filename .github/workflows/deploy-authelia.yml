@@ -103,9 +103,10 @@ jobs:
             # Ensure web network exists
             docker network create web || true
 
-            # Deploy Authelia + Redis
-            echo "📦 Starting Authelia and Redis..."
-            docker compose up -d
+            # Force recreate so bind-mounted configuration.yml / users_database.yml
+            # are always reloaded (Authelia does not hot-reload session.cookies).
+            echo "📦 Starting Authelia and Redis (force-recreate)..."
+            docker compose up -d --force-recreate --remove-orphans
 
             # Wait for Redis to be healthy
             echo "⏳ Waiting for Redis..."
@@ -131,20 +132,27 @@ jobs:
               sleep 2
             done
 
-            # Wait for Authelia to be healthy
-            echo "⏳ Waiting for Authelia..."
+            # Healthcheck is disabled in compose (minimal image). Wait until the
+            # process answers /api/health instead of container Health.Status.
+            echo "⏳ Waiting for Authelia API..."
             ATTEMPT=0
 
             while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-              AUTHELIA_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' authelia 2>/dev/null || echo "unknown")
-
-              if [ "$AUTHELIA_HEALTH" = "healthy" ]; then
-                echo "✅ Authelia is healthy"
+              if docker exec authelia wget -qO- http://127.0.0.1:9091/api/health >/dev/null 2>&1 \
+                || curl -fsS http://127.0.0.1:9091/api/health >/dev/null 2>&1; then
+                echo "✅ Authelia API is up"
                 break
               fi
 
+              RUNNING=$(docker inspect --format='{{.State.Running}}' authelia 2>/dev/null || echo "false")
+              if [ "$RUNNING" != "true" ]; then
+                echo "❌ Authelia container is not running"
+                docker logs authelia --tail 50
+                exit 1
+              fi
+
               if [ $ATTEMPT -eq $((MAX_ATTEMPTS - 1)) ]; then
-                echo "❌ Authelia failed to become healthy"
+                echo "❌ Authelia API failed to become ready"
                 docker logs authelia --tail 50
                 exit 1
               fi
@@ -153,6 +161,40 @@ jobs:
               ATTEMPT=$((ATTEMPT + 1))
               sleep 2
             done
+
+            # Smoke: CRM cookie domain must redirect to auth.codespartan.cloud
+            echo "🔍 Verifying ForwardAuth redirect for crm.codespartan.cloud..."
+            CRM_VERIFY=$(docker exec authelia wget -qS -O /dev/null \
+              --header="X-Forwarded-Proto: https" \
+              --header="X-Forwarded-Host: crm.codespartan.cloud" \
+              --header="X-Forwarded-Uri: /" \
+              --header="Accept: text/html" \
+              "http://127.0.0.1:9091/api/verify?rd=https://auth.codespartan.cloud" 2>&1 || true)
+            if echo "$CRM_VERIFY" | grep -qE "HTTP/1\.[01] 302" \
+              && echo "$CRM_VERIFY" | grep -q "auth.codespartan.cloud"; then
+              echo "✅ CRM verify returns 302 → auth.codespartan.cloud"
+            else
+              echo "❌ CRM verify failed (expect 302 to auth.codespartan.cloud)"
+              echo "$CRM_VERIFY" | head -30
+              docker logs authelia --tail 20
+              exit 1
+            fi
+
+            echo "🔍 Verifying mambo-cloud still redirects to auth.mambo-cloud.com..."
+            GRAFANA_VERIFY=$(docker exec authelia wget -qS -O /dev/null \
+              --header="X-Forwarded-Proto: https" \
+              --header="X-Forwarded-Host: grafana.mambo-cloud.com" \
+              --header="X-Forwarded-Uri: /" \
+              --header="Accept: text/html" \
+              "http://127.0.0.1:9091/api/verify?rd=https://auth.mambo-cloud.com" 2>&1 || true)
+            if echo "$GRAFANA_VERIFY" | grep -qE "HTTP/1\.[01] 302" \
+              && echo "$GRAFANA_VERIFY" | grep -q "auth.mambo-cloud.com"; then
+              echo "✅ Grafana verify returns 302 → auth.mambo-cloud.com"
+            else
+              echo "❌ Grafana verify failed"
+              echo "$GRAFANA_VERIFY" | head -30
+              exit 1
+            fi
 
             DEPLOY_END=$(date +%s)
             DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))

@@ -5,11 +5,25 @@ Single Sign-On y autenticación de dos factores para todos los dashboards de la 
 ## 🔐 Credenciales
 
 ```
-URL: https://auth.mambo-cloud.com
+URL (mambo-cloud):     https://auth.mambo-cloud.com
+URL (codespartan.cloud): https://auth.codespartan.cloud   # CRM y futuros hosts *.codespartan.cloud
 Usuario: admin
 Contraseña: codespartan123
 MFA: Configurar en primer login (Google Authenticator)
 ```
+
+### Multi-domain (cookie scope)
+
+Authelia v4 exige que cada `session.cookies[].authelia_url` comparta eTLD+1 con su `domain`.
+Por eso hay **dos portales** y **dos middlewares** ForwardAuth:
+
+| Cookie domain | Portal | Middleware Traefik | Ejemplo protegido |
+|---|---|---|---|
+| `mambo-cloud.com` | `auth.mambo-cloud.com` | `authelia@docker` | grafana, traefik, portainer |
+| `codespartan.cloud` | `auth.codespartan.cloud` | `authelia-codespartan@docker` | `crm.codespartan.cloud` |
+
+DNS: el subdominio `auth` debe existir en **ambos** dominios (Terraform `subdomains` incluye `auth`).
+Tras cambiar cookies/config: siempre `docker compose up -d --force-recreate` (no hay hot-reload).
 
 ## 🚀 Quick Start
 
