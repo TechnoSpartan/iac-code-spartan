@@ -110,11 +110,15 @@ http:
 
     # crm.codespartan.cloud -> Twenty CRM (twenty-server) on the APIs VPS,
     # reached over the codespartan-internal private network (10.0.0.0/24).
-    # Same pattern as cyberdyne-api: Traefik only terminates TLS here.
+    # Protected by Authelia ForwardAuth (same middleware as job-hunter).
+    # API calls from dental-ia must use http://10.0.0.3:3000 (private), not this host.
     crm:
       rule: "Host(`crm.codespartan.cloud`)"
       entrypoints:
         - websecure
+      middlewares:
+        - authelia@docker
+        - security-headers@file
       service: crm-service
       tls:
         certResolver: le

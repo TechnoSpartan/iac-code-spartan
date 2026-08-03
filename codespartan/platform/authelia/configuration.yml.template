@@ -101,6 +101,14 @@ access_control:
       subject:
         - "group:admins"
 
+    # Twenty CRM — puerta Authelia (equipo CodeSpartan)
+    # No es SSO nativo de Twenty: solo bloquea el acceso HTTP hasta login MFA.
+    - domain: crm.codespartan.cloud
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:dev"
+
     # Public apps - no auth required
     - domain:
         - www.mambo-cloud.com
@@ -126,10 +134,14 @@ session:
   remember_me: 1M
 
   # Multi-domain cookies configuration (v5 format)
+  # codespartan.cloud required for ForwardAuth on crm.codespartan.cloud
   cookies:
     - domain: mambo-cloud.com
       authelia_url: https://auth.mambo-cloud.com
-      default_redirection_url: https://mambo-cloud.com
+      default_redirection_url: https://www.mambo-cloud.com
+    - domain: codespartan.cloud
+      authelia_url: https://auth.mambo-cloud.com
+      default_redirection_url: https://crm.codespartan.cloud
 
   redis:
     host: authelia-redis

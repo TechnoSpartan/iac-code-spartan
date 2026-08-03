@@ -26,12 +26,12 @@ Credenciales por defecto: `admin` / `codespartan123` + TOTP vía Authelia (https
 | CodeSpartan WWW | https://www.codespartan.cloud | ✅ Operacional | `codespartan-www` | Next.js SSR, incluye chatbot (OpenAI) |
 | CodeSpartan UI | https://ui.codespartan.cloud | ✅ Operacional | `codespartan-ui` | Storybook estático |
 | Redmine | https://project.codespartan.cloud | ✅ Operacional | `redmine-app`, `redmine-db` | Reemplaza a OpenProject; PostgreSQL propio |
-| Twenty CRM | https://crm.codespartan.cloud | ✅ Operacional | (reenvía a `twenty-server` en el VPS secundario, IP privada `10.0.0.3:3000`) | Corre en `CodeSpartan-apis`, no en el VPS principal — no tenía sitio cómodo aquí junto a Redmine/monitoring/job-hunter. Ver `docs/06-implementation/PIPELINE_COMERCIAL.md` |
+| Twenty CRM | https://crm.codespartan.cloud | 🔒 Authelia MFA + grupos admins/dev | (reenvía a `twenty-server` en VPS APIs `10.0.0.3:3000`) | Signup cerrado; invitaciones. Leads dental-ia vía API privada. Ver `apps/codespartan-cloud/crm/README.md` |
+| Dental IA (DentalFlow) | https://dental-ia.es · https://www.dental-ia.es | ✅ Público | `dental-ia-web` | Form piloto → Brevo + Twenty API (`10.0.0.3:3000`) |
 | job-hunter (bot) | vía `JOB_HUNTER_API_HOST` (variable propia, no gestionado por Terraform) | ✅ Operacional | `job-hunter-bot` | |
 | job-hunter (dashboard) | vía `TRAEFIK_HOSTNAME` propio | ✅ Operacional, protegido por Authelia | `job-hunter-dashboard` | |
 | Cyberdyne Systems | https://www.cyberdyne-systems.es (y apex) | ✅ Operacional | (reenvía a `codespartan-frontend` en VPS secundario `10.0.0.3:3080`) | Stack completo en APIs VPS; Traefik file provider |
 | Cyberdyne API | https://api.cyberdyne-systems.es | ✅ Operacional | (reenvía a `codespartan-api` en VPS secundario `10.0.0.3:3081`) | NestJS; ya no Supabase/Kong |
-| Dental IA (DentalFlow) | https://dental-ia.es · https://www.dental-ia.es | 🔄 Next.js SSR | `dental-ia-web` | Imagen `ghcr.io/technospartan/dental-ia` (antes nginx estático) |
 | Mambo Cloud | https://www.mambo-cloud.com | ✅ Operacional | `mambo-cloud-app` | Sitio estático (nginx) |
 | Staging/Lab (mambo-cloud, cyberdyne, dental-ia) | `staging.*` / `lab.*` / `*-staging.*` | ❌ No desplegado | — | Subdominios reservados en Terraform, sin contenedor activo |
 

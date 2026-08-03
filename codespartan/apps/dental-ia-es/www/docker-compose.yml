@@ -20,6 +20,9 @@ services:
       - PILOT_FROM_EMAIL=${PILOT_FROM_EMAIL:-noreply@codespartan.cloud}
       - PILOT_FROM_NAME=${PILOT_FROM_NAME:-DentalFlow}
       - PILOT_TO_EMAIL=${PILOT_TO_EMAIL:-contacto@codespartan.es}
+      - TWENTY_LEADS_ENABLED=${TWENTY_LEADS_ENABLED:-true}
+      - TWENTY_API_KEY=${TWENTY_API_KEY}
+      - TWENTY_API_URL=${TWENTY_API_URL:-http://10.0.0.3:3000}
 
     healthcheck:
       test:
