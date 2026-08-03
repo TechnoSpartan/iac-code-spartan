@@ -117,7 +117,8 @@ http:
       entrypoints:
         - websecure
       middlewares:
-        - authelia@docker
+        # codespartan.cloud cookie scope → portal auth.codespartan.cloud
+        - authelia-codespartan@docker
         - security-headers@file
       service: crm-service
       tls:

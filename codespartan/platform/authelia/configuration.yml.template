@@ -87,8 +87,10 @@ access_control:
   default_policy: deny
 
   rules:
-    # Allow Authelia portal itself
-    - domain: auth.mambo-cloud.com
+    # Allow Authelia portal itself (one host per cookie domain / eTLD+1)
+    - domain:
+        - auth.mambo-cloud.com
+        - auth.codespartan.cloud
       policy: bypass
 
     # Dashboards - require authentication + MFA (TOTP configured)
@@ -103,6 +105,8 @@ access_control:
 
     # Twenty CRM — puerta Authelia (equipo CodeSpartan)
     # No es SSO nativo de Twenty: solo bloquea el acceso HTTP hasta login MFA.
+    # session.cookies.codespartan.cloud.authelia_url MUST be same-site
+    # (auth.codespartan.cloud), not auth.mambo-cloud.com.
     - domain: crm.codespartan.cloud
       policy: two_factor
       subject:
@@ -133,14 +137,15 @@ session:
   inactivity: 5m
   remember_me: 1M
 
-  # Multi-domain cookies configuration (v5 format)
-  # codespartan.cloud required for ForwardAuth on crm.codespartan.cloud
+  # Multi-domain cookies (v5). Each cookie domain needs an authelia_url
+  # that shares cookie scope (same eTLD+1). Cross-domain portals are invalid:
+  # auth.mambo-cloud.com cannot serve session cookies for codespartan.cloud.
   cookies:
     - domain: mambo-cloud.com
       authelia_url: https://auth.mambo-cloud.com
       default_redirection_url: https://www.mambo-cloud.com
     - domain: codespartan.cloud
-      authelia_url: https://auth.mambo-cloud.com
+      authelia_url: https://auth.codespartan.cloud
       default_redirection_url: https://crm.codespartan.cloud
 
   redis:

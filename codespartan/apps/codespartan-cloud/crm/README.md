@@ -13,14 +13,16 @@ CRM comercial CodeSpartan en `https://crm.codespartan.cloud`.
 | Red interna | `crm_internal` (`172.34.0.0/24`) |
 
 ```
-Browser → Traefik (TLS) → Authelia MFA → twenty-server (10.0.0.3:3000)
+Browser → Traefik (TLS) → Authelia MFA (auth.codespartan.cloud) → twenty-server (10.0.0.3:3000)
 dental-ia form → http://10.0.0.3:3000/rest/...  (private API, API key)
 ```
 
 ## Modelo de acceso
 
 1. **Puerta Authelia** — solo usuarios en grupos `admins` o `dev` (MFA).
-2. **Twenty** — single workspace; `IS_SIGN_UP_DISABLED=true`; miembros por **invitación**.
+   - Portal del cookie domain `codespartan.cloud`: `https://auth.codespartan.cloud`
+   - Middleware Traefik: `authelia-codespartan@docker` (no el de mambo-cloud).
+2. **Twenty** — single workspace; signup cerrado en Admin; miembros por **invitación**.
 3. **No es SSO OIDC** Authelia→Twenty (doble login posible: Authelia + sesión Twenty).
 
 ### Añadir un compañero

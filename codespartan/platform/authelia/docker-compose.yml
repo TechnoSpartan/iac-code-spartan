@@ -12,22 +12,35 @@ services:
     labels:
       - traefik.enable=true
 
-      # Router for Authelia portal
+      # Separate routers so ACME issues one cert per host (avoids dual-SAN
+      # failure taking down auth.mambo-cloud.com when codespartan DNS/LE fails).
       - traefik.http.routers.authelia.rule=Host(`auth.mambo-cloud.com`)
       - traefik.http.routers.authelia.entrypoints=websecure
       - traefik.http.routers.authelia.tls=true
       - traefik.http.routers.authelia.tls.certresolver=le
       - traefik.http.routers.authelia.service=authelia
+      - traefik.http.routers.authelia.middlewares=security-headers@file
+
+      - traefik.http.routers.authelia-codespartan.rule=Host(`auth.codespartan.cloud`)
+      - traefik.http.routers.authelia-codespartan.entrypoints=websecure
+      - traefik.http.routers.authelia-codespartan.tls=true
+      - traefik.http.routers.authelia-codespartan.tls.certresolver=le
+      - traefik.http.routers.authelia-codespartan.service=authelia
+      - traefik.http.routers.authelia-codespartan.middlewares=security-headers@file
+
       - traefik.http.services.authelia.loadbalancer.server.port=9091
       - traefik.http.services.authelia.loadbalancer.passhostheader=true
 
-      # Middleware definition
+      # ForwardAuth per cookie domain. Authelia v4 multi-cookie requires an explicit
+      # rd that matches session.cookies[].authelia_url (same eTLD+1). A single
+      # middleware with rd=auth.mambo-cloud.com breaks codespartan.cloud hosts.
       - traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/verify?rd=https://auth.mambo-cloud.com
       - traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true
       - traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email
 
-      # Security headers
-      - traefik.http.routers.authelia.middlewares=security-headers@file
+      - traefik.http.middlewares.authelia-codespartan.forwardAuth.address=http://authelia:9091/api/verify?rd=https://auth.codespartan.cloud
+      - traefik.http.middlewares.authelia-codespartan.forwardAuth.trustForwardHeader=true
+      - traefik.http.middlewares.authelia-codespartan.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email
 
       # Specify which Docker network Traefik should use
       - traefik.docker.network=web
