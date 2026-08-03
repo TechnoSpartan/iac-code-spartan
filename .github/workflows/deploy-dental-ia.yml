@@ -80,11 +80,14 @@ jobs:
           PILOT_FROM_EMAIL: ${{ secrets.DENTAL_PILOT_FROM_EMAIL }}
           PILOT_FROM_NAME: ${{ secrets.DENTAL_PILOT_FROM_NAME }}
           PILOT_TO_EMAIL: ${{ secrets.DENTAL_PILOT_TO_EMAIL }}
+          TWENTY_API_KEY: ${{ secrets.TWENTY_API_KEY }}
+          TWENTY_API_URL: ${{ secrets.TWENTY_API_URL }}
+          TWENTY_LEADS_ENABLED: ${{ secrets.TWENTY_LEADS_ENABLED }}
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: GHCR_TOKEN,BREVO_API_KEY,BREVO_SMTP_USER,BREVO_SMTP_PASS,PILOT_FROM_EMAIL,PILOT_FROM_NAME,PILOT_TO_EMAIL
+          envs: GHCR_TOKEN,BREVO_API_KEY,BREVO_SMTP_USER,BREVO_SMTP_PASS,PILOT_FROM_EMAIL,PILOT_FROM_NAME,PILOT_TO_EMAIL,TWENTY_API_KEY,TWENTY_API_URL,TWENTY_LEADS_ENABLED
           script: |
             set -euo pipefail
 
@@ -117,6 +120,12 @@ jobs:
             FROM_NAME="${PILOT_FROM_NAME:-DentalFlow}"
             TO_EMAIL="${PILOT_TO_EMAIL:-contacto@codespartan.es}"
 
+            TWENTY_URL="${TWENTY_API_URL:-http://10.0.0.3:3000}"
+            TWENTY_ENABLED="${TWENTY_LEADS_ENABLED:-true}"
+            if [ -z "${TWENTY_API_KEY:-}" ]; then
+              echo "ℹ️  TWENTY_API_KEY empty — pilot form will email only (CRM skipped)"
+            fi
+
             cat > .env <<EOF
             NODE_ENV=production
             BREVO_API_KEY=${BREVO_API_KEY:-}
@@ -127,6 +136,9 @@ jobs:
             PILOT_FROM_EMAIL=${FROM_EMAIL}
             PILOT_FROM_NAME=${FROM_NAME}
             PILOT_TO_EMAIL=${TO_EMAIL}
+            TWENTY_LEADS_ENABLED=${TWENTY_ENABLED}
+            TWENTY_API_KEY=${TWENTY_API_KEY:-}
+            TWENTY_API_URL=${TWENTY_URL}
             EOF
             chmod 600 .env
 

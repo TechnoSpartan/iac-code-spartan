@@ -45,10 +45,14 @@ Secrets requeridos:
 | `VPS_SSH_HOST` | Host SSH del VPS principal |
 | `VPS_SSH_USER` | Usuario SSH de despliegue |
 | `VPS_SSH_KEY` | Clave privada SSH de despliegue |
-| `BREVO_API_KEY` | API key de Brevo (Transactional) para el formulario de piloto |
-| `DENTAL_PILOT_FROM_EMAIL` | Opcional. Remitente verificado en Brevo (default `noreply@codespartan.cloud`) |
+| `BREVO_API_KEY` / `BREVO_SMTP_PASS` | Clave SMTP Brevo (`xsmtpsib-…`) |
+| `BREVO_SMTP_USER` | Login SMTP (fallback `REDMINE_SMTP_USERNAME`) |
+| `DENTAL_PILOT_FROM_EMAIL` | Opcional. Remitente (default `noreply@codespartan.cloud`) |
 | `DENTAL_PILOT_FROM_NAME` | Opcional. Nombre del remitente (default `DentalFlow`) |
 | `DENTAL_PILOT_TO_EMAIL` | Opcional. Buzón de leads (default `contacto@codespartan.es`) |
+| `TWENTY_API_KEY` | API key Twenty (Settings → API & Webhooks). Sin ella, solo email |
+| `TWENTY_API_URL` | Opcional. Default `http://10.0.0.3:3000` (red privada) |
+| `TWENTY_LEADS_ENABLED` | Opcional. Default `true` |
 
 El DNS se gestiona con Terraform en `codespartan/infra/hetzner/terraform.tfvars`; no se configura desde el workflow.
 
@@ -73,7 +77,7 @@ Endpoints de la aplicación:
 | Endpoint | Uso |
 |----------|-----|
 | `GET /api/health` | Healthcheck del contenedor |
-| `POST /api/pilot` | Formulario piloto → email interno + auto-reply vía Brevo |
+| `POST /api/pilot` | Formulario piloto → Brevo (email + auto-reply) + Twenty CRM API (`TWENTY_API_URL`) |
 | `GET /privacidad` | Política de privacidad |
 | `GET /aviso-legal` | Aviso legal |
 

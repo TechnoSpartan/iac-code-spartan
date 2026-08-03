@@ -13,6 +13,9 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS:-}
+      # Single workspace: one org (CodeSpartan). Close public self-signup.
+      IS_MULTIWORKSPACE_ENABLED: ${IS_MULTIWORKSPACE_ENABLED:-false}
+      IS_SIGN_UP_DISABLED: ${IS_SIGN_UP_DISABLED:-true}
     ports:
       # Sin Traefik en este host: se publica solo en la IP privada
       # (red codespartan-internal), igual que supabase-kong. Traefik, en el
@@ -55,6 +58,8 @@ services:
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       DISABLE_DB_MIGRATIONS: "true"
       DISABLE_CRON_JOBS_REGISTRATION: "true"
+      IS_MULTIWORKSPACE_ENABLED: ${IS_MULTIWORKSPACE_ENABLED:-false}
+      IS_SIGN_UP_DISABLED: ${IS_SIGN_UP_DISABLED:-true}
     networks:
       - crm_internal
     depends_on:

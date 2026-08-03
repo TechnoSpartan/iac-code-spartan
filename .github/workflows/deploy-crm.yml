@@ -29,6 +29,8 @@ jobs:
           PG_PASSWORD=${{ secrets.CRM_PG_PASSWORD }}
           ENCRYPTION_KEY=${{ secrets.CRM_ENCRYPTION_KEY }}
           STORAGE_TYPE=local
+          IS_MULTIWORKSPACE_ENABLED=false
+          IS_SIGN_UP_DISABLED=true
           EOF
 
       - name: Create remote directory
