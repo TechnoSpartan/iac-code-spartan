@@ -30,7 +30,6 @@ jobs:
           ENCRYPTION_KEY=${{ secrets.CRM_ENCRYPTION_KEY }}
           STORAGE_TYPE=local
           IS_MULTIWORKSPACE_ENABLED=false
-          IS_SIGN_UP_DISABLED=true
           EOF
 
       - name: Create remote directory
@@ -73,7 +72,34 @@ jobs:
 
             echo "=== Desplegando Twenty CRM ==="
             docker compose pull
-            docker compose up -d --wait
+            docker compose up -d
+
+            echo "=== Esperando health de twenty-server ==="
+            ATTEMPTS=0
+            MAX_ATTEMPTS=40
+            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' twenty-server 2>/dev/null || echo "missing")
+              RUNNING=$(docker inspect --format='{{.State.Running}}' twenty-server 2>/dev/null || echo "false")
+              echo "running=$RUNNING health=$HEALTH ($((ATTEMPTS+1))/$MAX_ATTEMPTS)"
+              if [ "$RUNNING" = "true" ] && { [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "none" ]; }; then
+                if curl -sf http://10.0.0.3:3000/healthz >/dev/null 2>&1 || curl -sf http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
+                  echo "twenty-server OK"
+                  break
+                fi
+              fi
+              if [ "$RUNNING" != "true" ]; then
+                docker logs twenty-server --tail 80 || true
+              fi
+              ATTEMPTS=$((ATTEMPTS+1))
+              sleep 5
+            done
+
+            if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+              echo "ERROR: twenty-server no healthy a tiempo"
+              docker ps -a | grep twenty || true
+              docker logs twenty-server --tail 120 || true
+              exit 1
+            fi
 
             echo "=== Verificando ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}' | grep twenty
