@@ -13,6 +13,10 @@ services:
       - PORT=3000
       - HOSTNAME=0.0.0.0
       - BREVO_API_KEY=${BREVO_API_KEY}
+      - BREVO_SMTP_USER=${BREVO_SMTP_USER}
+      - BREVO_SMTP_PASS=${BREVO_SMTP_PASS:-${BREVO_API_KEY}}
+      - BREVO_SMTP_HOST=${BREVO_SMTP_HOST:-smtp-relay.brevo.com}
+      - BREVO_SMTP_PORT=${BREVO_SMTP_PORT:-587}
       - PILOT_FROM_EMAIL=${PILOT_FROM_EMAIL:-noreply@codespartan.cloud}
       - PILOT_FROM_NAME=${PILOT_FROM_NAME:-DentalFlow}
       - PILOT_TO_EMAIL=${PILOT_TO_EMAIL:-contacto@codespartan.es}
