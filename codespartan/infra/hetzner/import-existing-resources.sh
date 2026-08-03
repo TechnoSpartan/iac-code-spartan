@@ -104,7 +104,7 @@ fi
 echo "Importing DNS zones and records..."
 # Keep these two lists in sync with `domains`/`subdomains` in terraform.tfvars.
 domains=("mambo-cloud.com" "cyberdyne-systems.es" "codespartan.cloud" "dental-ia.es")
-subdomains=("traefik" "grafana" "backoffice" "www" "staging" "lab" "lab-staging" "api" "api-staging" "project" "ui" "mambo" "portainer" "crm")
+  subdomains=("traefik" "grafana" "backoffice" "www" "staging" "lab" "lab-staging" "api" "api-staging" "project" "ui" "mambo" "portainer" "crm" "auth")
 
 for domain in "${domains[@]}"; do
   terraform import "hcloud_zone.zones[\"$domain\"]" "$domain" 2>/dev/null \
@@ -127,12 +127,14 @@ done
 # Same "no persistent backend" problem as above: each group (domain, name,
 # type) must be listed here manually, matching terraform.tfvars, or a
 # successful create in one CI run becomes a 409 "already exists" in the next.
+# Keep in sync with dns_additional_records in terraform.tfvars
 additional_records=(
   "codespartan.cloud|@|MX"
   "codespartan.cloud|@|TXT"
+  "codespartan.cloud|brevo1._domainkey|CNAME"
+  "codespartan.cloud|brevo2._domainkey|CNAME"
+  "codespartan.cloud|_dmarc|TXT"
   "codespartan.cloud|mail|TXT"
-  "codespartan.cloud|mail._domainkey.mail|TXT"
-  "codespartan.cloud|_dmarc.mail|TXT"
 )
 
 for entry in "${additional_records[@]}"; do
