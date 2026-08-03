@@ -75,20 +75,20 @@ jobs:
             docker compose up -d
 
             echo "=== Esperando health de twenty-server ==="
+            # Migrations on upgrade can take several minutes
             ATTEMPTS=0
-            MAX_ATTEMPTS=40
+            MAX_ATTEMPTS=90
             while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
               HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' twenty-server 2>/dev/null || echo "missing")
               RUNNING=$(docker inspect --format='{{.State.Running}}' twenty-server 2>/dev/null || echo "false")
-              echo "running=$RUNNING health=$HEALTH ($((ATTEMPTS+1))/$MAX_ATTEMPTS)"
-              if [ "$RUNNING" = "true" ] && { [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "none" ]; }; then
-                if curl -sf http://10.0.0.3:3000/healthz >/dev/null 2>&1 || curl -sf http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
-                  echo "twenty-server OK"
-                  break
-                fi
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://10.0.0.3:3000/healthz 2>/dev/null || echo "000")
+              echo "running=$RUNNING health=$HEALTH http=$HTTP_CODE ($((ATTEMPTS+1))/$MAX_ATTEMPTS)"
+              if [ "$RUNNING" = "true" ] && { [ "$HTTP_CODE" = "200" ] || [ "$HEALTH" = "healthy" ]; }; then
+                echo "twenty-server OK"
+                break
               fi
               if [ "$RUNNING" != "true" ]; then
-                docker logs twenty-server --tail 80 || true
+                docker logs twenty-server --tail 40 || true
               fi
               ATTEMPTS=$((ATTEMPTS+1))
               sleep 5
