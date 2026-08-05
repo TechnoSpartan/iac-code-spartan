@@ -9,6 +9,12 @@ services:
     environment:
       # OpenAI API Key for chatbot
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Brevo (email de notificacion del formulario de contacto)
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - BREVO_TO_EMAIL=${BREVO_TO_EMAIL:-contacto@codespartan.es}
+      # Twenty CRM (self-hosted, red privada codespartan-internal)
+      - TWENTY_API_KEY=${TWENTY_API_KEY}
+      - TWENTY_API_URL=${TWENTY_API_URL:-http://10.0.0.3:3000}
       # Next.js environment
       - NODE_ENV=production
 
