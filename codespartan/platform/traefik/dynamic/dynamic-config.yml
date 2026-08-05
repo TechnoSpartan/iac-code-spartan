@@ -124,6 +124,33 @@ http:
       tls:
         certResolver: le
 
+    # lab.dental-ia.es -> app real de DentalFlow (backend+frontend+db+redis)
+    # en el VPS de APIs, red privada 10.0.0.0/24. Enrutado por path, un
+    # único origen para el navegador: /api y /public van al backend, el
+    # resto al frontend. Prioridad alta para que gane sobre el catch-all.
+    dental-lab-api:
+      rule: "Host(`lab.dental-ia.es`) && (PathPrefix(`/api`) || PathPrefix(`/public`))"
+      entrypoints:
+        - websecure
+      middlewares:
+        - security-headers@file
+      service: dental-lab-api-service
+      tls:
+        certResolver: le
+      priority: 100
+
+    dental-lab-www:
+      rule: "Host(`lab.dental-ia.es`)"
+      entrypoints:
+        - websecure
+      middlewares:
+        - security-headers@file
+        - compression@file
+      service: dental-lab-www-service
+      tls:
+        certResolver: le
+      priority: 1
+
   services:
     # Nest API (ft-rc-bko-social_posts backend) on the APIs VPS
     cyberdyne-api-service:
@@ -142,6 +169,18 @@ http:
       loadBalancer:
         servers:
           - url: "http://10.0.0.3:3000"
+
+    # DentalFlow backend (dental-lab-backend) on the APIs VPS
+    dental-lab-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.3:3091"
+
+    # DentalFlow frontend (dental-lab-frontend) on the APIs VPS
+    dental-lab-www-service:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.3:3090"
 
 # TLS configuration (if needed)
 tls:

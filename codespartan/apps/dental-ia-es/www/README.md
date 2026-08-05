@@ -23,7 +23,8 @@ Traefik termina TLS y enruta estos hosts al mismo contenedor:
 | `dental-ia.es` | Landing pública principal |
 | `www.dental-ia.es` | Landing pública principal |
 | `staging.dental-ia.es` | Entorno reservado; usa la imagen de producción hasta disponer de staging propio |
-| `lab.dental-ia.es` | Entorno reservado; usa la imagen de producción hasta disponer de laboratorio propio |
+
+`lab.dental-ia.es` ya no sirve esta landing — repuntado a la app real de DentalFlow (ver `codespartan/apps/dental-ia-es/lab/`).
 
 El nombre Compose explícito evita colisiones con otros stacks desplegados en directorios llamados `www`.
 

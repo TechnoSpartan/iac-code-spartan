@@ -64,20 +64,15 @@ services:
       - traefik.http.routers.dental-www.middlewares=security-headers@file,compression@file
       - traefik.http.routers.dental-www.service=dental-web
 
-      # Subdominios reservados (misma imagen hasta que haya staging real)
+      # Subdominio reservado (misma imagen hasta que haya staging real).
+      # lab.dental-ia.es ya NO apunta aquí — repuntado a la app real
+      # (ver codespartan/apps/dental-ia-es/lab/).
       - traefik.http.routers.dental-staging.rule=Host(`staging.dental-ia.es`)
       - traefik.http.routers.dental-staging.entrypoints=websecure
       - traefik.http.routers.dental-staging.tls=true
       - traefik.http.routers.dental-staging.tls.certresolver=le
       - traefik.http.routers.dental-staging.middlewares=security-headers@file,compression@file
       - traefik.http.routers.dental-staging.service=dental-web
-
-      - traefik.http.routers.dental-lab.rule=Host(`lab.dental-ia.es`)
-      - traefik.http.routers.dental-lab.entrypoints=websecure
-      - traefik.http.routers.dental-lab.tls=true
-      - traefik.http.routers.dental-lab.tls.certresolver=le
-      - traefik.http.routers.dental-lab.middlewares=security-headers@file,compression@file
-      - traefik.http.routers.dental-lab.service=dental-web
 
       - traefik.http.services.dental-web.loadbalancer.server.port=3000
 
