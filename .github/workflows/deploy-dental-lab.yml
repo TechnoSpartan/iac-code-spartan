@@ -1,0 +1,220 @@
+name: Deploy DentalFlow (lab.dental-ia.es)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "codespartan/apps/dental-ia-es/lab/**"
+    branches:
+      - main
+  repository_dispatch:
+    types: [dental-lab-deploy]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout IaC repository
+        uses: actions/checkout@v4
+        with:
+          path: iac-repo
+
+      - name: Checkout flow-ts-dental-ia-es repository
+        uses: actions/checkout@v4
+        with:
+          repository: TechnoSpartan/flow-ts-dental-ia-es
+          path: app-repo
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: technospartan
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Extract backend metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/technospartan/dental-lab-backend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app-repo/backend
+          file: ./app-repo/backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha,scope=dental-lab-backend
+          cache-to: type=gha,mode=max,scope=dental-lab-backend
+
+      - name: Extract frontend metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/technospartan/dental-lab-frontend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app-repo/frontend
+          file: ./app-repo/frontend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          # Next.js inlina NEXT_PUBLIC_* en build time. Vacío a propósito:
+          # el frontend hace llamadas a rutas relativas (/api/v1/...) y es
+          # Traefik quien decide el enrutado por Host+PathPrefix, no la app.
+          build-args: |
+            NEXT_PUBLIC_API_URL=
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha,scope=dental-lab-frontend
+          cache-to: type=gha,mode=max,scope=dental-lab-frontend
+
+      - name: Create remote directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          script: |
+            mkdir -p /home/deploy/apps/dental-lab
+
+      - name: Copy docker-compose to APIs VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          source: "iac-repo/codespartan/apps/dental-ia-es/lab/docker-compose.yml"
+          target: "/home/deploy/apps/dental-lab/"
+          strip_components: 5
+          overwrite: true
+
+      - name: Deploy to APIs VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_PAT }}
+          POSTGRES_PASSWORD: ${{ secrets.DENTAL_LAB_POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.DENTAL_LAB_JWT_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.DENTAL_LAB_ANTHROPIC_API_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        with:
+          host: ${{ secrets.APIS_VPS_SSH_HOST }}
+          username: ${{ secrets.APIS_VPS_SSH_USER }}
+          key: ${{ secrets.APIS_VPS_SSH_KEY }}
+          envs: GHCR_TOKEN,POSTGRES_PASSWORD,JWT_SECRET,ANTHROPIC_API_KEY,BREVO_API_KEY
+          script: |
+            set -euo pipefail
+
+            echo "════════════════════════════════════════════════════════════"
+            echo "🚀 DEPLOYING DENTALFLOW (lab.dental-ia.es)"
+            echo "════════════════════════════════════════════════════════════"
+
+            cd /home/deploy/apps/dental-lab
+            DEPLOY_START=$(date +%s)
+
+            if [ -z "${POSTGRES_PASSWORD:-}" ] || [ -z "${JWT_SECRET:-}" ]; then
+              echo "❌ DENTAL_LAB_POSTGRES_PASSWORD / DENTAL_LAB_JWT_SECRET no configurados"
+              exit 1
+            fi
+            if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+              echo "⚠️  ANTHROPIC_API_KEY vacío — la IA fallará en producción"
+            fi
+
+            echo "🔐 Logging in to GitHub Container Registry..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u technospartan --password-stdin
+
+            cat > .env <<EOF
+            POSTGRES_USER=dental_lab
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB=dental_lab
+            JWT_SECRET=${JWT_SECRET}
+            JWT_EXPIRES_IN=1h
+            AI_PROVIDER=anthropic
+            ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+            CORS_ORIGIN=https://lab.dental-ia.es
+            PUBLIC_BASE_URL=https://lab.dental-ia.es
+            AUTOMATIONS_SCAN_INTERVAL_MS=300000
+            BREVO_API_KEY=${BREVO_API_KEY:-}
+            EOF
+            chmod 600 .env
+
+            echo "📦 Pulling latest Docker images..."
+            docker compose pull
+
+            echo "🚀 Starting containers..."
+            docker compose up -d --force-recreate --remove-orphans
+
+            echo "🔍 Running health checks..."
+            sleep 3
+
+            ATTEMPTS=0
+            MAX_ATTEMPTS=40
+
+            while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+              BACKEND_HTTP=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://10.0.0.3:3091/health 2>/dev/null || echo "000")
+              FRONTEND_HTTP=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://10.0.0.3:3090/login 2>/dev/null || echo "000")
+
+              echo "⏳ backend=$BACKEND_HTTP frontend=$FRONTEND_HTTP ($((ATTEMPTS + 1))/$MAX_ATTEMPTS)"
+
+              if [ "$BACKEND_HTTP" = "200" ] && [ "$FRONTEND_HTTP" = "200" ]; then
+                DEPLOY_END=$(date +%s)
+                DEPLOY_TIME=$((DEPLOY_END - DEPLOY_START))
+
+                echo "✅ Health checks passed!"
+                docker image prune -f
+
+                echo ""
+                echo "════════════════════════════════════════════════════════════"
+                echo "✅ DEPLOYMENT SUCCESSFUL (${DEPLOY_TIME}s)"
+                echo "════════════════════════════════════════════════════════════"
+                docker ps --filter "name=dental-lab" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+                echo ""
+                echo "🌐 URL: https://lab.dental-ia.es"
+                exit 0
+              fi
+
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 5
+            done
+
+            echo "❌ Health check timeout"
+            docker ps -a --filter "name=dental-lab"
+            docker logs --tail 80 dental-lab-backend || true
+            docker logs --tail 80 dental-lab-frontend || true
+            exit 1
+
+      - name: Verify production URL (via Traefik)
+        if: success()
+        run: |
+          echo "🌐 Verifying https://lab.dental-ia.es ..."
+          sleep 10
+
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://lab.dental-ia.es || echo "000")
+          if [ "$FRONTEND_STATUS" -eq 200 ]; then
+            echo "✅ Frontend is live (HTTP $FRONTEND_STATUS)"
+          else
+            echo "⚠️  Frontend returned HTTP $FRONTEND_STATUS (SSL/propagation may need 1-2 min)"
+          fi
+
+          API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://lab.dental-ia.es/api/v1/auth/login || echo "000")
+          if [ "$API_STATUS" -eq 400 ] || [ "$API_STATUS" -eq 401 ]; then
+            echo "✅ API routing reaches the backend (HTTP $API_STATUS)"
+          else
+            echo "⚠️  /api/v1/auth/login returned HTTP $API_STATUS (expected 400/401 — check PathPrefix routing)"
+          fi

@@ -60,9 +60,11 @@ docker network inspect web --format='{{.IPAM.Config}}'
 | `redmine_internal` | 172.23.0.0/24 | Redmine + PostgreSQL | Sí |
 | `monitoring` | 172.24.0.0/24 | Stack de monitoreo | No |
 | `docker_api` | 172.25.0.0/24 | Docker socket proxy | Sí |
+| `dental_lab_internal` | 172.35.0.0/24 | DentalFlow app (backend+Postgres+Redis) | No |
 
 ## Notas
 
 - La red `web` **NO** debe ser `internal: true` porque necesita acceso a internet para SSL certificates
 - Los servicios pueden estar en múltiples redes (dual-homed)
 - Las redes internas bloquean acceso a internet
+- `dental_lab_internal` no es `internal: true` (aunque no está en `web`) porque el backend necesita salida a `api.anthropic.com`; no publica ningún puerto salvo el `ports:` explícito del propio backend/frontend hacia la IP privada del VPS
