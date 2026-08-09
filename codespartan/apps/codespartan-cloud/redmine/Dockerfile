@@ -17,6 +17,14 @@ RUN git clone --depth=1 https://github.com/onozaty/redmine-view-customize.git pl
 # Then per project: Settings → Custom fields → paste webhook URL
 RUN git clone --depth=1 https://github.com/kory33/redmine_discord.git plugins/redmine_discord
 
+# redmine_dashboard: kanban/drag & drop board with filters per project
+# https://github.com/jgraichen/redmine_dashboard
+RUN git clone --depth=1 https://github.com/jgraichen/redmine_dashboard.git plugins/redmine_dashboard
+
+# clipboard_image_paste: paste screenshots from clipboard into issues
+# https://github.com/peclik/clipboard_image_paste
+RUN git clone --depth=1 https://github.com/peclik/clipboard_image_paste.git plugins/clipboard_image_paste
+
 # ── Commercial plugins (add after purchase) ──────────────────────────────────
 # at_checklist (€49): https://redmine-plugins.atori.de/en/checklist.html
 #   1. Purchase and download at_checklist-x.x.x.zip
