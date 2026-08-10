@@ -38,43 +38,47 @@ services:
       - traefik.http.routers.job-hunter-api.middlewares=rate-limit-api@file,security-headers@file,compression@file
       - traefik.docker.network=web
 
-  job-hunter-dashboard:
-    image: ${JOB_HUNTER_DASHBOARD_IMAGE:-ghcr.io/technospartan/job-hunter-dashboard:latest}
-    container_name: job-hunter-dashboard
-    restart: unless-stopped
-    env_file: .env
-    depends_on:
-      - job-hunter-bot
-    networks:
-      - web
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.75'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.job-hunter-dashboard.rule=Host(`${JOB_HUNTER_DASHBOARD_HOST}`)
-      - traefik.http.routers.job-hunter-dashboard.entrypoints=websecure
-      - traefik.http.routers.job-hunter-dashboard.tls=true
-      - traefik.http.routers.job-hunter-dashboard.tls.certresolver=le
-      - traefik.http.services.job-hunter-dashboard.loadbalancer.server.port=3000
-      - traefik.http.routers.job-hunter-dashboard.middlewares=authelia@docker,rate-limit-global@file,security-headers@file,compression@file
-      - traefik.docker.network=web
+  # job-hunter-dashboard: proyecto local de búsqueda de oportunidades.
+  # Deshabilitado: no se expone públicamente (dashboard.codespartan.cloud no
+  # existe en DNS y generaba errores ACME en Traefik). El bot de Telegram que
+  # lo impulsa sigue activo vía job-hunter-bot.
+  # job-hunter-dashboard:
+  #   image: ${JOB_HUNTER_DASHBOARD_IMAGE:-ghcr.io/technospartan/job-hunter-dashboard:latest}
+  #   container_name: job-hunter-dashboard
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   depends_on:
+  #     - job-hunter-bot
+  #   networks:
+  #     - web
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 20s
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.75'
+  #         memory: 512M
+  #       reservations:
+  #         cpus: '0.1'
+  #         memory: 128M
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.job-hunter-dashboard.rule=Host(`${JOB_HUNTER_DASHBOARD_HOST}`)
+  #     - traefik.http.routers.job-hunter-dashboard.entrypoints=websecure
+  #     - traefik.http.routers.job-hunter-dashboard.tls=true
+  #     - traefik.http.routers.job-hunter-dashboard.tls.certresolver=le
+  #     - traefik.http.services.job-hunter-dashboard.loadbalancer.server.port=3000
+  #     - traefik.http.routers.job-hunter-dashboard.middlewares=authelia@docker,rate-limit-global@file,security-headers@file,compression@file
+  #     - traefik.docker.network=web
 
 volumes:
   job-hunter-data:
