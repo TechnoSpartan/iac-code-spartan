@@ -134,6 +134,12 @@ jobs:
               'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && bundle exec rails runner "Setting.mail_from = \"Redmine <noreply@codespartan.es>\"" RAILS_ENV=production' \
               2>&1 || echo "Warning: could not set mail_from (check manually in Admin > Settings)"
 
+            echo "=== Applying view_customize branding snippets ==="
+            cat /opt/codespartan/apps/codespartan-cloud/redmine/scripts/seed_view_customize.rb | \
+              docker exec -i redmine-app bash -c \
+              'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && cd /usr/src/redmine && bundle exec rails runner - RAILS_ENV=production' \
+              2>&1 | grep -E "^OK|^ERR|^Total" || echo "Warning: could not apply branding snippets"
+
             echo "=== Checking container resource limits ==="
             docker inspect redmine-app --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
             docker inspect redmine-db --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
