@@ -75,14 +75,20 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GH_PAT }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_FROM_EMAIL: ${{ secrets.BREVO_FROM_EMAIL || 'noreply@codespartan.cloud' }}
+          BREVO_FROM_NAME: ${{ secrets.BREVO_FROM_NAME || 'CodeSpartan Web' }}
           BREVO_TO_EMAIL: ${{ secrets.CODESPARTAN_WWW_TO_EMAIL || 'contacto@codespartan.es' }}
+          MICROSOFT_TENANT_ID: ${{ secrets.MICROSOFT_TENANT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          MICROSOFT_BOOKINGS_BUSINESS_ID: ${{ secrets.MICROSOFT_BOOKINGS_BUSINESS_ID }}
           TWENTY_API_KEY: ${{ secrets.TWENTY_API_KEY }}
           TWENTY_API_URL: ${{ secrets.TWENTY_API_URL || 'http://10.0.0.3:3000' }}
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: GHCR_TOKEN,OPENAI_API_KEY,BREVO_API_KEY,BREVO_TO_EMAIL,TWENTY_API_KEY,TWENTY_API_URL
+          envs: GHCR_TOKEN,OPENAI_API_KEY,BREVO_API_KEY,BREVO_FROM_EMAIL,BREVO_FROM_NAME,BREVO_TO_EMAIL,MICROSOFT_TENANT_ID,MICROSOFT_CLIENT_ID,MICROSOFT_CLIENT_SECRET,MICROSOFT_BOOKINGS_BUSINESS_ID,TWENTY_API_KEY,TWENTY_API_URL
           script: |
             set -euo pipefail
 
@@ -105,7 +111,13 @@ jobs:
             cat > .env <<EOF
             OPENAI_API_KEY=$OPENAI_API_KEY
             BREVO_API_KEY=$BREVO_API_KEY
+            BREVO_FROM_EMAIL=$BREVO_FROM_EMAIL
+            BREVO_FROM_NAME=$BREVO_FROM_NAME
             BREVO_TO_EMAIL=$BREVO_TO_EMAIL
+            MICROSOFT_TENANT_ID=$MICROSOFT_TENANT_ID
+            MICROSOFT_CLIENT_ID=$MICROSOFT_CLIENT_ID
+            MICROSOFT_CLIENT_SECRET=$MICROSOFT_CLIENT_SECRET
+            MICROSOFT_BOOKINGS_BUSINESS_ID=$MICROSOFT_BOOKINGS_BUSINESS_ID
             TWENTY_API_KEY=$TWENTY_API_KEY
             TWENTY_API_URL=$TWENTY_API_URL
             EOF
