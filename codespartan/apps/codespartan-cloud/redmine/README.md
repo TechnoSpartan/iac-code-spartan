@@ -156,46 +156,38 @@ After first login with `admin/admin`:
 
 ### Installing Plugins
 
-Plugins are installed in the `/usr/src/redmine/plugins` volume.
-
-**Example: Installing a Gantt enhancement plugin**
+Plugins are **baked into the image** (see `Dockerfile`) for reproducibility — they are
+not installed in volumes. To add a plugin:
 
 ```bash
-# SSH into VPS
-ssh leonidas@91.98.137.217
-
-# Download plugin into plugins volume
-docker exec redmine-app sh -c 'cd /usr/src/redmine/plugins && \
-  wget https://github.com/plugin/archive.zip && \
-  unzip archive.zip && rm archive.zip'
-
-# Run migrations
-docker exec redmine-app bundle exec rake redmine:plugins:migrate RAILS_ENV=production
-
-# Restart Redmine
-docker compose -f /opt/codespartan/apps/codespartan-cloud/redmine/docker-compose.yml restart app
+# 1. Edit the Dockerfile and add a clone line, e.g.:
+#    RUN git clone --depth=1 https://github.com/user/plugin.git plugins/plugin_name
+#
+# 2. Deploy (GitHub Action "Deploy Redmine" rebuilds the image on push):
+git add -A
+git commit -m "feat(redmine): add plugin"
+git push
 ```
 
-**Popular Gantt Plugins:**
-- **Redmine Better Gantt Chart**: Enhanced Gantt with critical path, baselines
-- **Redmine Gantt List**: List view alongside Gantt
-- **Redmine Resources**: Resource planning and allocation
+**Plugins already installed:**
+- **view_customize** (`onozaty/redmine-view-customize`): inject custom CSS/JS/HTML per path
+- **redmine_dashboard** (`jgraichen/redmine_dashboard`): kanban drag & drop board
+- **clipboard_image_paste** (`peclik/clipboard_image_paste`): paste screenshots into issues
 
 ### Installing Themes
 
-Themes are installed in `/usr/src/redmine/public/themes` volume.
+The active theme is the **Opale** theme (fork of PurpleMine2 compatible with Redmine 6),
+baked into the image at `themes/opale/` during build (see `Dockerfile`).
 
 ```bash
-# Download theme
-docker exec redmine-app sh -c 'cd /usr/src/redmine/public/themes && \
-  git clone https://github.com/theme-repo.git theme-name'
-
 # Apply theme
-# Administration → Settings → Display → Theme → Select theme
+# Administration → Settings → Display → Theme → Select "Opale"
+# If missing styles, precompile assets (already done by the deploy workflow):
+# docker exec redmine-app bash -c 'bundle exec rake assets:precompile RAILS_ENV=production'
 ```
 
-**Popular Themes:**
-- **PurpleMine2**: Modern, responsive theme
+**Theme candidates (Redmine 6 compatible):**
+- **Opale**: Modern, responsive theme (current)
 - **Redmine Alex Skin**: Clean, professional look
 - **Circle Theme**: Minimalist design
 
@@ -218,8 +210,12 @@ docker exec redmine-app sh -c 'cd /usr/src/redmine/public/themes && \
 |--------|-------------|---------|
 | `redmine-db-data` | `/var/lib/postgresql/data` | Database persistence |
 | `redmine-data` | `/usr/src/redmine/files` | Uploaded files and attachments |
-| `redmine-plugins` | `/usr/src/redmine/plugins` | Installed plugins |
-| `redmine-themes` | `/usr/src/redmine/public/themes` | Installed themes |
+
+> **Plugins & themes are baked into the image** at build time (see `Dockerfile`):
+> `view_customize`, `redmine_dashboard`, `clipboard_image_paste` and the `Opale` theme.
+> To add/remove them, edit the `Dockerfile` and redeploy — no extra volumes needed.
+> The old `redmine-plugins`/`redmine-themes` volumes were removed: their mount points
+> (`plugins/`, `public/themes/`) are obsolete in Redmine 6 (themes now live in `themes/`).
 
 ## Network Isolation
 
@@ -260,13 +256,11 @@ docker compose stop app
 # Backup database
 docker exec redmine-db pg_dump -U redmine redmine > db_backup.sql
 
-# Backup volumes (data, plugins, themes)
+# Backup volumes (files data)
 docker run --rm \
   -v redmine-data:/data \
-  -v redmine-plugins:/plugins \
-  -v redmine-themes:/themes \
   -v $(pwd):/backup \
-  alpine tar czf /backup/redmine_volumes_$(date +%Y%m%d).tar.gz /data /plugins /themes
+  alpine tar czf /backup/redmine_files_$(date +%Y%m%d).tar.gz /data
 
 # Restart Redmine
 docker compose start app
