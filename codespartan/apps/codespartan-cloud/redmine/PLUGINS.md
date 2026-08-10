@@ -136,10 +136,13 @@ Los plugins van **dentro de la imagen Docker** (no en volúmenes), lo que garant
 Dockerfile
   └── FROM redmine:6-alpine
        ├── git clone view_customize    → plugins/view_customize/
-       ├── git clone redmine_discord   → plugins/redmine_discord/
+       ├── git clone redmine_dashboard → plugins/redmine_dashboard/
+       ├── git clone clipboard_image_paste → plugins/clipboard_image_paste/
+       ├── git clone opale             → themes/opale/
        └── bundle install              → gems de los plugins
 ```
 
 El volumen `redmine-data` persiste los archivos subidos por usuarios.  
-El volumen `redmine-themes` persiste los temas instalados manualmente.  
-Los plugins se gestionan exclusivamente desde el `Dockerfile`.
+Los plugins y el tema (`Opale`) se gestionan exclusivamente desde el `Dockerfile`.
+El viejo volumen `redmine-themes` fue retirado: su montaje en `public/themes/` es obsoleto
+en Redmine 6 (los temas custom viven en `themes/` y se hornean en la imagen).

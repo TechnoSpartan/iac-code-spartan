@@ -1,0 +1,19 @@
+# Redmine email configuration.
+# Auto-generated from environment variables (BREVO SMTP relay) on build.
+# Redmine evaluates this file as ERB, so ENV vars are read at runtime.
+# The official redmine image IGNORES REDMINE_SMTP_* env vars; the config
+# file below is what actually wires ActionMailer.
+
+production:
+  email_delivery:
+    delivery_method: :smtp
+    smtp_settings:
+      address: <%= ENV['REDMINE_SMTP_ADDRESS'] %>
+      port: <%= ENV['REDMINE_SMTP_PORT'].to_i %>
+      domain: <%= ENV['REDMINE_SMTP_DOMAIN'] %>
+      authentication: :<%= ENV['REDMINE_SMTP_AUTHENTICATION'] %>
+      user_name: <%= ENV['REDMINE_SMTP_USERNAME'] %>
+      password: <%= ENV['REDMINE_SMTP_PASSWORD'] %>
+      # STARTTLS on port 587 (required by Brevo relay). Redmine defaults
+      # enable_starttls_auto to true when TLS is supported by the server.
+      enable_starttls_auto: true

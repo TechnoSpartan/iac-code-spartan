@@ -12,10 +12,11 @@ WORKDIR /usr/src/redmine
 # Directory name MUST be "view_customize" (plugin hardcodes this name)
 RUN git clone --depth=1 https://github.com/onozaty/redmine-view-customize.git plugins/view_customize
 
-# redmine_discord: send issue notifications to Discord via webhook
-# Setup after deploy: Admin → Custom fields → New field (Projects, List, "Discord Webhooks", multiple values)
-# Then per project: Settings → Custom fields → paste webhook URL
-RUN git clone --depth=1 https://github.com/kory33/redmine_discord.git plugins/redmine_discord
+# redmine_discord: send issue notifications to Discord via webhook.
+# DISABLED (ago 2026): crashes in a background thread with `each for nil`
+# when no webhook is configured yet. Re-enable once a webhook is set up:
+#   RUN git clone --depth=1 https://github.com/kory33/redmine_discord.git plugins/redmine_discord
+# Setup after deploy: Admin → Custom fields → Projects, List, "Discord Webhooks" → use.
 
 # redmine_dashboard: kanban/drag & drop board with filters per project
 # https://github.com/jgraichen/redmine_dashboard
@@ -38,6 +39,17 @@ RUN git clone --depth=1 https://github.com/peclik/clipboard_image_paste.git plug
 #   3. Uncomment the lines below and rebuild
 #   COPY plugins/at_rechnungstellung/ plugins/at_rechnungstellung/
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Email config. The official redmine image IGNORES REDMINE_SMTP_* env vars;
+# this ERB file (evaluated at runtime) wires ActionMailer to the Brevo relay.
+# Secrets stay in .env → env vars, never baked in the image.
+COPY config/configuration.yml.template /usr/src/redmine/config/configuration.yml
+
+# Opale theme (actively maintained fork of PurpleMine2, compatible with
+# Redmine 6 / Propshaft). https://github.com/gagnieray/opale
+# Redmine 6+ must read custom themes from the top-level themes/ dir; the
+# admin entrypoint precompiles them (see deploy-redmine.yml).
+RUN git clone --depth=1 https://github.com/gagnieray/opale.git themes/opale
 
 RUN bundle config set without 'development test' && \
     bundle install --no-cache && \

@@ -121,8 +121,18 @@ jobs:
               'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && bundle exec rake redmine:plugins:migrate RAILS_ENV=production' \
               2>&1 || echo "Warning: plugin migration failed (may already be applied)"
 
+            echo "=== Precompiling assets (theme: Opale in themes/) ==="
+            docker exec --user root redmine-app bash -c \
+              'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && bundle exec rake assets:precompile RAILS_ENV=production' \
+              2>&1 || echo "Warning: asset precompilation failed"
+
             echo "=== Restarting redmine-app after migrations ==="
             docker restart redmine-app
+
+            echo "=== Setting mail_from (From: address for notifications) ==="
+            docker exec redmine-app bash -c \
+              'export SECRET_KEY_BASE="$REDMINE_SECRET_KEY_BASE" && bundle exec rails runner "Setting.mail_from = \"Redmine <noreply@codespartan.es>\"" RAILS_ENV=production' \
+              2>&1 || echo "Warning: could not set mail_from (check manually in Admin > Settings)"
 
             echo "=== Checking container resource limits ==="
             docker inspect redmine-app --format 'Memory Limit: {{.HostConfig.Memory}} bytes ({{div .HostConfig.Memory 1048576}}MB)' || echo "Warning: Could not check memory limit"
