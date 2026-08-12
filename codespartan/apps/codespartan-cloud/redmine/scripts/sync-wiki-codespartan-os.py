@@ -20,6 +20,7 @@ import os
 import re
 import socket
 import sys
+import time
 import urllib.parse
 import urllib.request
 
@@ -47,16 +48,29 @@ PROJECT_ID = "codespartan-os"
 UA = {"User-Agent": "codespartan-wiki-sync/1.0"}
 
 
-def req(method, url, data=None, headers=None, timeout=120):
+def req(method, url, data=None, headers=None, timeout=120, retries=4):
     h = {**UA, "X-Redmine-API-Key": API_KEY, **(headers or {})}
     r = urllib.request.Request(url, data=data, method=method, headers=h)
-    try:
-        with OPENER.open(r, timeout=timeout) as resp:
-            body = resp.read()
-            return resp.status, body.decode("utf-8", "replace") if body else ""
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", "replace") if e.fp else ""
-        return e.code, body
+    last = (0, "")
+    for attempt in range(1, retries + 1):
+        try:
+            with OPENER.open(r, timeout=timeout) as resp:
+                body = resp.read()
+                return resp.status, body.decode("utf-8", "replace") if body else ""
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace") if e.fp else ""
+            last = (e.code, body)
+            if e.code in (404, 500, 502, 503, 504) and attempt < retries:
+                time.sleep(2 * attempt)
+                continue
+            return last
+        except (urllib.error.URLError, ConnectionError, OSError) as e:
+            last = (0, str(e))
+            if attempt < retries:
+                time.sleep(2 * attempt)
+                continue
+            return last
+    return last
 
 
 def title_from(rel_noext):
