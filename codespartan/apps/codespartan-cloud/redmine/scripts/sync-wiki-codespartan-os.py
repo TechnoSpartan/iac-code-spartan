@@ -104,6 +104,7 @@ def upload_file(path):
 def collect(repo_dir):
     md = []
     for root, dirs, files in os.walk(repo_dir):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
         dirs.sort()
         for fn in sorted(files):
             if fn.endswith(".md"):
@@ -177,6 +178,8 @@ def main():
     # 3) Attach non-markdown templates (scripts/*.sh, *.yml under 10-Templates) to their folders
     tpl_files = {}
     for root, dirs, files in os.walk(repo_dir):
+        if any(part.startswith(".") for part in root.replace(repo_dir, "").split(os.sep)):
+            continue
         for fn in sorted(files):
             if fn.endswith((".sh", ".yml")) and not fn.endswith(".md"):
                 rel = os.path.relpath(os.path.join(root, fn), repo_dir)
