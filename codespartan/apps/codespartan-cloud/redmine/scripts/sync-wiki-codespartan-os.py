@@ -36,6 +36,10 @@ def _ipv4_first_getaddrinfo(*args, **kwargs):
 
 socket.getaddrinfo = _ipv4_first_getaddrinfo
 
+# Bypass any HTTP(S)_PROXY env vars GitHub Actions may inject: those proxies
+# can return "404 page not found" for arbitrary hosts. Go direct like curl.
+OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
 REDMINE_URL = os.environ.get("REDMINE_URL", "https://project.codespartan.cloud").rstrip("/")
 API_KEY = os.environ.get("REDMINE_API_KEY", "")
 PROJECT_ID = "codespartan-os"
@@ -47,7 +51,7 @@ def req(method, url, data=None, headers=None, timeout=120):
     h = {**UA, "X-Redmine-API-Key": API_KEY, **(headers or {})}
     r = urllib.request.Request(url, data=data, method=method, headers=h)
     try:
-        with urllib.request.urlopen(r, timeout=timeout) as resp:
+        with OPENER.open(r, timeout=timeout) as resp:
             body = resp.read()
             return resp.status, body.decode("utf-8", "replace") if body else ""
     except urllib.error.HTTPError as e:
