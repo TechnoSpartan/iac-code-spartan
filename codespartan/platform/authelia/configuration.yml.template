@@ -205,101 +205,11 @@ ntp:
   disable_startup_check: false
   disable_failure: false
 
-# OpenID Connect / OAuth 2.0 Provider
-# DISABLED: OIDC configuration (RSA key was corrupted)
-# To re-enable, generate new RSA key with: openssl genrsa -out private.pem 4096
-# identity_providers:
-#   oidc:
-#     hmac_secret: [REDACTED-HMAC-SECRET]
-#     # JWKS configuration with RSA key for signing
-#     jwks:
-#       - algorithm: RS256
-#         use: sig
-#         key: |
-#           -----BEGIN PRIVATE KEY-----
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           [REDACTED-RSA-KEY-LINE]
-#           -----END PRIVATE KEY-----
-#
-#     # Token lifespans (v5 format)
-#     lifespans:
-#       access_token: 1h
-#       authorize_code: 1m
-#       id_token: 1h
-#       refresh_token: 90m
-#
-#     enable_client_debug_messages: false
-#     enforce_pkce: public_clients_only
-#
-#     cors:
-#       endpoints:
-#         - authorization
-#         - token
-#         - revocation
-#         - introspection
-#         - userinfo
-#       allowed_origins_from_client_redirect_uris: true
-#
-#     clients:
-#       - client_id: grafana
-#         client_name: Grafana Dashboard
-#         client_secret: '[REDACTED-OIDC-CLIENT-SECRET-HASH]'
-#         public: false
-#         authorization_policy: two_factor
-#         redirect_uris:
-#           - https://grafana.mambo-cloud.com/login/generic_oauth
-#         scopes:
-#           - openid
-#           - profile
-#           - email
-#           - groups
-#         userinfo_signed_response_alg: none
-#         token_endpoint_auth_method: client_secret_basic
+# OpenID Connect / OAuth 2.0 Provider: currently disabled. It was previously
+# configured with an RSA key + client_secret that are no longer valid and
+# have been removed from this file (and purged from git history — see
+# TechnoSpartan/iac-code-spartan#3). To re-enable OIDC, generate a FRESH RSA
+# key (openssl genrsa -out private.pem 4096) and hmac_secret, wire them in via
+# GitHub Secrets + envsubst like the rest of this template, and never commit
+# the raw key material again.
+
