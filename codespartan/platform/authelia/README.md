@@ -8,7 +8,7 @@ Single Sign-On y autenticación de dos factores para todos los dashboards de la 
 URL (mambo-cloud):     https://auth.mambo-cloud.com
 URL (codespartan.cloud): https://auth.codespartan.cloud   # CRM y futuros hosts *.codespartan.cloud
 Usuario: admin
-Contraseña: codespartan123
+Contraseña: ver password manager (rotada vía secret AUTHELIA_ADMIN_PASSWORD_HASH, no vive en el repo)
 MFA: Configurar en primer login (Google Authenticator)
 ```
 
@@ -53,39 +53,41 @@ curl -I https://traefik.mambo-cloud.com
 
 ## 📁 Archivos
 
-- `configuration.yml` - Configuración principal de Authelia
-- `users_database.yml` - Base de datos de usuarios
+- `configuration.yml.template` / `users_database.yml.template` - Plantillas versionadas; los `.yml` reales
+  se generan en cada deploy (`deploy-authelia.yml`) sustituyendo secretos de GitHub y NUNCA se commitean
+  (ver `.gitignore`).
 - `docker-compose.yml` - Deployment (Authelia + Redis)
 - `deploy.sh` - Script de deployment manual (deprecado, usar workflow)
 
 ## 🔧 Configuración
 
-### Añadir Usuario
+`users_database.yml` se genera en cada deploy a partir de `users_database.yml.template`
+(placeholders `${AUTHELIA_ADMIN_PASSWORD_HASH}` / `${AUTHELIA_ADMIN_EMAIL}`), sustituidos con
+GitHub Secrets vía `envsubst` — nunca se edita el archivo directamente en el VPS ni se commitea
+el real. **No reutilices una contraseña que haya estado expuesta en el repo o en logs.**
 
-1. Generar hash:
-```bash
-docker exec -it authelia authelia crypto hash generate argon2 --password 'contraseña'
-```
+### Rotar la contraseña de `admin`
 
-2. Editar `users_database.yml`:
-```yaml
-users:
-  nuevo_usuario:
-    displayname: "Nombre Completo"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$HASH"
-    email: usuario@mambo-cloud.com
-    groups:
-      - dev  # o "admins" para acceso a dashboards
-```
+1. Genera una contraseña fuerte y su hash localmente (nunca por un log de CI en un repo público):
+   ```bash
+   NEW_PW=$(openssl rand -hex 16)
+   docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password "$NEW_PW"
+   echo "Nueva contraseña (guárdala en tu password manager): $NEW_PW"
+   ```
+2. Actualiza el secret (esto no imprime el valor en ningún log):
+   ```bash
+   gh secret set AUTHELIA_ADMIN_PASSWORD_HASH --repo TechnoSpartan/iac-code-spartan --body '<hash generado>'
+   ```
+3. Dispara el redeploy, que regenera `users_database.yml` desde la plantilla con el hash nuevo:
+   ```bash
+   gh workflow run deploy-authelia.yml --repo TechnoSpartan/iac-code-spartan
+   ```
 
-3. Recrear container:
-```bash
-docker compose down && docker compose up -d --force-recreate
-```
+### Añadir otro usuario
 
-### Cambiar Contraseña
-
-Igual que añadir usuario, pero modificando el usuario existente.
+Genera su hash igual que arriba, añade un nuevo bloque `${AUTHELIA_OTRO_USUARIO_HASH}` a
+`users_database.yml.template`, crea el secret correspondiente, y añade la variable al
+`envsubst`/`env:` de `deploy-authelia.yml`.
 
 ### Políticas de Acceso
 
@@ -129,10 +131,11 @@ docker compose restart traefik
 ### Login no funciona
 
 ```bash
-# Verificar hash de contraseña
+# Verificar que la contraseña que estás probando coincide con el hash desplegado
+# (sustituye <tu-contraseña> y <hash-en-users_database.yml> — nunca commitees el resultado)
 docker exec authelia authelia crypto hash validate argon2 \
-  --password 'codespartan123' \
-  --hash '$argon2id$v=19$m=65536,t=3,p=4$VGhpc0lzQVNhbHRTdHJpbmc$iZQMvKroqXAJzxeyNxJTeaBtVyXJVZeuKbgisSSoOtI'
+  --password '<tu-contraseña>' \
+  --hash '<hash-en-users_database.yml>'
 
 # Verificar Redis
 docker exec authelia-redis redis-cli ping

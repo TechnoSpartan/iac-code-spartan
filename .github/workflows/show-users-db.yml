@@ -7,7 +7,7 @@ jobs:
   show:
     runs-on: ubuntu-latest
     steps:
-      - name: Show users_database.yml
+      - name: Show Authelia status
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
@@ -17,7 +17,12 @@ jobs:
             echo "════════════════════════════════════════════════════════════"
             echo "📄 USERS DATABASE FILE"
             echo "════════════════════════════════════════════════════════════"
-            cat /opt/codespartan/platform/authelia/users_database.yml
+            echo "Contents are no longer printed here (this repo is public and"
+            echo "Actions logs are visible to anyone). Check manually over SSH:"
+            echo "  ssh ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} \\"
+            echo "    'cat /opt/codespartan/platform/authelia/users_database.yml'"
+            echo "Users configured (names only, no hashes):"
+            grep -E '^\s+[a-zA-Z0-9_-]+:\s*$' /opt/codespartan/platform/authelia/users_database.yml | sed 's/^/  /' || true
 
             echo ""
             echo "════════════════════════════════════════════════════════════"

@@ -390,9 +390,18 @@ docker restart traefik
 
 ## Default Credentials
 
-All management services use:
-- Username: `admin`
-- Password: `codespartan123`
+Historically all management services shared `admin` / `codespartan123` (this value was committed
+in plain text in this public repo and is considered compromised — never reuse it).
+
+- **Authelia** (gates Traefik dashboard, Grafana, Portainer, Backoffice, CRM): rotated. The real
+  password lives only in a password manager; the deployed Argon2 hash comes from the
+  `AUTHELIA_ADMIN_PASSWORD_HASH` GitHub Secret, rendered into `users_database.yml` at deploy time
+  from `codespartan/platform/authelia/users_database.yml.template` (never commit the real file).
+  To rotate: see "Rotar la contraseña de `admin`" in `codespartan/platform/authelia/README.md`.
+- **Grafana, Portainer, Traefik (basic auth), Backoffice**: still need to be checked/rotated —
+  `codespartan123` may still be their live credential (see `GRAFANA_ADMIN_PASSWORD`,
+  `TRAEFIK_BASIC_AUTH` secrets and `codespartan/platform/stacks/backups/{backup,restore}.sh`,
+  which still hardcode `GRAFANA_PASS="codespartan123"`). Treat as a pending follow-up, not yet done.
 
 Services:
 - https://traefik.mambo-cloud.com
