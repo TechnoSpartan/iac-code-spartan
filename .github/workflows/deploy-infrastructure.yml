@@ -12,7 +12,6 @@ on:
           - plan
           - apply
           - destroy
-          - check-job-hunter-chromium
   push:
     paths:
       - 'codespartan/infra/hetzner/**'
@@ -70,34 +69,3 @@ jobs:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_ssh_public_key_content: ${{ secrets.VPS_SSH_PUBLIC_KEY }}
           TF_VAR_apis_deploy_ssh_public_key_content: ${{ secrets.APIS_DEPLOY_SSH_PUBLIC_KEY }}
-
-      - name: Check Job Hunter Chromium
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'check-job-hunter-chromium'
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            echo "=== Container status ==="
-            docker ps --filter name=job-hunter-bot --format '{{.Names}}: {{.Status}}'
-            echo "=== Image digest ==="
-            docker inspect job-hunter-bot --format '{{.Image}}'
-            echo "=== Chromium binary ==="
-            docker exec job-hunter-bot ls -la /usr/bin/chromium-browser
-            echo "=== Chromium launch test (inside live container) ==="
-            docker exec job-hunter-bot node -e "
-            const { chromium } = require('/app/apps/bot/node_modules/playwright');
-            (async () => {
-              const browser = await chromium.launch({
-                headless: true,
-                executablePath: process.env.CHROMIUM_EXECUTABLE_PATH,
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-              });
-              const page = await browser.newPage();
-              await page.goto('https://www.xing.com', { timeout: 15000 });
-              console.log('PAGE TITLE:', await page.title());
-              await browser.close();
-              console.log('LAUNCH TEST: SUCCESS');
-            })().catch((e) => { console.error('LAUNCH TEST: FAILED', e); process.exit(1); });
-            "
