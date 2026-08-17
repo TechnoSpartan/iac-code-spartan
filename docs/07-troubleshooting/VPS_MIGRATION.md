@@ -132,11 +132,6 @@ if [ -d "/opt/codespartan/apps/openproject" ]; then
   echo "OpenProject ya no existe - eliminado en favor de Redmine" 
 fi
 
-# Si existe /opt/codespartan/apps/dental-io/
-if [ -d "/opt/codespartan/apps/dental-io" ]; then
-  sudo mv /opt/codespartan/apps/dental-io/* /opt/codespartan/apps/dental-ia-es/www/ 2>/dev/null || true
-fi
-
 # Si existe /opt/codespartan/apps/mambo-cloud/
 if [ -d "/opt/codespartan/apps/mambo-cloud" ]; then
   sudo mv /opt/codespartan/apps/mambo-cloud/* /opt/codespartan/apps/mambo-cloud-com/www/ 2>/dev/null || true

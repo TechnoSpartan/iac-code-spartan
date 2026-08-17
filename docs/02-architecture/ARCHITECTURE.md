@@ -42,7 +42,7 @@ graph TB
             CyberDB[(MongoDB)]
         end
 
-        subgraph DomainDental["Domain: Dental-IO"]
+        subgraph DomainDental["Domain: Dental IA"]
             KongDental[Kong API Gateway<br/>- Auth JWT<br/>- Rate Limit 50req/s<br/>- Logging]
             DentalFront[Frontend React]
             DentalAPI[API Node.js]
@@ -312,7 +312,7 @@ graph LR
 
     subgraph Fase3["FASE 3: API Gateway (3-5 días)"]
         C1[Kong para<br/>Cyberdyne]
-        C2[Kong para<br/>Dental-IO]
+        C2[Kong para<br/>Dental IA]
         C3[Kong para<br/>TrackWorks]
         C1 --> C2 --> C3
     end

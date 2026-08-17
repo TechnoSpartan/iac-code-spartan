@@ -66,8 +66,7 @@ docker_api (172.25.0.0/24, internal: true)
 mambo_internal (172.29.0.0/24)
 └─ mambo-cloud-app              - Sitio estático (red interna reservada, sin BD)
 
-dental_internal (172.30.0.0/24)
-└─ dental-ia-web                - Next.js SSR (red web; sin BD en V1)
+# dental_internal (172.30.0.0/24) - reservada para una futura API/BBDD Dental
 
 redmine_internal (172.31.0.0/24, internal: true)
 ├─ redmine-app                  - Project management
@@ -190,7 +189,7 @@ El VPS secundario (`CodeSpartan-apis`) usa su propio rango de subredes, fuera de
 
 ### Prioridad Media: 🔄 OPCIONAL
 
-- [ ] Desplegar Kong para dental-io y mambo-cloud (plantilla en `platform/kong/_TEMPLATE/`)
+- [ ] Desplegar Kong para Dental IA y Mambo Cloud (plantilla en `platform/kong/_TEMPLATE/`)
 
 ### Prioridad Baja: ⏸️ NO NECESARIO
 
@@ -208,7 +207,7 @@ El VPS secundario (`CodeSpartan-apis`) usa su propio rango de subredes, fuera de
 
 ### Puntuación Global: 🟢 **9/10**
 
-**Conclusión:** el aislamiento de red crítico está correctamente implementado en este VPS y se mantiene como estándar para cada nuevo producto, dentro y fuera de él (Redmine aquí; Twenty CRM y Supabase en el VPS secundario, mismo principio). Las mejoras restantes (Kong para dental-io/mambo-cloud) son parte del roadmap de seguridad, no vulnerabilidades activas.
+**Conclusión:** el aislamiento de red crítico está correctamente implementado en este VPS y se mantiene como estándar para cada nuevo producto, dentro y fuera de él (Redmine aquí; Twenty CRM y Supabase en el VPS secundario, mismo principio). Las mejoras restantes (Kong para Dental IA y Mambo Cloud) son parte del roadmap de seguridad, no vulnerabilidades activas.
 
 ---
 

@@ -18,7 +18,7 @@ T
       CYB_API[NestJS:4000]
     end
 
-    subgraph Dental-IO
+    subgraph DentalIA
       DIO_WEB[React/Next:3000]
       DIO_API[NestJS:4000]
     end
@@ -34,8 +34,8 @@ T -->|studio.*| STD
 %% Apps
 T -->|www/staging/lab.cyberdyne| CYB_WEB
 T -->|/api cyberdyne | CYB_API
-T -->|www/staging/lab.dental-io| DIO_WEB
-T -->|/api dental-io| DIO_API
+T -->|www/staging/lab.dental-ia.es| DIO_WEB
+T -->|/api dental-ia.es| DIO_API
 
 %% Acceso interno
 CYB_API --- PG

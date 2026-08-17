@@ -37,7 +37,7 @@ Plataforma de infraestructura completamente containerizada que proporciona:
 graph TB
     Internet[🌍 Internet] --> Traefik[🚪 Traefik<br/>SSL + Routing]
 
-    Traefik --> Apps[📱 Apps VPS principal<br/>Cyberdyne, Dental-IO, Redmine, Twenty CRM, job-hunter]
+    Traefik --> Apps[📱 Apps VPS principal<br/>Cyberdyne, Dental IA, Redmine, Twenty CRM, job-hunter]
     Traefik --> Mon[📊 Monitoring<br/>Grafana, VictoriaMetrics, Loki]
     Traefik --> Back[🏢 Backoffice]
     Traefik -.->|red privada Hetzner| Apis[🗄️ VPS secundario<br/>Supabase self-hosted]
@@ -58,7 +58,7 @@ graph TB
 - ✅ Portainer read-only, protegido por Authelia
 - ✅ Aislamiento de red por producto (Redmine, Supabase, Twenty CRM)
 - ✅ Kong API Gateway para Supabase (incluido en su propio stack)
-- 🔄 Kong API Gateway pendiente para otros dominios (dental-io, mambo-cloud) — plantilla en `platform/kong/_TEMPLATE/`
+- 🔄 Kong API Gateway pendiente para otros dominios (Dental IA, Mambo Cloud) — plantilla en `platform/kong/_TEMPLATE/`
 
 **📖 Para ver la arquitectura completa, diagramas técnicos y roadmap detallado:**
 - **[Arquitectura Completa](docs/02-architecture/ARCHITECTURE.md)** - Arquitectura completa con diagramas de alto y bajo nivel
@@ -332,7 +332,7 @@ Toda la documentación está organizada en [docs/](docs/). Ver el [índice compl
 - ✅ **Redes aisladas**: bases de datos aisladas por producto (Redmine, Supabase, Twenty CRM)
 
 ### Pendiente
-- 🔄 **Kong API Gateway**: solo pendiente para dominios distintos de Cyberdyne/Supabase (dental-io, mambo-cloud) — plantilla en `platform/kong/_TEMPLATE/`
+- 🔄 **Kong API Gateway**: solo pendiente para dominios distintos de Cyberdyne/Supabase (Dental IA, Mambo Cloud) — plantilla en `platform/kong/_TEMPLATE/`
 
 **Ver arquitectura de seguridad completa:** [docs/02-architecture/ARCHITECTURE.md](docs/02-architecture/ARCHITECTURE.md)
 
@@ -343,7 +343,7 @@ Toda la documentación está organizada en [docs/](docs/). Ver el [índice compl
 - [x] **Aislamiento de redes** - Redes internas por dominio/producto
 - [x] **Authelia** - SSO con MFA para dashboards
 - [x] **Portainer read-only** - Dashboard seguro de contenedores
-- [ ] **Kong API Gateway** - Pendiente para dominios distintos de Cyberdyne/Supabase (dental-io, mambo-cloud)
+- [ ] **Kong API Gateway** - Pendiente para dominios distintos de Cyberdyne/Supabase (Dental IA, Mambo Cloud)
 
 ### Infraestructura
 - [ ] **Backups automáticos** (S3-compatible)

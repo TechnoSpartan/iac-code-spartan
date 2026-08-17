@@ -216,12 +216,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Application Services Updates** (FASE 6):
-  - dental-io: traefik/whoami v1.10 → v1.11.0
+   - Dental application: traefik/whoami v1.10 → v1.11.0
   - mambo-cloud: nginx:alpine → nginx:stable-alpine (v1.28.0)
   - _TEMPLATE: nginx:alpine → nginx:stable-alpine (v1.28.0)
 
 ### Fixed
-- Removed incompatible healthcheck from dental-io service
+- Removed incompatible healthcheck from the Dental application service
   - traefik/whoami is a minimal scratch-based image without wget/curl
   - Traefik handles health monitoring for this service
 
@@ -237,7 +237,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ensures predictable, stable nginx versions across all applications
 - Consistency with platform services (backoffice)
 
-**Note**: dental-io currently has empty BASE_DOMAIN configuration and is not active in production. Service updated successfully for future use.
+**Note**: the Dental application had an empty domain configuration and was not active in production at that time. Service updated successfully for future use.
 
 ## [1.10.0] - 2025-10-19
 

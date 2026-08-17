@@ -15,7 +15,7 @@ Implementar aislamiento de red entre aplicaciones para mejorar la seguridad, evi
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │   Traefik    │    │ cyberdyne-   │    │  dental-io-  │  │
+│  │   Traefik    │    │ cyberdyne-   │    │  another-    │  │
 │  │    Proxy     │───▶│   frontend   │    │     web      │  │
 │  └──────────────┘    └──────┬───────┘    └──────┬───────┘  │
 │                             │                     │           │
@@ -174,12 +174,12 @@ networks:
 # Conectar al contenedor de cyberdyne
 docker exec -it cyberdyne-frontend sh
 
-# Intentar conectar a DB de dental-io (debería FALLAR)
-ping dental-io-db
-# ping: bad address 'dental-io-db'
+# Intentar conectar a la DB de otro producto (debería FALLAR)
+ping another-product-db
+# ping: bad address 'another-product-db'
 
-curl http://dental-io-db:5432
-# Could not resolve host: dental-io-db
+curl http://another-product-db:5432
+# Could not resolve host: another-product-db
 ```
 
 ### Verificar que la app SÍ puede conectar a su propia DB

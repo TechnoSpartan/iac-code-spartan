@@ -7,7 +7,7 @@ Template para desplegar Kong API Gateway en modo DB-less para nuevos dominios.
 ### 1. Copiar el template
 
 ```bash
-# Reemplazar DOMAIN_NAME con el nombre del dominio (ej: dental-io, mambo-cloud)
+# Reemplazar DOMAIN_NAME con el nombre del dominio (ej: dental-ia, mambo-cloud)
 cp -r codespartan/platform/kong/_TEMPLATE codespartan/platform/kong/DOMAIN_NAME
 ```
 

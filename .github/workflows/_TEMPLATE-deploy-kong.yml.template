@@ -4,7 +4,7 @@
 #
 # INSTRUCCIONES:
 # 1. Copiar este archivo: cp _TEMPLATE-deploy-kong.yml.template deploy-kong-{{DOMAIN_NAME}}.yml
-# 2. Reemplazar {{DOMAIN_NAME}} con el nombre del dominio (ej: dental-io)
+# 2. Reemplazar {{DOMAIN_NAME}} con el nombre del dominio (ej: dental-ia)
 # 3. Reemplazar {{NETWORK_SUBNET}} con la subnet (ej: 172.27.0.0/24)
 # 4. Quitar la extension .template del nombre del archivo
 #

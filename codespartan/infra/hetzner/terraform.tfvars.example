@@ -22,7 +22,7 @@ firewall_allowed_ssh_cidrs = ["1.2.3.4/32", "::/0"]
 # apis_deploy_ssh_public_key_content = "ssh-ed25519 AAAA... apis-deploy@codespartan"
 
 # Si vas a gestionar DNS en Hetzner DNS, añade tus dominios aquí
-# domains = ["cyberdyne-systems.es", "dental-io.es"]
+# domains = ["cyberdyne-systems.es", "dental-ia.es"]
 # subdomains = ["www", "staging", "lab", "traefik", "grafana"]
 
 # IPv6 / AAAA opcional
@@ -46,7 +46,7 @@ firewall_allowed_ssh_cidrs = ["1.2.3.4/32", "::/0"]
 #     # DKIM (TXT) - ejemplo: selector1._domainkey
 #     { name = "selector1._domainkey", type = "TXT", value = "\"v=DKIM1; k=rsa; p=CLAVE_PUBLICA...\"" }
 #   ]
-#   "dental-io.es" = [
+#   "dental-ia.es" = [
 #     # CNAME para verificación (si lo pide tu proveedor)
 #     { name = "_acme-challenge", type = "CNAME", value = "challenge.tu-proveedor.com." }
 #   ]

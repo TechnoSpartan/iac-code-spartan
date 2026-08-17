@@ -586,7 +586,7 @@ Ya configurado en `.env.example`:
 | `172.25.0.0/24` | `docker_api`        | Socket proxy                        |
 | `172.26.0.0/24` | `kong_cyberdyne`    | Retirada (redundante con el Kong propio de Supabase) |
 | `172.29.0.0/24` | `mambo_internal`    | Mambo Cloud                         |
-| `172.30.0.0/24` | `dental_internal`   | Dental IO                           |
+| `172.30.0.0/24` | `dental_internal`   | Reservada para futura API/BBDD Dental IA |
 | `172.31.0.0/24` | `redmine_internal`  | Redmine (permanente, no se toca)    |
 | `172.34.0.0/24` | `crm_internal`      | **NUEVO:** Twenty CRM (server/worker/db/redis) |
 

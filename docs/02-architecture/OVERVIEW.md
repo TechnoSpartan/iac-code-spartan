@@ -129,7 +129,7 @@ Disk:   ~12% (4GB / 38GB)
 │  LAYER 3: APPLICATIONS                                           │
 │  - mambo-cloud (www, staging, lab subdomains)                   │
 │  - cyberdyne                                                     │
-│  - dental-io                                                     │
+│  - dental-ia                                                     │
 │  - [Your apps using _TEMPLATE]                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -172,9 +172,9 @@ iac-code-spartan/
 │   │   │   ├── README.md
 │   │   │   ├── .env.example
 │   │   │   └── healthcheck.sh
-│   │   ├── mambo-cloud/     # Example app
-│   │   ├── cyberdyne/
-│   │   └── dental-io/
+│   │   ├── mambo-cloud-com/
+│   │   ├── cyberdyne-systems-es/
+│   │   └── dental-ia-es/
 │   │
 │   ├── scripts/             # Maintenance & operations
 │   │   ├── backup.sh                 # Daily backups (cron)
@@ -668,10 +668,10 @@ Content: ./html → /usr/share/nginx/html
 **Type:** Application container
 **Subdomain:** cyberdyne.mambo-cloud.com
 
-#### 3. dental-io
+#### 3. dental-ia
 
-**Type:** Application container
-**Subdomain:** dental-io.mambo-cloud.com
+**Type:** Next.js SSR landing
+**Hosts:** dental-ia.es, www.dental-ia.es, staging.dental-ia.es, lab.dental-ia.es
 
 ---
 
@@ -1275,9 +1275,9 @@ docker logs traefik --tail 50
 │       ├── monitoring/docker-compose.yml
 │       └── backoffice/docker-compose.yml
 ├── apps/
-│   ├── mambo-cloud/
-│   ├── cyberdyne/
-│   └── dental-io/
+│   ├── mambo-cloud-com/
+│   ├── cyberdyne-systems-es/
+│   └── dental-ia-es/
 ├── scripts/
 │   ├── backup.sh
 │   ├── restore.sh

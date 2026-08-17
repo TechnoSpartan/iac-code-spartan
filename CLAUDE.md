@@ -48,7 +48,7 @@ The platform consists of three main layers:
 **Security Roadmap:**
 - ✅ **docker-socket-proxy**: Filter for Docker API (eliminates Traefik direct access to socket)
 - ⚠️ **Kong API Gateway** (Cyberdyne): retirado — Cyberdyne ahora se sirve desde Supabase self-hosted (2º VPS), que trae su propio Kong interno
-- 🔄 **Kong API Gateway** (Otros dominios): Pendiente para dental-io, mambo-cloud (plantilla en `platform/kong/_TEMPLATE/`)
+- 🔄 **Kong API Gateway** (Otros dominios): Pendiente para Dental IA, Mambo Cloud (plantilla en `platform/kong/_TEMPLATE/`)
 - ✅ **Authelia**: SSO con MFA implementado
 - ✅ **Portainer**: Read-only dashboard behind Authelia
 - ✅ **Network Isolation**: bases de datos aisladas por producto (Redmine, Supabase, Twenty CRM); ver `docs/02-architecture/NETWORK_ISOLATION_CURRENT.md`
@@ -228,7 +228,7 @@ networks:
 Note: the secondary VPS (`CodeSpartan-apis`) has its own separate subnet ranges, managed independently — Supabase uses `172.20.0.0/24` (`supabase_internal`, within `platform/supabase/`) and Twenty CRM uses `172.34.0.0/24` (`crm_internal`, within `apps/codespartan-cloud/crm/`). Neither is part of this `172.x` range used on the main VPS. Unlike Supabase/Kong and the main VPS's isolated networks, `crm_internal` is a plain bridge network (no `internal: true`) — that flag silently breaks Docker's published-port NAT rules when a container's only network is internal, which is exactly what happened when `crm` was moved here (see git history).
 
 **Why this matters:**
-- Without network isolation, `cyberdyne-frontend` can directly communicate with `dental-io-db`
+- Without network isolation, a frontend can directly communicate with databases from another product
 - With isolation, databases are only accessible by their own application services
 - See `codespartan/apps/_TEMPLATE/NETWORK_ISOLATION.md` for detailed guide
 
@@ -430,7 +430,7 @@ Services:
 
 ⚠️ **Known Security Gaps (Being Addressed):**
 1. **Kong pending for other domains**
-   - Risk: dental-io, mambo-cloud sin rate limiting
+   - Risk: Dental IA, Mambo Cloud sin rate limiting
    - Solution: Replicar patrón Kong para otros dominios (plantilla en `platform/kong/_TEMPLATE/`)
 
 **When making changes to the architecture, consult `docs/ARCHITECTURE.md` for the target state and migration plan.**
