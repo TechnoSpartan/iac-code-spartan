@@ -67,6 +67,13 @@ http:
         replacement: "https://www.codespartan.cloud/${1}"
         permanent: true
 
+    # Redirect Cyberdyne apex to the canonical www host.
+    cyberdyne-apex-redirect:
+      redirectRegex:
+        regex: "^https://cyberdyne-systems\\.es/(.*)"
+        replacement: "https://www.cyberdyne-systems.es/${1}"
+        permanent: true
+
   routers:
     # Global HTTP to HTTPS redirect (applies to all HTTP traffic)
     http-catchall:
@@ -118,6 +125,17 @@ http:
       service: cyberdyne-www-service
       tls:
         certResolver: le
+
+    cyberdyne-apex-redirect:
+      rule: "Host(`cyberdyne-systems.es`)"
+      entrypoints:
+        - websecure
+      middlewares:
+        - cyberdyne-apex-redirect
+      service: noop@internal
+      tls:
+        certResolver: le
+      priority: 100
 
     # crm.codespartan.cloud -> Twenty CRM (twenty-server) on the APIs VPS,
     # reached over the codespartan-internal private network (10.0.0.0/24).
