@@ -41,6 +41,7 @@ Credenciales por defecto: `admin` / `codespartan123` + TOTP vía Authelia (https
 |----------|--------|------------|
 | Cyberdyne frontend | Solo IP privada `10.0.0.3:3080` → Traefik `www/apex.cyberdyne-systems.es` | `codespartan-frontend` |
 | Cyberdyne API (Nest) | Solo IP privada `10.0.0.3:3081` → Traefik `api.cyberdyne-systems.es` | `codespartan-api` |
+| Social Posts media (MinIO S3) | `https://media.cyberdyne-systems.es` → Traefik → `10.0.0.3:9000`; acceso mediante URLs firmadas | `codespartan-minio` |
 | Postgres / Redis / MinIO (social posts) | Internos (red `social_internal`) | `codespartan-db`, `codespartan-redis`, `codespartan-minio` |
 | Twenty CRM (server) | Solo IP privada `10.0.0.3:3000` → Traefik `crm.codespartan.cloud` | `twenty-server` |
 | Twenty CRM (worker, db, redis) | Internos (red `crm_internal`) | `twenty-worker`, `twenty-db`, `twenty-redis` |

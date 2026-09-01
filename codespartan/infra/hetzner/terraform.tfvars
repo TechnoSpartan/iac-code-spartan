@@ -61,4 +61,9 @@ dns_additional_records = {
     # Brevo — subdominio mail.codespartan.cloud (envío de campañas)
     { name = "mail", type = "TXT", value = "v=spf1 include:spf.brevo.com ~all" },
   ]
+
+  "cyberdyne-systems.es" = [
+    { name = "media", type = "A", value = "91.98.137.217", ttl = 300 },
+    { name = "media", type = "AAAA", value = "2a01:4f8:1c1a:7d21::1", ttl = 300 },
+  ]
 }

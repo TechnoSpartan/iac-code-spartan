@@ -99,6 +99,17 @@ http:
       tls:
         certResolver: le
 
+    # Signed media URLs for Social Posts, served by MinIO on the APIs VPS.
+    cyberdyne-media:
+      rule: "Host(`media.cyberdyne-systems.es`) && (Method(`GET`) || Method(`HEAD`))"
+      entrypoints:
+        - websecure
+      middlewares:
+        - security-headers@file
+      service: cyberdyne-media-service
+      tls:
+        certResolver: le
+
     # www + apex cyberdyne-systems.es -> frontend (codespartan-frontend) on APIs VPS
     cyberdyne-www:
       rule: "Host(`www.cyberdyne-systems.es`) || Host(`cyberdyne-systems.es`)"
@@ -157,6 +168,13 @@ http:
       loadBalancer:
         servers:
           - url: "http://10.0.0.3:3081"
+
+    # MinIO S3 API for signed Social Posts media URLs.
+    cyberdyne-media-service:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://10.0.0.3:9000"
 
     # Frontend (ft-rc-bko-social_posts) on the APIs VPS
     cyberdyne-www-service:
