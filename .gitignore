@@ -61,3 +61,7 @@ __pycache__/
 
 .idea
 .claude/
+
+# Local infrastructure values and generated credentials
+**/terraform.tfvars
+**/users.htpasswd
