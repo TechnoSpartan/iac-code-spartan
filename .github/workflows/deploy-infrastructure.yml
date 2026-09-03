@@ -33,6 +33,15 @@ jobs:
         with:
           terraform_version: "1.9.0"
 
+      - name: Restore protected Terraform variables
+        shell: bash
+        env:
+          TERRAFORM_TFVARS_B64: ${{ secrets.TERRAFORM_TFVARS_B64 }}
+        run: |
+          test -n "$TERRAFORM_TFVARS_B64" || { echo "Missing TERRAFORM_TFVARS_B64 secret"; exit 1; }
+          printf '%s' "$TERRAFORM_TFVARS_B64" | base64 --decode > terraform.tfvars
+          chmod 600 terraform.tfvars
+
       - name: Terraform Init
         run: terraform init
         env:
