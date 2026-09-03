@@ -79,8 +79,8 @@ Ve a: **Settings → Secrets and variables → Actions**
 HCLOUD_TOKEN=tu_token_hetzner_cloud              # Cubre Cloud + DNS (hcloud_zone)
 VPS_SSH_PUBLIC_KEY=tu_clave_publica_ssh          # Provisionada en el VPS principal
 APIS_DEPLOY_SSH_PUBLIC_KEY=tu_clave_publica_ssh  # Usuario deploy del VPS secundario
-VPS_SSH_HOST=91.98.137.217
-VPS_SSH_USER=leonidas
+VPS_SSH_HOST=<VPS_HOST>
+VPS_SSH_USER=<DEPLOY_USER>
 VPS_SSH_KEY=tu_clave_privada_ssh_completa
 ```
 
@@ -99,9 +99,9 @@ Ejecutar workflows en este orden:
 
 ### 3. Verificar despliegue
 
-- https://traefik.mambo-cloud.com (admin/codespartan123)
-- https://grafana.mambo-cloud.com (admin/codespartan123)
-- https://backoffice.mambo-cloud.com (admin/codespartan123)
+- https://<traefik-dashboard-host> (SSO/MFA)
+- https://<monitoring-host> (SSO/MFA)
+- https://<backoffice-host> (SSO/MFA)
 - https://www.mambo-cloud.com
 
 ## 📁 Estructura del Proyecto
@@ -156,16 +156,16 @@ domains    = ["mambo-cloud.com"]
 subdomains = ["traefik", "grafana", "backoffice", "www", "staging", "lab"]
 
 # IPs
-manual_ipv4_address = "91.98.137.217"
-manual_ipv6_address = "2a01:4f8:1c1a:7d21::1"
+manual_ipv4_address = "<VPS_IPV4>"
+manual_ipv6_address = "<VPS_IPV6>"
 ```
 
 ### Credenciales por defecto
 
 ```bash
 # Todos los servicios web
-Usuario: admin
-Password: codespartan123
+Usuario: <ADMIN_USER>
+Password: <CONFIGURAR_EN_GESTOR_DE_SECRETOS>
 ```
 
 ## 🛠️ Comandos Útiles
@@ -173,7 +173,7 @@ Password: codespartan123
 ### Conectar al VPS
 
 ```bash
-ssh leonidas@91.98.137.217
+ssh <DEPLOY_USER>@<VPS_HOST>
 ```
 
 ### Verificar servicios
@@ -212,7 +212,7 @@ docker compose up -d
 ## 📊 Monitoreo
 
 ### Grafana Dashboard
-- **URL**: https://grafana.mambo-cloud.com
+- **URL**: https://<monitoring-host>
 - **Datasources**: VictoriaMetrics (métricas) + Loki (logs)
 - **Dashboards**: Infraestructura, Traefik, Docker, Aplicaciones
 - **Retención**: 7 días para métricas y logs
@@ -261,7 +261,7 @@ git push origin main
 
 ```bash
 # 1. Verificar contenedor
-ssh leonidas@91.98.137.217
+ssh <DEPLOY_USER>@<VPS_HOST>
 docker ps | grep nombre_servicio
 
 # 2. Ver logs
